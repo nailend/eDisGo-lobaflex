@@ -17,6 +17,11 @@
 *.pkl
 *.ipynb_checkpoints
 
+# exclude results
+results/*
+# exclude data
+data/*
+
 # exclude locally built docs
 doc/_html
 
