@@ -1,0 +1,18 @@
+model:
+  feeder-id: "0"
+  grid-id: "2534"
+  feeder-dir: "/home/local/RL-INSTITUT/julian.endres/Projekte/Thesis/Anya_Dump/2534/feeder_15min_2weeks"
+  grid-dir:
+  working-dir: "/home/local/RL-INSTITUT/julian.endres/Projekte/Thesis/results"
+opt:
+  solver: 'gurobi'
+  opt_storage: False
+  opt_ev: False
+  opt_hp: True
+  objective: 'minimize_loading'
+  timesteps_per_iteration: 96
+  iterations_per_era: 7
+  overlap_iterations: 24
+logger:
+    log_file: 'log.txt'
+    log_to_file: True
