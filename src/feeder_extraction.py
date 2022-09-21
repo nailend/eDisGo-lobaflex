@@ -271,12 +271,9 @@ def extract_feeders_parallel(grid_id, only_flex_ev):
     # try:
     edisgo_dir = os.path.join(grid_dir, str(grid_id), strategy)
     save_dir = os.path.join(data_dir, str(grid_id))
-    edisgo_obj = import_edisgo_from_files(
-        edisgo_dir, import_timeseries=True, only_flex_ev=only_flex_ev
-    )
+    edisgo_obj = import_edisgo_from_files(edisgo_dir, import_timeseries=True)
     extract_feeders_nx(
-        edisgo_obj,
-        save_dir,
+        edisgo_obj=edisgo_obj, save_dir=save_dir, only_flex_ev=only_flex_ev
     )
     # except Exception as e:
     #     print("Problem in grid {}.".format(grid_id))
