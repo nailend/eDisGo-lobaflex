@@ -210,14 +210,14 @@ def create_timeseries_for_building(building_id, scenario):
         AND sector = 'residential'
         AND zensus_population_id IN(
         SELECT zensus_population_id FROM
-        demand.heat_timeseries_selected_profiles
+        demand.egon_heat_timeseries_selected_profiles
         WHERE building_id  = {building_id})) as demand,
 
         (SELECT COUNT(building_id)
-        FROM demand.heat_timeseries_selected_profiles
+        FROM demand.egon_heat_timeseries_selected_profiles
         WHERE zensus_population_id IN(
         SELECT zensus_population_id FROM
-        demand.heat_timeseries_selected_profiles
+        demand.egon_heat_timeseries_selected_profiles
         WHERE building_id  = {building_id})) as building,
 
         (SELECT daily_demand_share, day_of_year FROM
@@ -225,16 +225,16 @@ def create_timeseries_for_building(building_id, scenario):
         WHERE climate_zone = (
             SELECT climate_zone FROM boundaries.egon_map_zensus_climate_zones
             WHERE zensus_population_id =
-            (SELECT zensus_population_id FROM demand.heat_timeseries_selected_profiles
+            (SELECT zensus_population_id FROM demand.egon_heat_timeseries_selected_profiles
              WHERE building_id = {building_id}))) as daily_demand) as daily_demand
 
         JOIN (SELECT b.idp, ordinality as day
-        FROM demand.heat_timeseries_selected_profiles a,
+        FROM demand.egon_heat_timeseries_selected_profiles a,
         UNNEST (a.selected_idp_profiles) WITH ORDINALITY as selected_idp
-        JOIN demand.heat_idp_pool b
+        JOIN demand.egon_heat_idp_pool b
         ON selected_idp = b.index
         WHERE a.building_id = {building_id}) as demand_profile
         ON demand_profile.day = daily_demand.day_of_year
         """
 
-    return pd.read_sql(sql, db.engine(), index_col=None)
+    return pd.read_sql(sql, db.engine(), index_col=None).rename(columns={"demand":building_id})

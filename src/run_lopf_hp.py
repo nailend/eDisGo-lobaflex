@@ -114,15 +114,17 @@ def create_heatpumps_from_db(edisgo_obj):
     cop_df = cop_df.rename(columns=map_cop_hp_names)
     # TODO COP 1 ausprobieren worst case
 
-    # Get heat timeseries fro selected buildings
-    # TODO wait for SH run, tables dont exist yet
-    # df_heat_time_series = pd.concat([create_timeseries_for_building(
-    #     building_id,
-    #     scenario="eGon2035") for building_id in building_ids],
-    #     axis=1, keys=building_ids)
+    # Get heat timeseries for selected buildings
+    # TODO get heat_time_series for all buildings in MVGD
+    #  and remove district heating buildings
+    heat_demand_df = pd.concat([create_timeseries_for_building(
+        building_id,
+        scenario="eGon2035") for building_id in building_ids],
+        axis=1)
+    heat_demand_df = heat_demand_df.rename(columns=map_cop_hp_names)
 
     # Workaround: generate random heat time series
-    heat_demand_df = pd.DataFrame(np.random.rand(8760, number_of_hps), columns=hp_names)
+    # heat_demand_df = pd.DataFrame(np.random.rand(8760, number_of_hps) /1e3, columns=hp_names)
 
     # TODO adapt timeindex
     year = edisgo_obj.timeseries.timeindex.year.unique()[0]
@@ -137,6 +139,7 @@ def create_heatpumps_from_db(edisgo_obj):
         heat_demand_df = heat_demand_df.resample(freq).ffill()
         cop_df = cop_df.resample(freq).ffill()
 
+    # TODO nans in heat_demand_df!
     heat_demand_df = heat_demand_df.loc[edisgo_obj.timeseries.timeindex]
     cop_df = cop_df.loc[edisgo_obj.timeseries.timeindex]
 
