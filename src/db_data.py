@@ -7,10 +7,13 @@ import pandas as pd
 import saio
 
 import egon_db as db
+from sqlalchemy import func
+from sqlalchemy.types import Integer
 
 saio.register_schema("demand", engine=db.engine())
 saio.register_schema("boundaries", engine=db.engine())
 saio.register_schema("supply", engine=db.engine())
+saio.register_schema("openstreetmap", engine=db.engine())
 
 
 def timeit(func):
@@ -149,6 +152,7 @@ def get_cop(building_ids):
         egon_map_zensus_weather_cell,
     )
     from saio.supply import egon_era5_renewable_feedin
+    from saio.openstreetmap import osm_buildings_synthetic
 
     with db.session_scope() as session:
         cells_query = (
@@ -157,23 +161,49 @@ def get_cop(building_ids):
                 egon_era5_renewable_feedin.feedin,
             )
             .filter(egon_map_zensus_buildings_residential.id.in_(building_ids))
-            .join(
-                egon_map_zensus_weather_cell,
+            .filter(
                 egon_map_zensus_buildings_residential.cell_id
                 == egon_map_zensus_weather_cell.zensus_population_id,
             )
-            .join(
-                egon_era5_renewable_feedin,
+            .filter(
                 egon_map_zensus_weather_cell.w_id == egon_era5_renewable_feedin.w_id,
             )
             .filter(egon_era5_renewable_feedin.carrier == "heat_pump_cop")
         )
 
-    df_cop = pd.read_sql(
+    df_cop_osm = pd.read_sql(
         cells_query.statement,
         cells_query.session.bind,
         index_col=None,
     )
+    synt_building_id = set(building_ids).difference(set(df_cop_osm["egon_building_id"]))
+
+    with db.session_scope() as session:
+        cells_query = (
+            session.query(
+                osm_buildings_synthetic.id.label("egon_building_id"),
+                egon_era5_renewable_feedin.feedin,
+            )
+            .filter(
+                func.cast(osm_buildings_synthetic.id, Integer).in_(synt_building_id))
+            .filter(
+                func.cast(osm_buildings_synthetic.cell_id, Integer)
+                == egon_map_zensus_weather_cell.zensus_population_id,
+            )
+            .filter(
+                egon_map_zensus_weather_cell.w_id == egon_era5_renewable_feedin.w_id,
+            )
+            .filter(egon_era5_renewable_feedin.carrier == "heat_pump_cop")
+        )
+
+    df_cop_synth = pd.read_sql(
+        cells_query.statement,
+        cells_query.session.bind,
+        index_col=None,
+    )
+    df_cop_synth["egon_building_id"] = df_cop_synth["egon_building_id"].astype(int)
+    df_cop = pd.concat([df_cop_osm, df_cop_synth], axis=0, ignore_index=True)
+
     df_cop = pd.DataFrame.from_dict(
         df_cop.set_index("egon_building_id")["feedin"].to_dict(), orient="columns"
     )
