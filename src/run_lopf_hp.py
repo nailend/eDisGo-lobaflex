@@ -97,16 +97,19 @@ def create_heatpumps_from_db(edisgo_obj):
     ]
     number_of_hps = int(residential_loads.shape[0] / 2)
 
-    # Select random residential buildings
-    residential_loads = residential_loads.sample(number_of_hps)
-    # Create HP names fpr selected residential buildings
-    hp_names = [f"HP_{i}" for i in residential_loads.index]
-    buses = residential_loads.bus
-
     # Get random residential buildings from DB
     building_ids = get_random_residential_buildings(
         scenario="eGon2035", limit=number_of_hps
     )["building_id"].tolist()
+
+    # Select random residential loads
+    residential_loads = residential_loads.sample(number_of_hps)
+    # Create HP names for selected residential loads
+    hp_names = [f"HP_{i}" for i in residential_loads.index]
+    buses = residential_loads.bus
+
+    # Map residential loads to db building id randomly
+    map_hp_to_loads = dict(zip(building_ids, hp_names))
 
     # Get cop for selected buildings
     cop_df = get_cop(building_ids)
@@ -115,8 +118,8 @@ def create_heatpumps_from_db(edisgo_obj):
         nan_building_ids = cop_df.columns[cop_df.isna().any(axis=0).values]
         raise ValueError(f"There are NaN-Values in the following cop_df of buildings: {nan_building_ids}")
 
-    map_cop_hp_names = dict(zip(cop_df.columns, hp_names))
-    cop_df = cop_df.rename(columns=map_cop_hp_names)
+
+    cop_df = cop_df.rename(columns=map_hp_to_loads)
     # TODO COP 1 ausprobieren worst case
 
     # Get heat timeseries for selected buildings
@@ -133,7 +136,7 @@ def create_heatpumps_from_db(edisgo_obj):
         raise ValueError(f"There are NaN-Values in the following heat_demand_df of buildings: {nan_building_ids}")
 
     # Rename ts for residential buildings
-    heat_demand_df = heat_demand_df.rename(columns=map_cop_hp_names)
+    heat_demand_df = heat_demand_df.rename(columns=map_hp_to_loads)
 
     # Workaround: generate random heat time series
     # heat_demand_df = pd.DataFrame(np.random.rand(8760, number_of_hps) /1e3, columns=hp_names)
@@ -154,16 +157,16 @@ def create_heatpumps_from_db(edisgo_obj):
         cop_df = cop_df.resample(freq_load).ffill()
         logger.info(f"Heat demand ts and cop ts resampled to from {timeindex_db.freq} to {freq_load}")
 
-    # TODO nans in heat_demand_df!
     heat_demand_df = heat_demand_df.loc[edisgo_obj.timeseries.timeindex]
     cop_df = cop_df.loc[edisgo_obj.timeseries.timeindex]
-
     logger.info(f"Heat pump time series adapted to year {year}")
+
+    hp_p_set = heat_demand_df.div(cop_df).max() * 0.8
 
     loads_df = pd.DataFrame(
         index=hp_names,
         columns=["bus", "p_set", "type"],
-        data={"bus": buses, "p_set": 0.003, "type": "heat_pump"},
+        data={"bus": buses.values, "p_set": hp_p_set, "type": "heat_pump"},
     )
     # TODO p_set - peak heat demand
     #   script von birgit? minimum_hp_capacity
