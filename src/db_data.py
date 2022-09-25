@@ -133,7 +133,6 @@ def get_random_residential_buildings(scenario, limit):
             .filter(egon_building_electricity_peak_loads.sector == "residential")
             .limit(limit)
         )
-    # TODO isin_ get peak loads for specific buildings
 
     df_building_id = pd.read_sql(
         cells_query.statement,

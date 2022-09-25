@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import saio
 import yaml
+import sys
 
 from edisgo.edisgo import import_edisgo_from_files
 from edisgo.opf.lopf import (
@@ -37,59 +38,6 @@ from db_data import (
 engine = db.engine()
 saio.register_schema("demand", engine=engine)
 
-import contextlib
-import sys
-
-from contextlib import redirect_stderr, redirect_stdout
-
-# sys.stdout = Logger()
-
-# class Tee(object):
-#     def __init__(self, name, mode):
-#         # super.__init__(
-#         self.file = open(name, mode)
-#         self.stdout = sys.stdout
-#         sys.stdout = self
-#     def __del__(self):
-#         sys.stdout = self.stdout
-#         self.file.close()
-#     def write(self, data):
-#         self.file.write(data)
-#         self.stdout.write(data)
-#     def flush(self):
-#         self.file.flush()
-
-
-class Tee(object):
-    def __init__(self, logfile):
-        # super.__init__(
-        # self.remove = logger.remove()
-        self.start = logger.add(
-            sink=logfile,
-            format="{time} {level} {message}",
-            level="TRACE",
-            backtrace=True,
-            diagnose=True,
-        )
-        self.file = logger
-        self.stdout = sys.stdout
-        sys.stdout = self
-        self.stderr = sys.stderr
-        sys.stderr = self
-
-    def __del__(self):
-        sys.stdout = self.stdout
-        # self.file.close()
-
-    def write(self, data):
-        self.file.info(data)
-        self.stdout.write(data)
-        self.stderr.write(data)
-        stdout.write(data)
-
-    def flush(self):
-        self.file.info("Its over")
-
 
 def get_config(path="./model_config.yaml"):
     """
@@ -113,30 +61,6 @@ def setup_logfile(cfg):
         backtrace=True,
         diagnose=True,
     )
-    # print = logger.info
-    # sys.stdout = redirect_stdout(logger.info)
-    # redirect_stderr(logger.warning)
-    # detour = Tee(logfile)
-    # sys.stderr = Tee
-    # sys.stdout = detour
-    # sys.stdout.write = logger.info
-
-    # import subprocess, os, sys
-    #
-    # tee = subprocess.Popen(["tee", "log.txt"], stdin=subprocess.PIPE)
-    # # Cause tee's stdin to get a copy of our stdin/stdout (as well as that
-    # # of any child processes we spawn)
-    # os.dup2(tee.stdin.fileno(), sys.stdout.fileno())
-    # os.dup2(tee.stdin.fileno(), sys.stderr.fileno())
-    #
-    # # The flush flag is needed to guarantee these lines are written before
-    # # the two spawned /bin/ls processes emit any output
-    # print("\nstdout", flush=True)
-    # print("stderr", file=sys.stderr, flush=True)
-    #
-    # # These child processes' stdin/stdout are
-    # os.spawnve("P_WAIT", "/bin/ls", ["/bin/ls"], {})
-    # os.execve("/bin/ls", ["/bin/ls"], os.environ)
 
     logger.info("Start")
 
@@ -162,20 +86,6 @@ def get_downstream_matrix(import_path, edisgo_obj):
 def create_heatpumps_from_db(edisgo_obj):
 
     cfg_m = get_config()["model"]
-    # path = Path(cfg_m["feeder-dir"]) / Path(str(cfg_m["feeder-id"]))
-    # TODO get from egon-data
-    # TODO timeindex from where?
-
-    # cop_df = (
-    #     pd.read_csv(path / Path("COP_2011.csv")).set_index(timeindex)
-    #     .resample("15min")
-    #     .ffill()
-    # ).rename(columns={"COP 2011": hp_name})
-    #
-    # df_heat_time_series = (
-    #     pd.read_csv(path / Path("hp_heat_2011.csv"),
-    #                 index_col=0).set_index(timeindex)
-    # ).rename(columns={"0": hp_name})
 
     # HP-disaggregation
     # TODO insert here
@@ -187,11 +97,13 @@ def create_heatpumps_from_db(edisgo_obj):
     ]
     number_of_hps = int(residential_loads.shape[0] / 2)
 
+    # Select random residential buildings
     residential_loads = residential_loads.sample(number_of_hps)
+    # Create HP names fpr selected residential buildings
     hp_names = [f"HP_{i}" for i in residential_loads.index]
     buses = residential_loads.bus
 
-    # Get random residential buildings
+    # Get random residential buildings from DB
     building_ids = get_random_residential_buildings(
         scenario="eGon2035", limit=number_of_hps
     )["building_id"].tolist()
@@ -290,15 +202,8 @@ def build_model(cfg):
     # edisgo_obj.timeseries.resample("h")
     # logger.info("Resampled Time series to h")
 
-    # hp_name = edisgo_obj.add_component(
-    #     "load",
-    #     # bus="Bus 3",
-    #     bus="BranchTee_mvgd_2534_lvgd_20547_1",
-    #     type="heat_pump",
-    #     p_set=0.003,
-    #     sector="flexible",
-    #     add_ts=False,  # dispatch will be optimized
-    # )
+
+    # Add heatpumps fron egon-data-db
     edisgo_obj = create_heatpumps_from_db(edisgo_obj)
     logger.info("Added heat pumps to eDisGo")
 
