@@ -147,6 +147,7 @@ def create_heatpumps_from_db(edisgo_obj):
 
     return edisgo_obj
 
+
 # @logger.catch
 def build_model(cfg):
     """
@@ -172,6 +173,20 @@ def build_model(cfg):
     return edisgo_obj
 
 
+def write_metadata(path, edisgo_obj):
+    """"""
+
+    # TODO generate metadat from edisgo_obj
+    # edisgo_obj
+    metadata = [f"This is Delhi \n", "This is Paris \n", "This is London \n"]
+
+    # Writing to file
+    with open(Path(f"{path}/metadata.md"), "w") as file:
+        # Writing data to a file
+        file.write(f"METADATA for Grid {cfg_m['grid_id']} \n {'*'*20} \n \n")
+        file.writelines(metadata)
+
+
 if __name__ == "__main__":
 
     cfg = get_config()
@@ -193,6 +208,9 @@ if __name__ == "__main__":
         save_timeseries=True,
         save_electromobility=True,
     )
+
+    write_metadata(export_path, edisgo_obj)
+    # TODO write metadata
 
     # # Due to different voltage levels, impedances need to adapted
     # # TODO alternatively p.u.
