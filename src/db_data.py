@@ -105,24 +105,6 @@ def create_timeseries_residential_heat_demand(df_profiles, idp_data):
     return df_timeseries
 
 
-def get_hp_thermal_loads():
-    """"""
-    # residential
-
-    # CTS
-    with db.session_scope() as session:
-
-        cells_query = session.query()
-
-    df_hp_thermal_loads = pd.read_sql(
-        cells_query.statement,
-        cells_query.session.bind,
-        index_col=None,
-    )
-    df_hp_thermal_loads
-    return df_hp_thermal_loads
-
-
 def get_random_residential_buildings(scenario, limit):
     """"""
     # residential
