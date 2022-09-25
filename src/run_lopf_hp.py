@@ -110,6 +110,11 @@ def create_heatpumps_from_db(edisgo_obj):
 
     # Get cop for selected buildings
     cop_df = get_cop(building_ids)
+    # if any nan value in ts raise error
+    if any(cop_df.isna().any(axis=0)):
+        nan_building_ids = cop_df.columns[cop_df.isna().any(axis=0).values]
+        raise ValueError(f"There are NaN-Values in the following cop_df of buildings: {nan_building_ids}")
+
     map_cop_hp_names = dict(zip(cop_df.columns, hp_names))
     cop_df = cop_df.rename(columns=map_cop_hp_names)
     # TODO COP 1 ausprobieren worst case
@@ -121,6 +126,13 @@ def create_heatpumps_from_db(edisgo_obj):
         building_id,
         scenario="eGon2035") for building_id in building_ids],
         axis=1)
+
+    # if any nan value in ts raise error
+    if any(heat_demand_df.isna().any(axis=0)):
+        nan_building_ids = heat_demand_df.columns[heat_demand_df.isna().any(axis=0).values]
+        raise ValueError(f"There are NaN-Values in the following heat_demand_df of buildings: {nan_building_ids}")
+
+    # Rename ts for residential buildings
     heat_demand_df = heat_demand_df.rename(columns=map_cop_hp_names)
 
     # Workaround: generate random heat time series
