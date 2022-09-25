@@ -283,7 +283,7 @@ def extract_feeders_parallel(grid_id, only_flex_ev):
 def get_downstream_node_matrix_feeders_parallel_server(grid_id_feeder_tuple):
     grid_id = grid_id_feeder_tuple[0]
     feeder_id = grid_id_feeder_tuple[1]
-    edisgo_dir = os.path.join(grid_dir, str(grid_id), "feeder", str(feeder_id))
+    edisgo_dir = os.path.join(data_dir, str(grid_id), "feeder", str(feeder_id))
     if os.path.isfile(
         edisgo_dir + "/downstream_node_matrix_{}_{}.csv".format(grid_id, feeder_id)
     ):
@@ -436,7 +436,7 @@ if __name__ == "__main__":
                 extract_feeders_parallel(grid_id, only_flex_ev)
             if get_downstream_node_matrix:
                 print("Getting downstream nodes matrices")
-                feeder_dir = os.path.join(grid_dir, str(grid_id), "feeder")
+                feeder_dir = os.path.join(data_dir, str(grid_id), "feeder")
                 for feeder in os.listdir(feeder_dir):
                     get_downstream_node_matrix_feeders_parallel_server(
                         (grid_id, feeder)
