@@ -1,83 +1,27 @@
-import logging
-import multiprocessing as mp
+""""""
 import os
-import sys
 
-from datetime import date
 from pathlib import Path
-from time import perf_counter
 
 import edisgo.opf.lopf as lopf
-import numpy as np
 import pandas as pd
-import saio
-import yaml
 
 from edisgo.edisgo import import_edisgo_from_files
-from edisgo.opf.lopf import (
-    BANDS,
-    import_flexibility_bands,
-    optimize,
-    prepare_time_invariant_parameters,
-    setup_model,
-    update_model,
-)
+from edisgo.opf.lopf import BANDS, import_flexibility_bands
 from edisgo.tools.tools import convert_impedances_to_mv
 from loguru import logger
 
 import egon_db as db
 
-from db_data import (  # get_hp_thermal_loads,
+from db_data import (
     create_timeseries_for_building,
     get_cop,
     get_random_residential_buildings,
 )
+from model_solving import get_downstream_matrix
+from tools import get_config, setup_logfile
 
 engine = db.engine()
-
-
-def get_config(path="./model_config.yaml"):
-    """
-    Returns the config.
-    """
-    with open(path, encoding="utf8") as f:
-        return yaml.safe_load(f)
-
-
-def setup_logfile(cfg):
-
-    working_dir = Path(cfg["model"]["working-dir"])
-    os.makedirs(working_dir, exist_ok=True)
-
-    # logger.remove()
-    logfile = working_dir / Path(f"{date.isoformat(date.today())}.log")
-    logger.add(
-        sink=logfile,
-        format="{time} {level} {message}",
-        level="TRACE",
-        backtrace=True,
-        diagnose=True,
-    )
-
-    logger.info("Start")
-
-
-def get_downstream_matrix(import_path, edisgo_obj):
-    """Matrix that describes the influence of the nodes on each other"""
-    cfg_m = get_config()["model"]
-    downstream_nodes_matrix = pd.read_csv(
-        os.path.join(
-            import_path,
-            f"downstream_node_matrix_{cfg_m['grid-id']}_{cfg_m['feeder-id']}.csv",
-        ),
-        index_col=0,
-    )
-    # TODO could be sparse?
-    downstream_nodes_matrix = downstream_nodes_matrix.astype(np.uint8)
-    downstream_nodes_matrix = downstream_nodes_matrix.loc[
-        edisgo_obj.topology.buses_df.index, edisgo_obj.topology.buses_df.index
-    ]
-    return downstream_nodes_matrix
 
 
 def create_heatpumps_from_db(edisgo_obj):
@@ -234,48 +178,69 @@ def build_model(cfg):
     edisgo_obj = create_heatpumps_from_db(edisgo_obj)
     logger.info("Added heat pumps to eDisGo")
 
-    # Due to different voltage levels, impedances need to adapted
-    # TODO alternatively p.u.
-    edisgo_obj = convert_impedances_to_mv(edisgo_obj)
-    logger.info("Converted impedances to mv")
-    downstream_nodes_matrix = get_downstream_matrix(import_dir, edisgo_obj)
-    logger.info("Downstream node matrix imported")
-
-    # Create dict with time invariant parameters
-    parameters = lopf.prepare_time_invariant_parameters(
-        edisgo_obj,
-        downstream_nodes_matrix,
-        pu=False,
-        optimize_storage=False,
-        optimize_ev_charging=False,
-        optimize_hp=True,
-    )
-    logger.info("Time-invariant parameters extracted")
-
-    return edisgo_obj, downstream_nodes_matrix, parameters
+    return edisgo_obj
 
 
 if __name__ == "__main__":
 
     cfg = get_config()
-
     setup_logfile(cfg)
-    print = logger.info
 
-    edisgo_obj, downstream_nodes_matrix, parameters = build_model(cfg)
+    cfg_m = cfg["model"]
+
+    edisgo_obj = build_model(cfg)
     logger.info("Model is build")
 
-    # cfg_o = get_config()["opt"]
-
-    timesteps = list(range(24))
-    timesteps = edisgo_obj.timeseries.timeindex[timesteps]
-    model = lopf.setup_model(
-        parameters,
-        timesteps=timesteps,
-        objective="residual_load",
+    edisgo_obj.save(
+        directory=Path(cfg_m["working-dir"]),
+        save_topology=True,
+        save_heatpump=True,
+        save_results=True,
+        save_timeseries=True,
+        save_electromobility=True,
     )
-    logger.info("Model is setup")
 
-    logger.info("Optimize model")
-    results = lopf.optimize(model, "gurobi")
-    logger.info("Model solved")
+    # # Due to different voltage levels, impedances need to adapted
+    # # TODO alternatively p.u.
+    # edisgo_obj = convert_impedances_to_mv(edisgo_obj)
+    # logger.info("Converted impedances to mv")
+    #
+    # import_dir = Path(cfg_m["feeder-dir"]) / Path(cfg_m["feeder-id"])
+    # downstream_nodes_matrix = get_downstream_matrix(import_dir, edisgo_obj)
+    # logger.info("Downstream node matrix imported")
+    #
+    # # Create dict with time invariant parameters
+    # parameters = lopf.prepare_time_invariant_parameters(
+    #     edisgo_obj,
+    #     downstream_nodes_matrix,
+    #     pu=False,
+    #     optimize_storage=False,
+    #     optimize_ev_charging=False,
+    #     optimize_hp=True,
+    # )
+    # logger.info("Time-invariant parameters extracted")
+    #
+    # # cfg_o = get_config()["opt"]
+    #
+    # timesteps = list(range(24))
+    # timesteps = edisgo_obj.timeseries.timeindex[timesteps]
+    # model = lopf.setup_model(
+    #     parameters,
+    #     timesteps=timesteps,
+    #     objective="residual_load",
+    # )
+    # logger.info("Model is setup")
+    #
+    # logger.info("Optimize model")
+    # results = lopf.optimize(model, "gurobi")
+    #
+    # # existing_loggers = [logging.getLogger()]  # get the root logger
+    # # existing_loggers = existing_loggers + [
+    # #     logging.getLogger(name) for name in logging.root.manager.loggerDict
+    # # ]
+    # #
+    # # for logger in existing_loggers:
+    # #     print(logger)
+    # #     print(logger.handlers)
+    # #     print("-"*20)
+    # logger.info("Model solved")
