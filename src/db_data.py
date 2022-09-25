@@ -16,6 +16,7 @@ saio.register_schema("supply", engine=db.engine())
 saio.register_schema("openstreetmap", engine=db.engine())
 
 
+@timeit
 def get_profile_ids_residential_heat_demand(building_id=None, mv_grid_id=None):
     """
     Returns a list of profile ids for residential heat demand.
@@ -66,6 +67,7 @@ def get_profile_ids_residential_heat_demand(building_id=None, mv_grid_id=None):
     return df_profiles
 
 
+@timeit
 def create_timeseries_residential_heat_demand(df_profiles, idp_data):
     """"""
 
@@ -91,6 +93,7 @@ def create_timeseries_residential_heat_demand(df_profiles, idp_data):
     return df_timeseries
 
 
+@timeit
 def get_random_residential_buildings(scenario, limit):
     """"""
     # residential
@@ -181,6 +184,7 @@ def get_cop(building_ids):
     return df_cop
 
 
+@timeit
 def create_timeseries_for_building(building_id, scenario):
     """Generates final heat demand timeseries for a specific building
 
