@@ -1,6 +1,6 @@
 #egon-data:
 #  --database-host: 127.0.0.1
-#  --database-name: egon-data-sh-cts-je
+#  --database-name: egon-data
 #  --database-port: '59776'
 #  --database-user: egon
 #  --database-password: data
