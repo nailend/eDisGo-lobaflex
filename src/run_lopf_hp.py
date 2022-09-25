@@ -140,16 +140,19 @@ def create_heatpumps_from_db(edisgo_obj):
 
     # TODO adapt timeindex
     year = edisgo_obj.timeseries.timeindex.year.unique()[0]
-    freq = pd.Series(edisgo_obj.timeseries.timeindex).diff().min()
-    timeindex = pd.date_range(
+
+    timeindex_db = pd.date_range(
         start=f"{year}-01-01 00:00:00", end=f"{year}-12-31 23:45:00", freq="h"
     )
+    heat_demand_df.index = timeindex_db
+    cop_df.index = timeindex_db
 
-    heat_demand_df.index = timeindex
-    cop_df.index = timeindex
-    if not freq == timeindex.freq:
-        heat_demand_df = heat_demand_df.resample(freq).ffill()
-        cop_df = cop_df.resample(freq).ffill()
+    # Resample COP and demand
+    freq_load = pd.Series(edisgo_obj.timeseries.timeindex).diff().min()
+    if not freq_load == timeindex_db.freq:
+        heat_demand_df = heat_demand_df.resample(freq_load).ffill()
+        cop_df = cop_df.resample(freq_load).ffill()
+        logger.info(f"Heat demand ts and cop ts resampled to from {timeindex_db.freq} to {freq_load}")
 
     # TODO nans in heat_demand_df!
     heat_demand_df = heat_demand_df.loc[edisgo_obj.timeseries.timeindex]
