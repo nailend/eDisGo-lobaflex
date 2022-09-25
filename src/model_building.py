@@ -147,14 +147,6 @@ def create_heatpumps_from_db(edisgo_obj):
 
     return edisgo_obj
 
-
-def setup_directory(cfg_m):
-    working_dir = (
-        Path(cfg_m["working-dir"]) / Path(cfg_m["grid-id"]) / Path(cfg_m["feeder-id"])
-    )
-    os.makedirs(working_dir, exist_ok=True)
-
-
 # @logger.catch
 def build_model(cfg):
     """
@@ -162,7 +154,6 @@ def build_model(cfg):
     """
     logger.info("Build model")
     cfg_m = cfg["model"]
-    setup_directory(cfg_m)
     logger.info(f"Model settings:{cfg_m}")
 
     # import Grid
@@ -187,12 +178,15 @@ if __name__ == "__main__":
     setup_logfile(cfg)
 
     cfg_m = cfg["model"]
-
+    # setup_directory(cfg_m)
     edisgo_obj = build_model(cfg)
     logger.info("Model is build")
 
+    export_path = Path(cfg_m["working-dir"]) / Path(f"build/{cfg_m['grid_id']}")
+    os.makedirs(export_path, exist_ok=True)
+
     edisgo_obj.save(
-        directory=Path(cfg_m["working-dir"]),
+        directory=export_path,
         save_topology=True,
         save_heatpump=True,
         save_results=True,

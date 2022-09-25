@@ -3,7 +3,7 @@ model:
   grid-id: "2534"
   feeder-dir: "/home/local/RL-INSTITUT/julian.endres/Projekte/Thesis/Anya_Dump/2534/feeder_15min_2weeks"
   grid-dir:
-  working-dir: "/home/local/RL-INSTITUT/julian.endres/Projekte/Thesis/results"
+  working-dir: "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/results"
 opt:
   solver: 'gurobi'
   opt_storage: False
