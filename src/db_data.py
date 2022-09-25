@@ -1,14 +1,16 @@
 import datetime
+import time
 
 from pathlib import Path
-import time
+
 import numpy as np
 import pandas as pd
 import saio
 
-import egon_db as db
 from sqlalchemy import func
 from sqlalchemy.types import Integer
+
+import egon_db as db
 
 saio.register_schema("demand", engine=db.engine())
 saio.register_schema("boundaries", engine=db.engine())
@@ -20,11 +22,14 @@ def timeit(func):
     """
     Decorator for measuring function's running time.
     """
+
     def measure_time(*args, **kw):
         start_time = time.time()
         result = func(*args, **kw)
-        print("Processing time of %s(): %.2f seconds."
-              % (func.__qualname__, time.time() - start_time))
+        print(
+            "Processing time of %s(): %.2f seconds."
+            % (func.__qualname__, time.time() - start_time)
+        )
         return result
 
     return measure_time
@@ -127,14 +132,15 @@ def get_random_residential_buildings(scenario, limit):
     return df_building_id
 
 
+@timeit
 def get_cop(building_ids):
 
     from saio.boundaries import (
         egon_map_zensus_buildings_residential,
         egon_map_zensus_weather_cell,
     )
-    from saio.supply import egon_era5_renewable_feedin
     from saio.openstreetmap import osm_buildings_synthetic
+    from saio.supply import egon_era5_renewable_feedin
 
     with db.session_scope() as session:
         cells_query = (
@@ -167,7 +173,8 @@ def get_cop(building_ids):
                 egon_era5_renewable_feedin.feedin,
             )
             .filter(
-                func.cast(osm_buildings_synthetic.id, Integer).in_(synt_building_id))
+                func.cast(osm_buildings_synthetic.id, Integer).in_(synt_building_id)
+            )
             .filter(
                 func.cast(osm_buildings_synthetic.cell_id, Integer)
                 == egon_map_zensus_weather_cell.zensus_population_id,
@@ -249,4 +256,6 @@ def create_timeseries_for_building(building_id, scenario):
         ON demand_profile.day = daily_demand.day_of_year
         """
 
-    return pd.read_sql(sql, db.engine(), index_col=None).rename(columns={"demand":building_id})
+    return pd.read_sql(sql, db.engine(), index_col=None).rename(
+        columns={"demand": building_id}
+    )

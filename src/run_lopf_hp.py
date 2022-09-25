@@ -12,7 +12,6 @@ import numpy as np
 import pandas as pd
 import saio
 import yaml
-import sys
 
 from edisgo.edisgo import import_edisgo_from_files
 from edisgo.opf.lopf import (
@@ -28,15 +27,13 @@ from loguru import logger
 
 import egon_db as db
 
-from db_data import (
+from db_data import (  # get_hp_thermal_loads,
     create_timeseries_for_building,
     get_cop,
-    get_hp_thermal_loads,
     get_random_residential_buildings,
 )
 
 engine = db.engine()
-saio.register_schema("demand", engine=engine)
 
 
 def get_config(path="./model_config.yaml"):
@@ -116,8 +113,9 @@ def create_heatpumps_from_db(edisgo_obj):
     # if any nan value in ts raise error
     if any(cop_df.isna().any(axis=0)):
         nan_building_ids = cop_df.columns[cop_df.isna().any(axis=0).values]
-        raise ValueError(f"There are NaN-Values in the following cop_df of buildings: {nan_building_ids}")
-
+        raise ValueError(
+            f"There are NaN-Values in the following cop_df of buildings: {nan_building_ids}"
+        )
 
     cop_df = cop_df.rename(columns=map_hp_to_loads)
     # TODO COP 1 ausprobieren worst case
@@ -125,15 +123,22 @@ def create_heatpumps_from_db(edisgo_obj):
     # Get heat timeseries for selected buildings
     # TODO get heat_time_series for all buildings in MVGD
     #  and remove district heating buildings
-    heat_demand_df = pd.concat([create_timeseries_for_building(
-        building_id,
-        scenario="eGon2035") for building_id in building_ids],
-        axis=1)
+    heat_demand_df = pd.concat(
+        [
+            create_timeseries_for_building(building_id, scenario="eGon2035")
+            for building_id in building_ids
+        ],
+        axis=1,
+    )
 
     # if any nan value in ts raise error
     if any(heat_demand_df.isna().any(axis=0)):
-        nan_building_ids = heat_demand_df.columns[heat_demand_df.isna().any(axis=0).values]
-        raise ValueError(f"There are NaN-Values in the following heat_demand_df of buildings: {nan_building_ids}")
+        nan_building_ids = heat_demand_df.columns[
+            heat_demand_df.isna().any(axis=0).values
+        ]
+        raise ValueError(
+            f"There are NaN-Values in the following heat_demand_df of buildings: {nan_building_ids}"
+        )
 
     # Rename ts for residential buildings
     heat_demand_df = heat_demand_df.rename(columns=map_hp_to_loads)
@@ -155,7 +160,9 @@ def create_heatpumps_from_db(edisgo_obj):
     if not freq_load == timeindex_db.freq:
         heat_demand_df = heat_demand_df.resample(freq_load).ffill()
         cop_df = cop_df.resample(freq_load).ffill()
-        logger.info(f"Heat demand ts and cop ts resampled to from {timeindex_db.freq} to {freq_load}")
+        logger.info(
+            f"Heat demand ts and cop ts resampled to from {timeindex_db.freq} to {freq_load}"
+        )
 
     heat_demand_df = heat_demand_df.loc[edisgo_obj.timeseries.timeindex]
     cop_df = cop_df.loc[edisgo_obj.timeseries.timeindex]
@@ -222,7 +229,6 @@ def build_model(cfg):
     # Resampling not possible as no coherent timeseries
     # edisgo_obj.timeseries.resample("h")
     # logger.info("Resampled Time series to h")
-
 
     # Add heatpumps fron egon-data-db
     edisgo_obj = create_heatpumps_from_db(edisgo_obj)
