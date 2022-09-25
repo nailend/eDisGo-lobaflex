@@ -1,7 +1,7 @@
 import datetime
 
 from pathlib import Path
-
+import time
 import numpy as np
 import pandas as pd
 import saio
@@ -11,6 +11,20 @@ import egon_db as db
 saio.register_schema("demand", engine=db.engine())
 saio.register_schema("boundaries", engine=db.engine())
 saio.register_schema("supply", engine=db.engine())
+
+
+def timeit(func):
+    """
+    Decorator for measuring function's running time.
+    """
+    def measure_time(*args, **kw):
+        start_time = time.time()
+        result = func(*args, **kw)
+        print("Processing time of %s(): %.2f seconds."
+              % (func.__qualname__, time.time() - start_time))
+        return result
+
+    return measure_time
 
 
 def get_profile_ids_residential_heat_demand(building_id=None, mv_grid_id=None):
