@@ -200,7 +200,7 @@ if __name__ == "__main__":
     edisgo_obj = build_model(cfg)
     logger.info("Model is build")
 
-    export_path = Path(cfg_m["working-dir"]) / Path(f"build/{cfg_m['grid_id']}")
+    export_path = Path(f"{cfg_m['working-dir']}/{cfg_m['grid-id']}/{cfg_m['feeder-id']}")
     os.makedirs(export_path, exist_ok=True)
 
     edisgo_obj.save(

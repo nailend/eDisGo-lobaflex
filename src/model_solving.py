@@ -63,13 +63,17 @@ if __name__ == "__main__":
     # logger.propagate = False
 
     # import Grid
-    import_dir = Path(cfg_m["feeder-dir"]) / Path(cfg_m["feeder-id"])
-    edisgo_obj = import_edisgo_from_files(import_dir, import_timeseries=True)
+    import_dir = Path(f"{cfg_m['working-dir']}/{cfg_m['grid-id']}/{cfg_m['feeder-id']}")
+    # TODO add import for heatpumps
+    edisgo_obj = import_edisgo_from_files(import_dir,
+                                          import_timeseries=True,
+                                          import_heat_pump=True)
 
     # Due to different voltage levels, impedances need to adapted
     # TODO alternatively p.u.
     edisgo_obj = convert_impedances_to_mv(edisgo_obj)
     logger.info("Converted impedances to mv")
+
     downstream_nodes_matrix = get_downstream_matrix(import_dir, edisgo_obj)
     logger.info("Downstream node matrix imported")
 
