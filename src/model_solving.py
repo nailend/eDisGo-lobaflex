@@ -87,8 +87,13 @@ if __name__ == "__main__":
         optimize_hp=True,
     )
     logger.info("Time-invariant parameters extracted")
-    timesteps = list(range(24))
-    timesteps = edisgo_obj.timeseries.timeindex[timesteps]
+
+    # timesteps = list(range(24))
+    # timesteps = edisgo_obj.timeseries.timeindex[timesteps]
+
+    # get break between weeks
+    timesteps = pd.Series(edisgo_obj.timeseries.timeindex).diff().idxmax()
+    timesteps = edisgo_obj.timeseries.timeindex[:timesteps]
     model = lopf.setup_model(
         parameters,
         timesteps=timesteps,
