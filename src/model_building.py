@@ -39,7 +39,7 @@ def create_heatpumps_from_db(edisgo_obj):
     number_of_hps = int(residential_loads.shape[0] / 2)
 
     # Get random residential buildings from DB
-    building_ids = get_random_residential_buildings(
+    db_building_ids = get_random_residential_buildings(
         scenario="eGon2035", limit=number_of_hps
     )["building_id"].tolist()
 
@@ -50,10 +50,10 @@ def create_heatpumps_from_db(edisgo_obj):
     buses = residential_loads.bus
 
     # Map residential loads to db building id randomly
-    map_hp_to_loads = dict(zip(building_ids, hp_names))
+    map_hp_to_loads = dict(zip(db_building_ids, hp_names))
 
     # Get cop for selected buildings
-    cop_df = get_cop(building_ids)
+    cop_df = get_cop(db_building_ids)
     # if any nan value in ts raise error
     if any(cop_df.isna().any(axis=0)):
         nan_building_ids = cop_df.columns[cop_df.isna().any(axis=0).values]
@@ -61,8 +61,8 @@ def create_heatpumps_from_db(edisgo_obj):
             f"There are NaN-Values in the following cop_df of buildings: {nan_building_ids}"
         )
 
+    # Rename ts for residential buildings
     cop_df = cop_df.rename(columns=map_hp_to_loads)
-    # TODO COP 1 ausprobieren worst case
 
     # Get heat timeseries for selected buildings
     # TODO get heat_time_series for all buildings in MVGD
@@ -70,7 +70,7 @@ def create_heatpumps_from_db(edisgo_obj):
     heat_demand_df = pd.concat(
         [
             create_timeseries_for_building(building_id, scenario="eGon2035")
-            for building_id in building_ids
+            for building_id in db_building_ids
         ],
         axis=1,
     )
@@ -108,6 +108,7 @@ def create_heatpumps_from_db(edisgo_obj):
             f"Heat demand ts and cop ts resampled to from {timeindex_db.freq} to {freq_load}"
         )
 
+    # Select keep loads timesteps
     heat_demand_df = heat_demand_df.loc[edisgo_obj.timeseries.timeindex]
     cop_df = cop_df.loc[edisgo_obj.timeseries.timeindex]
     logger.info(f"Heat pump time series adapted to year {year}")
@@ -131,12 +132,14 @@ def create_heatpumps_from_db(edisgo_obj):
         index=hp_names,
     )
 
-    # Not whole timeseries available
-    # timesteps = edisgo_obj.timeseries.timeindex
-    # year = timesteps.year.unique()[0]
-    # pd.date_range(start=f"{year}-01-01 00:00:00", end=f"{year}-12-31 23:45:00", freq='h')
+    edisgo_obj.heat_pump.building_ids_df = pd.concat(
+        [
+            pd.Series(residential_loads.index),
+            pd.DataFrame.from_dict(map_hp_to_loads.items())
+        ],
+        keys=["residential_buildilng_id", "db_building_id", "hp_building_id"],
+        axis=1).droplevel(1, axis=1)
     edisgo_obj.heat_pump.heat_demand_df = heat_demand_df
-
     edisgo_obj.heat_pump.cop_df = cop_df
     edisgo_obj.heat_pump.thermal_storage_units_df = thermal_storage_units_df
 
