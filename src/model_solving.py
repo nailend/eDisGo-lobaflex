@@ -65,9 +65,9 @@ if __name__ == "__main__":
     # import Grid
     import_dir = Path(f"{cfg_m['working-dir']}/{cfg_m['grid-id']}/{cfg_m['feeder-id']}")
     # TODO add import for heatpumps
-    edisgo_obj = import_edisgo_from_files(import_dir,
-                                          import_timeseries=True,
-                                          import_heat_pump=True)
+    edisgo_obj = import_edisgo_from_files(
+        import_dir, import_timeseries=True, import_heat_pump=True
+    )
 
     # Due to different voltage levels, impedances need to adapted
     # TODO alternatively p.u.

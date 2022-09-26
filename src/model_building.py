@@ -135,10 +135,11 @@ def create_heatpumps_from_db(edisgo_obj):
     edisgo_obj.heat_pump.building_ids_df = pd.concat(
         [
             pd.Series(residential_loads.index),
-            pd.DataFrame.from_dict(map_hp_to_loads.items())
+            pd.DataFrame.from_dict(map_hp_to_loads.items()),
         ],
         keys=["residential_buildilng_id", "db_building_id", "hp_building_id"],
-        axis=1).droplevel(1, axis=1)
+        axis=1,
+    ).droplevel(1, axis=1)
     edisgo_obj.heat_pump.heat_demand_df = heat_demand_df
     edisgo_obj.heat_pump.cop_df = cop_df
     edisgo_obj.heat_pump.thermal_storage_units_df = thermal_storage_units_df
@@ -200,7 +201,9 @@ if __name__ == "__main__":
     edisgo_obj = build_model(cfg)
     logger.info("Model is build")
 
-    export_path = Path(f"{cfg_m['working-dir']}/{cfg_m['grid-id']}/{cfg_m['feeder-id']}")
+    export_path = Path(
+        f"{cfg_m['working-dir']}/{cfg_m['grid-id']}/{cfg_m['feeder-id']}"
+    )
     os.makedirs(export_path, exist_ok=True)
 
     edisgo_obj.save(
