@@ -186,7 +186,7 @@ def write_metadata(path, edisgo_obj):
     # Writing to file
     with open(Path(f"{path}/metadata.md"), "w") as file:
         # Writing data to a file
-        file.write(f"METADATA for Grid {cfg_m['grid_id']} \n {'*'*20} \n \n")
+        file.write(f"METADATA for Grid {cfg_m['grid-id']} \n {'*'*20} \n \n")
         file.writelines(metadata)
 
 
@@ -211,6 +211,7 @@ if __name__ == "__main__":
         save_timeseries=True,
         save_electromobility=True,
     )
+    logger.info(f"Model saved to: {export_path}")
 
     write_metadata(export_path, edisgo_obj)
     # TODO write metadata
