@@ -1,9 +1,7 @@
 model:
-  feeder-id: "0"
-  grid-id: "2534"
-  feeder-dir: "/home/local/RL-INSTITUT/julian.endres/Projekte/Thesis/Anya_Dump/2534/feeder_15min_2weeks"
-  grid-dir:
-  working-dir: "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/results"
+  grid-id: 2534
+  feeder: True
+  feeder-id: 0
 opt:
   solver: 'gurobi'
   opt_storage: False
