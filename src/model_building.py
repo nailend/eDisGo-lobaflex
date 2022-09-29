@@ -2,7 +2,7 @@
 import os
 
 from pathlib import Path
-
+import datetime
 import edisgo.opf.lopf as lopf
 import pandas as pd
 
@@ -204,7 +204,13 @@ if __name__ == "__main__":
     export_path = Path(
         f"{cfg_m['working-dir']}/{cfg_m['grid-id']}/{cfg_m['feeder-id']}"
     )
-    os.makedirs(export_path, exist_ok=True)
+
+    if os.path.isdir(export_path):
+        run_id = datetime.now().strftime("run_%Y-%m-%d-%H-%M-%S")
+        export_path = export_path / Path(f"{run_id}")
+        os.makedirs(export_path, exist_ok=True)
+    else:
+        os.makedirs(export_path, exist_ok=True)
 
     edisgo_obj.save(
         directory=export_path,
