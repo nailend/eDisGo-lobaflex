@@ -14,5 +14,5 @@ opt:
   iterations_per_era: 7
   overlap_iterations: 24
 logger:
-    log_file: 'log.txt'
-    log_to_file: True
+  log_file: 'log.txt'
+  log_to_file: True
