@@ -31,6 +31,32 @@ results_dir = results_dir[0]
 engine = db.engine()
 
 
+def determine_minimum_hp_capacity_per_building(
+    peak_heat_demand, flexibility_factor=24 / 18, cop=1.7
+):
+    """
+    Determines minimum required heat pump capacity.
+
+    Parameters
+    ----------
+    peak_heat_demand : pd.Series
+        Series with peak heat demand per building in MW. Index contains the
+        building ID.
+    flexibility_factor : float
+        Factor to overdimension the heat pump to allow for some flexible
+        dispatch in times of high heat demand. Per default, a factor of 24/18
+        is used, to take into account
+
+    Returns
+    -------
+    pd.Series
+        Pandas series with minimum required heat pump capacity per building in
+        MW.
+
+    """
+    return peak_heat_demand * flexibility_factor / cop
+
+
 def create_heatpumps_from_db(edisgo_obj):
     """"""
 
