@@ -114,6 +114,8 @@ def create_heatpumps_from_db(edisgo_obj):
     check_nans(heat_demand_df)
     heat_demand_df = heat_demand_df.rename(columns=map_hp_to_loads)
 
+    heat_demand_df.max()
+
     # Adapt timeindex to timeseries
     year = edisgo_obj.timeseries.timeindex.year.unique()[0]
     timeindex_db = pd.date_range(

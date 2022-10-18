@@ -15,7 +15,7 @@ import yaml
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-from config import __name__ as cfg_dir
+from config import __path__ as cfg_dir
 
 
 def paths(pid=None):
