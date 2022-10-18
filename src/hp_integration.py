@@ -23,10 +23,15 @@ from tools import get_config, setup_logfile, create_dir_or_variant
 
 from data import __path__ as data_dir
 from results import __path__ as results_dir
-
+from src import __path__ as source_dir
+from logs import __path__ as logs_dir
+from config import __path__ as config_dir
 
 data_dir = data_dir[0]
 results_dir = results_dir[0]
+source_dir = source_dir[0]
+logs_dir = logs_dir[0]
+config_dir = config_dir[0]
 
 engine = db.engine()
 
@@ -194,8 +199,8 @@ def write_metadata(path, edisgo_obj):
 
 if __name__ == "__main__":
 
-    cfg = get_config()
-    setup_logfile(cfg)
+    cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
+    setup_logfile(path=logs_dir)
 
     cfg_m = cfg["model"]
 

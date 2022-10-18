@@ -17,14 +17,16 @@ from data import __path__ as data_dir
 from results import __path__ as results_dir
 from src import __path__ as source_dir
 from logs import __path__ as logs_dir
+from config import __path__ as config_dir
 
 data_dir = data_dir[0]
 results_dir = results_dir[0]
 source_dir = source_dir[0]
 logs_dir = logs_dir[0]
+config_dir = config_dir[0]
 
 
-def get_config(path="./model_config.yaml"):
+def get_config(path=f".{config_dir}/model_config.yaml"):
     """
     Returns the config.
     """
@@ -32,12 +34,11 @@ def get_config(path="./model_config.yaml"):
         return yaml.safe_load(f)
 
 
-def setup_logfile(cfg):
-    working_dir = Path(cfg["model"]["working-dir"])
-    os.makedirs(working_dir, exist_ok=True)
+def setup_logfile(path):
 
+    os.makedirs(path, exist_ok=True)
     # logger.remove()
-    logfile = working_dir / Path(f"{date.isoformat(date.today())}.log")
+    logfile = path / Path(f"{date.isoformat(date.today())}.log")
     logger.add(
         sink=logfile,
         format="{time} {level} {message}",
