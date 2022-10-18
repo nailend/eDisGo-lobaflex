@@ -16,6 +16,14 @@ from edisgo.tools.complexity_reduction import (
     remove_1m_lines_from_edisgo,
 )
 
+from data import __path__ as data_dir
+from results import __path__ as results_dir
+
+
+data_dir = data_dir[0]
+results_dir = results_dir[0]
+
+
 # Script to prepare grids for optimisation. The necessary steps are:
 # Timeseries: Extract extreme weeks
 # Topology: Remove 1m lines, extract feeders, extract downstream nodes matrix

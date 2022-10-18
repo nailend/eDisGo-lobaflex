@@ -16,7 +16,16 @@ from tools import get_config, setup_logfile
 
 # from edisgo.tools import logger
 
-logger = logging.getLogger(__name__)
+from data import __path__ as data_dir
+from results import __path__ as results_dir
+from config import __path__ as config_dir
+
+data_dir = data_dir[0]
+results_dir = results_dir[0]
+config_dir = config_dir[0]
+
+
+# logger = logging.getLogger(__name__)
 
 
 def setup_directory(cfg_m):
@@ -46,10 +55,10 @@ def get_downstream_matrix(import_path, edisgo_obj):
 
 if __name__ == "__main__":
 
-    cfg = get_config()
+    cfg = get_config(Path(config_dir) / "model_config.yaml")
     cfg_m = cfg["model"]
 
-    setup_logfile(cfg)
+    # setup_logfile(cfg)
     # print = logger.info
     # logger = logging.getLogger("pyomo")
     # logger = logging.getLogger("pyomo.contrib.appsi.solvers.gurobi")
@@ -63,7 +72,7 @@ if __name__ == "__main__":
     # logger.propagate = False
 
     # import Grid
-    import_dir = Path(f"{cfg_m['working-dir']}/{cfg_m['grid-id']}/{cfg_m['feeder-id']}")
+    import_dir = Path(results_dir) / str(cfg_m['grid-id']) / str(cfg_m['feeder-id'])
     # TODO add import for heatpumps
     edisgo_obj = import_edisgo_from_files(
         import_dir, import_timeseries=True, import_heat_pump=True
@@ -88,12 +97,12 @@ if __name__ == "__main__":
     )
     logger.info("Time-invariant parameters extracted")
 
-    # timesteps = list(range(24))
-    # timesteps = edisgo_obj.timeseries.timeindex[timesteps]
+    timesteps = list(range(24))
+    timesteps = edisgo_obj.timeseries.timeindex[timesteps]
 
     # get break between weeks
-    timesteps = pd.Series(edisgo_obj.timeseries.timeindex).diff().idxmax()
-    timesteps = edisgo_obj.timeseries.timeindex[:timesteps]
+    # timesteps = pd.Series(edisgo_obj.timeseries.timeindex).diff().idxmax()
+    # timesteps = edisgo_obj.timeseries.timeindex[:timesteps]
     model = lopf.setup_model(
         parameters,
         timesteps=timesteps,
@@ -104,6 +113,27 @@ if __name__ == "__main__":
     logger.info("Optimize model")
     results = lopf.optimize(model, "gurobi")
 
+    # Export HP-results
+    export_dir = Path(f"{cfg_m['working-dir']}/{cfg_m['grid-id']}/{cfg_m['feeder-id']}")
+    for res_name, res in results.items():
+        try:
+            res = res.loc[timesteps]
+        except Exception:
+            pass
+        if "slack" in res_name:
+            res = res[res > 1e-6]
+            res = res.dropna(how="all")
+            res = res.dropna(how="all")
+        if not res.empty:
+            res.astype(np.float16).to_csv(
+                export_dir / Path("results/powerflow_results") /
+                Path(f"{res_name}_{cfg_m['grid-id']}_{cfg_m['feeder-id']}.csv")
+                )
+    print(f"Saved results to: {export_dir}/powerflow_results.")
+
+    # TODO return results for df
+    # TODO reinforce
+    # export reinforce results
     # existing_loggers = [logging.getLogger()]  # get the root logger
     # existing_loggers = existing_loggers + [
     #     logging.getLogger(name) for name in logging.root.manager.loggerDict
@@ -114,3 +144,37 @@ if __name__ == "__main__":
     #     print(logger.handlers)
     #     print("-"*20)
     logger.info("Model solved")
+
+    # TODO
+    # # TODO add emob ts to obj
+    # edisgo_obj.set_time_series_manual(
+    #         loads_p=None,
+    #         storage_units_p=None,
+    #         generators_q=None,
+    #         loads_q=None,
+    #     )
+    #
+    # # compute q
+    # edisgo_obj.set_time_series_reactive_power_control(
+    #     control="fixed_cosphi",
+    #     generators_parametrisation="default",
+    #     loads_parametrisation="default",
+    #     storage_units_parametrisation="default",)
+    #
+    #
+    # edisgo_obj.check_integrity()
+    #
+    # edisgo_obj.reinforce()
+    #
+    # edisgo_obj.save(directory,
+    #     save_topology=True,
+    #     save_timeseries=True,
+    #     save_results=True,
+    #     save_electromobility=True,
+    #     save_heatpump=True,
+    #     archive=True,
+    #     archive_type="zip")
+    #
+    #
+    # # optimize again
+    # # check for curtailment?
