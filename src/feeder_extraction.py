@@ -19,7 +19,6 @@ from edisgo.tools.complexity_reduction import (
 from data import __path__ as data_dir
 from results import __path__ as results_dir
 
-
 data_dir = data_dir[0]
 results_dir = results_dir[0]
 

@@ -3,21 +3,25 @@ import logging
 import os
 import time
 
-# import logging.config
-
 from datetime import date, datetime
 from pathlib import Path
 
+import psutil
 import yaml
 
 from loguru import logger
-import psutil
 
+from config import __path__ as config_dir
 from data import __path__ as data_dir
+from logs import __path__ as logs_dir
 from results import __path__ as results_dir
 from src import __path__ as source_dir
-from logs import __path__ as logs_dir
-from config import __path__ as config_dir
+
+# import logging.config
+
+
+
+
 
 data_dir = data_dir[0]
 results_dir = results_dir[0]
@@ -92,18 +96,19 @@ def setup_logger(name=None, loglevel=logging.DEBUG):
         handler = logging.FileHandler(logfile)
         handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter(
-            '%(asctime)s-%(levelname)s-%(funcName)s: %(message)s')
+            "%(asctime)s-%(levelname)s-%(funcName)s: %(message)s"
+        )
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
-        logging.info('Path for logging file: %s' % logs_dir)
+        logging.info("Path for logging file: %s" % logs_dir)
 
     # create a stream handler (print to prompt)
     stream = logging.StreamHandler()
     stream.setLevel(logging.INFO)
     stream_formatter = logging.Formatter(
-        '%(asctime)s-%(levelname)s: %(message)s',
-        '%H:%M:%S')
+        "%(asctime)s-%(levelname)s: %(message)s", "%H:%M:%S"
+    )
     stream.setFormatter(stream_formatter)
 
     # add the handlers to the logger
@@ -112,7 +117,7 @@ def setup_logger(name=None, loglevel=logging.DEBUG):
 
     logger.propagate = False
 
-    logger.debug('*********************************************************')
+    logger.debug("*********************************************************")
 
     return logger
 
@@ -156,8 +161,8 @@ def log_memory_usage():
 
     process = psutil.Process(os.getpid())
     mem = round(process.memory_info().rss / 1024**2)
-    logger = logging.getLogger('windnode_abw')
-    logger.info(f'[Memory used (w/o solver): {mem} MB]')
+    logger = logging.getLogger("windnode_abw")
+    logger.info(f"[Memory used (w/o solver): {mem} MB]")
 
     return mem
 

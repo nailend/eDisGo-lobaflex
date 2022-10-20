@@ -1,8 +1,9 @@
 """"""
 import os
 
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
 import edisgo.opf.lopf as lopf
 import pandas as pd
 
@@ -13,19 +14,18 @@ from loguru import logger
 
 import egon_db as db
 
+from config import __path__ as config_dir
+from data import __path__ as data_dir
 from db_data import (
     create_timeseries_for_building,
     get_cop,
     get_random_residential_buildings,
 )
+from logs import __path__ as logs_dir
 from model_solving import get_downstream_matrix
-from tools import get_config, setup_logfile, create_dir_or_variant
-
-from data import __path__ as data_dir
 from results import __path__ as results_dir
 from src import __path__ as source_dir
-from logs import __path__ as logs_dir
-from config import __path__ as config_dir
+from tools import create_dir_or_variant, get_config, setup_logfile
 
 data_dir = data_dir[0]
 results_dir = results_dir[0]
@@ -71,7 +71,7 @@ def create_heatpumps_from_db(edisgo_obj):
             nan_building_ids = df.columns[df.isna().any(axis=0).values]
             raise ValueError(
                 f"There are NaN-Values in the following buildings: "
-                f"{nan_building_ids}"
+                f"{nan_building_ids.values}"
             )
 
     # HP-disaggregation
@@ -86,7 +86,8 @@ def create_heatpumps_from_db(edisgo_obj):
 
     # Get random residential buildings from DB
     db_building_ids = get_random_residential_buildings(
-        scenario="eGon2035", limit=number_of_hps+2)["building_id"].tolist()
+        scenario="eGon2035", limit=number_of_hps + 2
+    )["building_id"].tolist()
 
     # TODO blöder workaround
     db_building_ids = [i for i in db_building_ids if i not in [6778, 6780]]
@@ -121,9 +122,7 @@ def create_heatpumps_from_db(edisgo_obj):
     # Adapt timeindex to timeseries
     year = edisgo_obj.timeseries.timeindex.year.unique()[0]
     timeindex_db = pd.date_range(
-        start=f"{year}-01-01 00:00:00",
-        end=f"{year}-12-31 23:45:00",
-        freq="h"
+        start=f"{year}-01-01 00:00:00", end=f"{year}-12-31 23:45:00", freq="h"
     )
     heat_demand_df.index = timeindex_db
     cop_df.index = timeindex_db
@@ -175,9 +174,8 @@ def create_heatpumps_from_db(edisgo_obj):
     edisgo_obj.heat_pump.cop_df = cop_df
     edisgo_obj.heat_pump.thermal_storage_units_df = thermal_storage_units_df
 
-    edisgo_obj.topology.loads_df = pd.concat(
-        [edisgo_obj.topology.loads_df, loads_df]
-    )
+    edisgo_obj.topology.loads_df = pd.concat([edisgo_obj.topology.loads_df,
+                                              loads_df])
     logger.info(
         f"{sum(loads_df.p_set):.2f} MW of heat pumps for individual "
         f"heating integrated."
@@ -203,6 +201,8 @@ def write_metadata(path, edisgo_obj):
 
 if __name__ == "__main__":
 
+    # TODO use SH1 59776
+
     cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
     setup_logfile(path=logs_dir)
 
@@ -218,17 +218,16 @@ if __name__ == "__main__":
 
     # import Grid
     if feeder:
-        import_dir = os.path.join(results_dir,
-                                  f"{grid_id}/{feeder_id}")
+        import_dir = os.path.join(results_dir, f"{grid_id}/{feeder_id}")
     else:
-        import_dir = os.path.join(results_dir,
-                                  f"edisgo_objects_emob/{grid_id}")
+        import_dir = os.path.join(results_dir, f"edisgo_objects_emob/{grid_id}")
 
-    edisgo_obj = import_edisgo_from_files(import_dir,
-                                          import_topology=True,
-                                          import_timeseries=True,
-                                          import_electromobility=True,
-                                          )
+    edisgo_obj = import_edisgo_from_files(
+        import_dir,
+        import_topology=True,
+        import_timeseries=True,
+        import_electromobility=True,
+    )
 
     logger.info(f"eDisGo object imported: {grid_id}/{feeder_id}")
 
@@ -237,14 +236,12 @@ if __name__ == "__main__":
     logger.info("Added heat pumps to eDisGo")
 
     if feeder:
-        export_path = os.path.join(results_dir,
-                                   f"edisgo_objects_emob_hp"
-                                   f"/{grid_id}"
-                                   f"/{feeder_id}")
+        export_path = os.path.join(
+            results_dir, f"edisgo_objects_emob_hp/{grid_id}/{feeder_id}"
+        )
     else:
-        export_path = os.path.join(results_dir,
-                                   f"edisgo_objects_emob_hp"
-                                   f"/{grid_id}")
+        export_path = os.path.join(results_dir, f"edisgo_objects_emob_hp"
+                                                f"/{grid_id}")
 
     create_dir_or_variant(export_path)
 
@@ -260,4 +257,3 @@ if __name__ == "__main__":
 
     # TODO write metadata
     write_metadata(export_path, edisgo_obj)
-

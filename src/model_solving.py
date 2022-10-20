@@ -12,13 +12,13 @@ from edisgo.edisgo import import_edisgo_from_files
 from edisgo.tools.tools import convert_impedances_to_mv
 from loguru import logger
 
+from config import __path__ as config_dir
+from data import __path__ as data_dir
+from results import __path__ as results_dir
 from tools import get_config, setup_logfile
 
 # from edisgo.tools import logger
 
-from data import __path__ as data_dir
-from results import __path__ as results_dir
-from config import __path__ as config_dir
 
 data_dir = data_dir[0]
 results_dir = results_dir[0]
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     # logger.propagate = False
 
     # import Grid
-    import_dir = Path(results_dir) / str(cfg_m['grid-id']) / str(cfg_m['feeder-id'])
+    import_dir = Path(results_dir) / str(cfg_m["grid-id"]) / str(cfg_m["feeder-id"])
     # TODO add import for heatpumps
     edisgo_obj = import_edisgo_from_files(
         import_dir, import_timeseries=True, import_heat_pump=True
@@ -126,9 +126,10 @@ if __name__ == "__main__":
             res = res.dropna(how="all")
         if not res.empty:
             res.astype(np.float16).to_csv(
-                export_dir / Path("results/powerflow_results") /
-                Path(f"{res_name}_{cfg_m['grid-id']}_{cfg_m['feeder-id']}.csv")
-                )
+                export_dir
+                / Path("results/powerflow_results")
+                / Path(f"{res_name}_{cfg_m['grid-id']}_{cfg_m['feeder-id']}.csv")
+            )
     print(f"Saved results to: {export_dir}/powerflow_results.")
 
     # TODO return results for df

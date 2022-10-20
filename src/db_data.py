@@ -101,6 +101,8 @@ def get_random_residential_buildings(scenario, limit):
 
     with db.session_scope() as session:
 
+        # TODO change to heat peak load as there are residentials without heat
+        #  but electricity
         cells_query = (
             session.query(egon_building_electricity_peak_loads.building_id)
             .filter(egon_building_electricity_peak_loads.scenario == scenario)
