@@ -20,12 +20,14 @@ from db_data import (
     create_timeseries_for_building,
     get_cop,
     get_random_residential_buildings,
+    determine_minimum_hp_capacity_per_building,
+    calc_residential_heat_profiles_per_mvgd
 )
 from logs import __path__ as logs_dir
 from model_solving import get_downstream_matrix
 from results import __path__ as results_dir
 from src import __path__ as source_dir
-from tools import create_dir_or_variant, get_config, setup_logfile
+from tools import create_dir_or_variant, get_config, setup_logfile, timeit
 
 data_dir = data_dir[0]
 results_dir = results_dir[0]
@@ -36,30 +38,14 @@ config_dir = config_dir[0]
 engine = db.engine()
 
 
-def determine_minimum_hp_capacity_per_building(
-    peak_heat_demand, flexibility_factor=24 / 18, cop=1.7
-):
+def get_hp_penetration():
+    """Derive percentage of households with hp from NEP2035
     """
-    Determines minimum required heat pump capacity.
+    # TODO anderes überlegen
+    hp_cap_2035 = 50
+    number_of_residential_buildings = 540000
 
-    Parameters
-    ----------
-    peak_heat_demand : pd.Series
-        Series with peak heat demand per building in MW. Index contains the
-        building ID.
-    flexibility_factor : float
-        Factor to overdimension the heat pump to allow for some flexible
-        dispatch in times of high heat demand. Per default, a factor of 24/18
-        is used, to take into account
-
-    Returns
-    -------
-    pd.Series
-        Pandas series with minimum required heat pump capacity per building in
-        MW.
-
-    """
-    return peak_heat_demand * flexibility_factor / cop
+    return hp_cap_2035 / number_of_residential_buildings
 
 
 def create_heatpumps_from_db(edisgo_obj):
@@ -75,7 +61,7 @@ def create_heatpumps_from_db(edisgo_obj):
             )
 
     # HP-disaggregation
-    # TODO HP-disaggregation insert here
+    # TODO HP-disaggregation from egon-data insert here
 
     # Workaround: assign to half of all residentials
     # Get all residentials
@@ -106,6 +92,18 @@ def create_heatpumps_from_db(edisgo_obj):
 
     # TODO get heat_time_series for all buildings in MVGD
     #  and remove district heating buildings
+    # ############### get residential heat demand profiles ###############
+    # df_heat_ts = calc_residential_heat_profiles_per_mvgd(mvgd=mvgd,
+    #                                                      scenario=scenario)
+    #
+    # # pivot to allow aggregation with CTS profiles
+    # df_heat_ts = df_heat_ts.pivot(
+    #     index=["day_of_year", "hour"],
+    #     columns="building_id",
+    #     values="demand_ts",
+    # )
+    # df_heat_ts = df_heat_ts.sort_index().reset_index(drop=True)
+
     # Get heat timeseries for selected buildings
     heat_demand_df = pd.concat(
         [
@@ -143,6 +141,8 @@ def create_heatpumps_from_db(edisgo_obj):
     logger.info(f"Heat pump time series cut adapted to year {year}")
 
     # TODO set p_set? minimal capacity?
+    peak_load = heat_demand_df.max()
+    hp_p_set = determine_minimum_hp_capacity_per_building(peak_load)
     hp_p_set = heat_demand_df.div(cop_df).max() * 0.8
 
     loads_df = pd.DataFrame(
@@ -174,8 +174,7 @@ def create_heatpumps_from_db(edisgo_obj):
     edisgo_obj.heat_pump.cop_df = cop_df
     edisgo_obj.heat_pump.thermal_storage_units_df = thermal_storage_units_df
 
-    edisgo_obj.topology.loads_df = pd.concat([edisgo_obj.topology.loads_df,
-                                              loads_df])
+    edisgo_obj.topology.loads_df = pd.concat([edisgo_obj.topology.loads_df, loads_df])
     logger.info(
         f"{sum(loads_df.p_set):.2f} MW of heat pumps for individual "
         f"heating integrated."
@@ -198,8 +197,8 @@ def write_metadata(path, edisgo_obj):
         file.write(f"METADATA for Grid {grid_id} \n {'*'*20} \n \n")
         file.writelines(metadata)
 
-
-if __name__ == "__main__":
+@timeit
+def run_hp_integration():
 
     # TODO use SH1 59776
 
@@ -208,7 +207,6 @@ if __name__ == "__main__":
 
     cfg_m = cfg["model"]
 
-    feeder = cfg_m["feeder"]
     grid_id = cfg_m["grid-id"]
     feeder_id = cfg_m["feeder-id"]
     # setup_directory(cfg_m)
@@ -217,7 +215,7 @@ if __name__ == "__main__":
     logger.info(f"Model settings:{cfg_m}")
 
     # import Grid
-    if feeder:
+    if cfg_m["feeder"]:
         import_dir = os.path.join(results_dir, f"{grid_id}/{feeder_id}")
     else:
         import_dir = os.path.join(results_dir, f"edisgo_objects_emob/{grid_id}")
@@ -232,16 +230,18 @@ if __name__ == "__main__":
     logger.info(f"eDisGo object imported: {grid_id}/{feeder_id}")
 
     # Add heatpumps fron egon-data-db
+    # TODO add durchdringung
+    # hp_penetration = get_hp_penetration()
     edisgo_obj = create_heatpumps_from_db(edisgo_obj)
     logger.info("Added heat pumps to eDisGo")
 
-    if feeder:
+    if cfg_m["feeder"]:
         export_path = os.path.join(
             results_dir, f"edisgo_objects_emob_hp/{grid_id}/{feeder_id}"
         )
     else:
-        export_path = os.path.join(results_dir, f"edisgo_objects_emob_hp"
-                                                f"/{grid_id}")
+        export_path = os.path.join(results_dir, f"edisgo_objects_emob_hp/"
+                                                f"{grid_id}")
 
     create_dir_or_variant(export_path)
 
@@ -257,3 +257,10 @@ if __name__ == "__main__":
 
     # TODO write metadata
     write_metadata(export_path, edisgo_obj)
+
+    return print("done")
+
+
+if __name__ == "__main__":
+
+    run_hp_integration()

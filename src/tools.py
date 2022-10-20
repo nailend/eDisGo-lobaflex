@@ -20,9 +20,6 @@ from src import __path__ as source_dir
 # import logging.config
 
 
-
-
-
 data_dir = data_dir[0]
 results_dir = results_dir[0]
 source_dir = source_dir[0]
