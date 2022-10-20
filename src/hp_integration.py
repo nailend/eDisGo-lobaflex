@@ -86,8 +86,10 @@ def create_heatpumps_from_db(edisgo_obj):
 
     # Get random residential buildings from DB
     db_building_ids = get_random_residential_buildings(
-        scenario="eGon2035", limit=number_of_hps)["building_id"].tolist()
+        scenario="eGon2035", limit=number_of_hps+2)["building_id"].tolist()
 
+    # TODO blöder workaround
+    db_building_ids = [i for i in db_building_ids if i not in [6778, 6780]]
     # Select random residential loads
     residential_loads = residential_loads.sample(number_of_hps)
     buses = residential_loads.bus
