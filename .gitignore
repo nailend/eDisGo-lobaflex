@@ -21,6 +21,8 @@
 results/*
 # exclude data
 data/*
+# exclude logs
+logs/*
 
 # exclude locally built docs
 doc/_html
