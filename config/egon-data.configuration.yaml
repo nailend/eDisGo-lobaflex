@@ -6,11 +6,30 @@
 #  --database-password: data
 #  --dataset-boundary: Schleswig-Holstein
 #  --random-seed: 42
+#egon-data:
+#  --database-host: 127.0.0.1
+#  --database-name: egon-data
+#  --database-port: '59776'
+#  --database-user: egon
+#  --database-password: data
+#  --dataset-boundary: Everything
+#  --random-seed: 42
 egon-data:
+  --airflow-database-name: airflow
+  --airflow-port: 8080
+  --compose-project-name: egon-data-sh2
   --database-host: 127.0.0.1
   --database-name: egon-data
+  --database-password: data
   --database-port: '59776'
   --database-user: egon
-  --database-password: data
-  --dataset-boundary: Everything
+  --dataset-boundary: Schleswig-Holstein
+  --docker-container-name: egon-data-sh2
+  --jobs: 12
+  --processes-per-task: 1
   --random-seed: 42
+ssh-tunnel:
+  ssh-host: "111.222.33.444"
+  ssh-user: "user.name"
+  ssh-pkey: "~/.ssh/path-to-private-key"
+  pgres-host: "localhost"
