@@ -9,7 +9,8 @@ from pathlib import Path
 import psutil
 import yaml
 
-from loguru import logger
+# from loguru import logger
+from src import logger
 
 from config import __path__ as config_dir
 from data import __path__ as data_dir
@@ -185,7 +186,7 @@ def timeit(func):
     def measure_time(*args, **kw):
         start_time = time.time()
         result = func(*args, **kw)
-        print(
+        logger.info(
             "Processing time of %s(): %.2f seconds."
             % (func.__qualname__, time.time() - start_time)
         )
