@@ -1,5 +1,3 @@
-import datetime
-
 import numpy as np
 import pandas as pd
 import saio
@@ -21,6 +19,7 @@ from saio.boundaries import (
     egon_map_zensus_buildings_residential,
     egon_map_zensus_climate_zones,
     egon_map_zensus_grid_districts,
+    egon_map_zensus_mvgd_buildings,
     egon_map_zensus_weather_cell,
 )
 from saio.demand import (
@@ -33,84 +32,9 @@ from saio.demand import (
     egon_heat_idp_pool,
     egon_heat_timeseries_selected_profiles,
     egon_peta_heat,
-    heat_timeseries_selected_profiles,
 )
 from saio.openstreetmap import osm_buildings_synthetic
 from saio.supply import egon_era5_renewable_feedin
-
-
-@timeit
-def get_profile_ids_residential_heat_demand(building_id=None, mv_grid_id=None):
-    """
-    Returns a list of profile ids for residential heat demand.
-    """
-
-    # if building_id:
-    #     building = db.select_dataframe(
-    #         f"""
-    #         SELECT * FROM
-    #         demand.heat_timeseries_selected_profiles
-    #         WHERE building_id  = {building_id}
-    #         """,
-    #         index_col='ID')
-
-    if mv_grid_id:
-        with db.session_scope() as session:
-            cells_query = (
-                session.query(heat_timeseries_selected_profiles)
-                .filter(
-                    egon_map_zensus_grid_districts.zensus_population_id
-                    == heat_timeseries_selected_profiles.zensus_population_id
-                )
-                .filter(egon_map_zensus_grid_districts.bus_id == mv_grid_id)
-            )
-
-        df_profiles = pd.read_sql(
-            cells_query.statement,
-            cells_query.session.bind,
-            index_col="ID",
-        )
-
-    # TODO rework
-    df_profiles.selected_idp_profiles = df_profiles.selected_idp_profiles.str.replace(
-        "[", ""
-    )
-
-    df_profiles.selected_idp_profiles = df_profiles.selected_idp_profiles.str.replace(
-        "]", ""
-    )
-
-    df_profiles.selected_idp_profiles = df_profiles.selected_idp_profiles.str.split(
-        ", "
-    )
-
-    return df_profiles
-
-
-@timeit
-def create_timeseries_residential_heat_demand(df_profiles, idp_data):
-    """"""
-
-    # TODO rework all
-    selected_idp = pd.DataFrame(
-        index=df_profiles.index,
-        columns=range(365),
-        data=df_profiles.selected_idp_profiles,
-    )
-
-    for i in range(365):
-        selected_idp[i] = df_profiles.selected_idp_profiles.str[i]
-
-    df_timeseries = pd.DataFrame(columns=selected_idp.index, index=range(8760))
-
-    for i in range(365):
-        df_timeseries[i * 24 : (i + 1) * 24] = idp_data.loc[
-            selected_idp[i].astype(int)
-        ].transpose()
-
-    df_timeseries.index = pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H")
-
-    return df_timeseries
 
 
 @timeit
@@ -571,6 +495,35 @@ def calc_cts_building_profiles(
     return df_building_profiles
 
 
+def identify_similar_mvgd(number_of_residentials):
+
+    logger.info(
+        f"Looking for mvgd with more then {number_of_residentials} " f"residentials."
+    )
+    with db.session_scope() as session:
+        cells_query = (
+            session.query(
+                egon_map_zensus_mvgd_buildings.bus_id,
+                func.count(egon_map_zensus_mvgd_buildings.building_id).label("count"),
+            )
+            .filter(egon_map_zensus_mvgd_buildings.sector == "residential")
+            .group_by(egon_map_zensus_mvgd_buildings.bus_id)
+        )
+
+    df = pd.read_sql(cells_query.statement, session.connection(), index_col=None)
+
+    df = df.loc[df["count"] > number_of_residentials]
+    mvgd = df.nsmallest(1, columns="count")
+    logger.info(
+        f"{mvgd['bus_id'].values} with {mvgd['count'].values} "
+        f"residentials "
+        f"found."
+    )
+
+    return mvgd["bus_id"].values[0]
+
+
+@timeit
 def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
     """
     Gets residential heat profiles per building in MV grid for either eGon2035

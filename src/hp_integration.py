@@ -1,46 +1,47 @@
 """"""
 import os
 
-from datetime import datetime
+# from datetime import datetime
 from pathlib import Path
 
-import edisgo.opf.lopf as lopf
+# import edisgo.opf.lopf as lopf
 import pandas as pd
 
 from edisgo.edisgo import import_edisgo_from_files
-from edisgo.opf.lopf import BANDS, import_flexibility_bands
-from edisgo.tools.tools import convert_impedances_to_mv
-from loguru import logger
 
 import egon_db as db
 
 from config import __path__ as config_dir
 from data import __path__ as data_dir
-from db_data import (
-    create_timeseries_for_building,
-    get_cop,
-    get_random_residential_buildings,
+from db_data import (  # create_timeseries_for_building,; get_random_residential_buildings,
+    calc_residential_heat_profiles_per_mvgd,
     determine_minimum_hp_capacity_per_building,
-    calc_residential_heat_profiles_per_mvgd
+    get_cop,
+    identify_similar_mvgd,
 )
 from logs import __path__ as logs_dir
-from model_solving import get_downstream_matrix
-from results import __path__ as results_dir
-from src import __path__ as source_dir
-from tools import create_dir_or_variant, get_config, setup_logfile, timeit
 
-data_dir = data_dir[0]
-results_dir = results_dir[0]
-source_dir = source_dir[0]
-logs_dir = logs_dir[0]
-config_dir = config_dir[0]
+# from model_solving import get_downstream_matrix
+from results import __path__ as results_dir
+
+# from edisgo.opf.lopf import BANDS, import_flexibility_bands
+# from edisgo.tools.tools import convert_impedances_to_mv
+# from loguru import logger
+from src import logger
+
+# from src import __path__ as source_dir
+from tools import get_config, timeit
+
+data_dir = Path(data_dir[0])
+results_dir = Path(results_dir[0])
+config_dir = Path(config_dir[0])
+logs_dir = Path(logs_dir[0])
 
 engine = db.engine()
 
 
 def get_hp_penetration():
-    """Derive percentage of households with hp from NEP2035
-    """
+    """Derive percentage of households with hp from NEP2035"""
     # TODO anderes überlegen
     hp_cap_2035 = 50
     number_of_residential_buildings = 540000
@@ -68,54 +69,62 @@ def create_heatpumps_from_db(edisgo_obj):
     residential_loads = edisgo_obj.topology.loads_df.loc[
         edisgo_obj.topology.loads_df.sector == "residential"
     ]
-    number_of_hps = int(residential_loads.shape[0] / 2)
+    # number_of_hps = int(residential_loads.shape[0] / 2)
+    # eGon100RE all buildings with decentral heating
+    # number_of_hps = residential_loads.shape[0]
 
-    # Get random residential buildings from DB
-    db_building_ids = get_random_residential_buildings(
-        scenario="eGon2035", limit=number_of_hps + 2
-    )["building_id"].tolist()
+    # # Get random residential buildings from DB
+    # db_building_ids = get_random_residential_buildings(
+    #     scenario="eGon100RE", limit=number_of_hps
+    # )["building_id"].tolist()
 
-    # TODO blöder workaround
-    db_building_ids = [i for i in db_building_ids if i not in [6778, 6780]]
+    # # TODO blöder workaround
+    # db_building_ids = [i for i in db_building_ids if i not in [6778, 6780]]
     # Select random residential loads
-    residential_loads = residential_loads.sample(number_of_hps)
-    buses = residential_loads.bus
+    # residential_loads = residential_loads.sample(number_of_hps)
+
+    # TODO get heat_time_series for all buildings in MVGD
+    #  and remove district heating buildings
+    # ############### get residential heat demand profiles ###############
+    mvgd = identify_similar_mvgd(residential_loads.shape[0])
+
+    df_heat_ts = calc_residential_heat_profiles_per_mvgd(
+        mvgd=mvgd, scenario="eGon100RE"
+    )
+    #
+    # pivot to allow aggregation with CTS profiles
+    df_heat_ts = df_heat_ts.pivot(
+        index=["day_of_year", "hour"],
+        columns="building_id",
+        values="demand_ts",
+    )
+    df_heat_ts = df_heat_ts.sort_index().reset_index(drop=True)
+    df_heat_ts = df_heat_ts.iloc[:, : residential_loads.shape[0]]
+    db_building_ids = df_heat_ts.columns
 
     # Create HP names and map to db building id randomly
     hp_names = [f"HP_{i}" for i in residential_loads.index]
     map_hp_to_loads = dict(zip(db_building_ids, hp_names))
+
+    heat_demand_df = df_heat_ts.rename(columns=map_hp_to_loads)
 
     # Get cop for selected buildings
     cop_df = get_cop(db_building_ids)
     check_nans(cop_df)
     cop_df = cop_df.rename(columns=map_hp_to_loads)
 
-    # TODO get heat_time_series for all buildings in MVGD
-    #  and remove district heating buildings
-    # ############### get residential heat demand profiles ###############
-    # df_heat_ts = calc_residential_heat_profiles_per_mvgd(mvgd=mvgd,
-    #                                                      scenario=scenario)
-    #
-    # # pivot to allow aggregation with CTS profiles
-    # df_heat_ts = df_heat_ts.pivot(
-    #     index=["day_of_year", "hour"],
-    #     columns="building_id",
-    #     values="demand_ts",
+    # # Get heat timeseries for selected buildings
+    # heat_demand_df = pd.concat(
+    #     [
+    #         create_timeseries_for_building(building_id, scenario="eGon2035")
+    #         for building_id in db_building_ids
+    #     ],
+    #     axis=1,
     # )
-    # df_heat_ts = df_heat_ts.sort_index().reset_index(drop=True)
+    # check_nans(heat_demand_df)
+    # heat_demand_df = heat_demand_df.rename(columns=map_hp_to_loads)
 
-    # Get heat timeseries for selected buildings
-    heat_demand_df = pd.concat(
-        [
-            create_timeseries_for_building(building_id, scenario="eGon2035")
-            for building_id in db_building_ids
-        ],
-        axis=1,
-    )
-    check_nans(heat_demand_df)
-    heat_demand_df = heat_demand_df.rename(columns=map_hp_to_loads)
-
-    heat_demand_df.max()
+    # heat_demand_df.max()
 
     # Adapt timeindex to timeseries
     year = edisgo_obj.timeseries.timeindex.year.unique()[0]
@@ -143,8 +152,9 @@ def create_heatpumps_from_db(edisgo_obj):
     # TODO set p_set? minimal capacity?
     peak_load = heat_demand_df.max()
     hp_p_set = determine_minimum_hp_capacity_per_building(peak_load)
-    hp_p_set = heat_demand_df.div(cop_df).max() * 0.8
+    # hp_p_set = heat_demand_df.div(cop_df).max() * 0.8
 
+    buses = residential_loads.bus
     loads_df = pd.DataFrame(
         index=hp_names,
         columns=["bus", "p_set", "type"],
@@ -189,7 +199,7 @@ def write_metadata(path, edisgo_obj):
     # TODO generate metadat from edisgo_obj
     # copy from  check_integrity
     # edisgo_obj
-    metadata = [f"This is Delhi \n", "This is Paris \n", "This is London \n"]
+    metadata = ["This is Delhi \n", "This is Paris \n", "This is London \n"]
     grid_id = edisgo_obj.topology.mv_grid
     # Writing to file
     with open(Path(f"{path}/metadata.md"), "w") as file:
@@ -197,37 +207,26 @@ def write_metadata(path, edisgo_obj):
         file.write(f"METADATA for Grid {grid_id} \n {'*'*20} \n \n")
         file.writelines(metadata)
 
+
 @timeit
-def run_hp_integration():
+def run_hp_integration(edisgo_obj=False, save=False):
 
     # TODO use SH1 59776
 
     cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
-    setup_logfile(path=logs_dir)
+    if not edisgo_obj:
 
-    cfg_m = cfg["model"]
+        grid_id = cfg["model"].get("grid-id")
+        import_dir = cfg["directories"]["hp_integration"].get("import")
+        import_path = data_dir / import_dir / str(grid_id)
+        logger.info(f"Import Grid from file: {import_path}")
 
-    grid_id = cfg_m["grid-id"]
-    feeder_id = cfg_m["feeder-id"]
-    # setup_directory(cfg_m)
-
-    logger.info("Build model")
-    logger.info(f"Model settings:{cfg_m}")
-
-    # import Grid
-    if cfg_m["feeder"]:
-        import_dir = os.path.join(results_dir, f"{grid_id}/{feeder_id}")
-    else:
-        import_dir = os.path.join(results_dir, f"edisgo_objects_emob/{grid_id}")
-
-    edisgo_obj = import_edisgo_from_files(
-        import_dir,
-        import_topology=True,
-        import_timeseries=True,
-        import_electromobility=True,
-    )
-
-    logger.info(f"eDisGo object imported: {grid_id}/{feeder_id}")
+        edisgo_obj = import_edisgo_from_files(
+            import_path,
+            import_topology=True,
+            import_timeseries=True,
+            import_electromobility=True,
+        )
 
     # Add heatpumps fron egon-data-db
     # TODO add durchdringung
@@ -235,32 +234,25 @@ def run_hp_integration():
     edisgo_obj = create_heatpumps_from_db(edisgo_obj)
     logger.info("Added heat pumps to eDisGo")
 
-    if cfg_m["feeder"]:
-        export_path = os.path.join(
-            results_dir, f"edisgo_objects_emob_hp/{grid_id}/{feeder_id}"
+    if save:
+        export_dir = cfg["directories"]["hp_integration"].get("export")
+        export_path = data_dir / export_dir / str(grid_id)
+        os.makedirs(export_path, exist_ok=True)
+        edisgo_obj.save(
+            export_path,
+            save_topology=True,
+            save_timeseries=True,
+            save_electromobility=True,
+            save_heatpump=True,
         )
-    else:
-        export_path = os.path.join(results_dir, f"edisgo_objects_emob_hp/"
-                                                f"{grid_id}")
+        logger.info(f"Saved grid to {export_path}")
 
-    create_dir_or_variant(export_path)
+        # TODO write metadata
+        write_metadata(export_path, edisgo_obj)
 
-    edisgo_obj.save(
-        directory=export_path,
-        save_topology=True,
-        save_heatpump=True,
-        save_results=True,
-        save_timeseries=True,
-        save_electromobility=True,
-    )
-    logger.info(f"Model saved to: {export_path}")
-
-    # TODO write metadata
-    write_metadata(export_path, edisgo_obj)
-
-    return print("done")
+    return edisgo_obj
 
 
 if __name__ == "__main__":
 
-    run_hp_integration()
+    edisgo_obj = run_hp_integration()
