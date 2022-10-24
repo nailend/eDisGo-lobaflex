@@ -1,6 +1,6 @@
 model:
   grid-id: 2534
-  feeder: True
+  feeder: False
   feeder-id: 0
 opt:
   solver: 'gurobi'
@@ -14,3 +14,17 @@ opt:
 logger:
   log_file: 'log.txt'
   log_to_file: True
+directories:
+  load_integration:
+    import: "elia_ding0_grids"
+    export: "load_n_gen_grids"
+  emob_integration:
+    import: "load_n_gen_grids"
+    export: "load_n_gen_n_emob_grids"
+    flexbands: ""
+  hp_integration:
+    import: "load_n_gen_n_emob_grids"
+    export: "load_n_gen_n_emob_n_hp_grids"
+  feeder_extraction:
+    import:
+    export:
