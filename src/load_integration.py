@@ -4,42 +4,65 @@ from pathlib import Path
 
 import pandas as pd
 
-from edisgo.edisgo import EDisGo, import_edisgo_from_files
-from edisgo.network.electromobility import get_energy_bands_for_optimization
-from edisgo.tools.logger import setup_logger
+from edisgo.edisgo import EDisGo  # , import_edisgo_from_files
 
-import_path = Path("./")
-grid_id = 2534
+# from edisgo.network.electromobility import get_energy_bands_for_optimization
+# from edisgo.tools.logger import setup_logger
+from loguru import logger
+
+from config import __path__ as config_dir
+from data import __path__ as data_dir
+from logs import __path__ as logs_dir
+from results import __path__ as results_dir
+from tools import get_config, timeit
+
+# from src.tools import setup_logger
 
 
-edisgo_obj = import_edisgo_from_files(import_path, import_timeseries=False)
+data_dir = Path(data_dir[0])
+results_dir = Path(results_dir[0])
+config_dir = Path(config_dir[0])
+logs_dir = Path(logs_dir[0])
 
-# set up time series
-timeindex = pd.date_range("1/1/2011", periods=24 * 7, freq="H")
-edisgo_obj.set_timeindex(timeindex)
-edisgo_obj.set_time_series_active_power_predefined(
-    fluctuating_generators_ts="oedb",
-    dispatchable_generators_ts=pd.DataFrame(data=1, columns=["other"], index=timeindex),
-    conventional_loads_ts="demandlib",
-)
-edisgo_obj.set_time_series_reactive_power_control()
 
-# resample time series to have a temporal resolution of 15 minutes, which is the same
-# as the electromobility time series
-edisgo_obj.resample_timeseries()
+@timeit
+def run_load_integration(edisgo_obj=False, save=False):
 
-# TODO get simbev + tracbev from kilian
+    cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
+    if not edisgo_obj:
 
-data_dir = os.path.join(os.path.dirname(os.getcwd()), "tests", "data")
-edisgo_obj.import_electromobility(
-    simbev_directory=os.path.join(data_dir, "simbev_example_scenario_2"),
-    tracbev_directory=os.path.join(data_dir, "tracbev_example_scenario_2"),
-)
+        grid_id = cfg["model"].get("grid-id")
+        import_dir = cfg["directories"]["load_integration"].get("import")
 
-for use_case in ["home", "work"]:
-    power, lower, upper = get_energy_bands_for_optimization(edisgo_obj, use_case)
+        ding0_grid = data_dir / import_dir / str(grid_id)
+        edisgo_obj = EDisGo(ding0_grid=ding0_grid)
 
-    power.to_csv(data_dir + r"\{}\upper_power_{}.csv".format(grid_id, use_case))
-    lower.to_csv(data_dir + r"\{}\lower_energy_{}.csv".format(grid_id, use_case))
-    upper.to_csv(data_dir + r"\{}\upper_energy_{}.csv".format(grid_id, use_case))
-    print("Successfully created bands for {}-{}".format(grid_id, use_case))
+    # set up time series
+    timeindex = pd.date_range("1/1/2011", periods=24 * 7, freq="H")
+    edisgo_obj.set_timeindex(timeindex)
+    edisgo_obj.set_time_series_active_power_predefined(
+        fluctuating_generators_ts="oedb",
+        dispatchable_generators_ts=pd.DataFrame(
+            data=1, columns=["other"], index=timeindex
+        ),
+        conventional_loads_ts="demandlib",
+    )
+    edisgo_obj.set_time_series_reactive_power_control()
+
+    if save:
+        export_dir = cfg["directories"]["load_integration"].get("export")
+        export_path = data_dir / export_dir / str(grid_id)
+        os.makedirs(export_path, exist_ok=True)
+        edisgo_obj.save(
+            export_path,
+            save_topology=True,
+            save_timeseries=True,
+        )
+        logger.info(f"Saved grid to {export_path}")
+
+    return edisgo_obj
+
+
+if __name__ == "__main__":
+
+    edisgo_obj = run_load_integration(save=True)
