@@ -57,7 +57,8 @@ if __name__ == "__main__":
 
     cfg = get_config(Path(config_dir) / "model_config.yaml")
     cfg_m = cfg["model"]
-
+    grid_id = cfg_m["grid-id"]
+    feeder_id = cfg_m["feeder-id"]
     # setup_logfile(cfg)
     # print = logger.info
     # logger = logging.getLogger("pyomo")
@@ -72,7 +73,10 @@ if __name__ == "__main__":
     # logger.propagate = False
 
     # import Grid
-    import_dir = Path(results_dir) / str(cfg_m["grid-id"]) / str(cfg_m["feeder-id"])
+    # import_dir = Path(results_dir) / str(cfg_m["grid-id"]) / str(cfg_m["feeder-id"])
+    import_dir = os.path.join(results_dir, f"edisgo_objects_emob_hp"
+                                           f"/{grid_id}/{feeder_id}")
+
     # TODO add import for heatpumps
     edisgo_obj = import_edisgo_from_files(
         import_dir, import_timeseries=True, import_heat_pump=True
