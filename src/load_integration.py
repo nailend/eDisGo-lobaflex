@@ -6,15 +6,15 @@ import pandas as pd
 
 from edisgo.edisgo import EDisGo  # , import_edisgo_from_files
 
-# from edisgo.network.electromobility import get_energy_bands_for_optimization
-# from edisgo.tools.logger import setup_logger
-# from loguru import logger
-from src import logger
-
 from config import __path__ as config_dir
 from data import __path__ as data_dir
 from logs import __path__ as logs_dir
 from results import __path__ as results_dir
+
+# from edisgo.network.electromobility import get_energy_bands_for_optimization
+# from edisgo.tools.logger import setup_logger
+# from loguru import logger
+from src import logger
 from tools import get_config, timeit
 
 # from src.tools import setup_logger

@@ -1,9 +1,11 @@
-from loguru import logger
 import os
+
+from datetime import date
 from pathlib import Path
 
+from loguru import logger
+
 from logs import __path__ as logs_dir
-from datetime import date
 
 logs_dir = Path(logs_dir[0])
 

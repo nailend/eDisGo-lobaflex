@@ -74,8 +74,9 @@ if __name__ == "__main__":
 
     # import Grid
     # import_dir = Path(results_dir) / str(cfg_m["grid-id"]) / str(cfg_m["feeder-id"])
-    import_dir = os.path.join(results_dir, f"edisgo_objects_emob_hp"
-                                           f"/{grid_id}/{feeder_id}")
+    import_dir = os.path.join(
+        results_dir, f"edisgo_objects_emob_hp" f"/{grid_id}/{feeder_id}"
+    )
 
     # TODO add import for heatpumps
     edisgo_obj = import_edisgo_from_files(
