@@ -6,24 +6,31 @@ import pandas as pd
 
 from edisgo.edisgo import EDisGo  # , import_edisgo_from_files
 
-from config import __path__ as config_dir
-from data import __path__ as data_dir
-from logs import __path__ as logs_dir
-from results import __path__ as results_dir
-
 # from edisgo.network.electromobility import get_energy_bands_for_optimization
 # from edisgo.tools.logger import setup_logger
 # from loguru import logger
 from logger import logger
 from tools import get_config, timeit
 
+# from config import __path__ as config_dir
+# from data import __path__ as data_dir
+# from logs import __path__ as logs_dir
+# from results import __path__ as results_dir
+
+
 # from src.tools import setup_logger
 
 
-data_dir = Path(data_dir[0])
-results_dir = Path(results_dir[0])
-config_dir = Path(config_dir[0])
-logs_dir = Path(logs_dir[0])
+# data_dir = Path(data_dir[0])
+# results_dir = Path(results_dir[0])
+# config_dir = Path(config_dir[0])
+# logs_dir = Path(logs_dir[0])
+
+data_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/data")
+logs_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/logs")
+config_dir = Path(
+    "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/config"
+)
 
 
 @timeit

@@ -11,18 +11,12 @@ from edisgo.edisgo import import_edisgo_from_files
 
 import egon_db as db
 
-from config import __path__ as config_dir
-from data import __path__ as data_dir
 from db_data import (  # create_timeseries_for_building,; get_random_residential_buildings,
     calc_residential_heat_profiles_per_mvgd,
     determine_minimum_hp_capacity_per_building,
     get_cop,
     identify_similar_mvgd,
 )
-from logs import __path__ as logs_dir
-
-# from model_solving import get_downstream_matrix
-from results import __path__ as results_dir
 
 # from edisgo.opf.lopf import BANDS, import_flexibility_bands
 # from edisgo.tools.tools import convert_impedances_to_mv
@@ -32,10 +26,24 @@ from logger import logger
 # from src import __path__ as source_dir
 from tools import get_config, timeit
 
-data_dir = Path(data_dir[0])
-results_dir = Path(results_dir[0])
-config_dir = Path(config_dir[0])
-logs_dir = Path(logs_dir[0])
+# from model_solving import get_downstream_matrix
+# from results import __path__ as results_dir
+# from logs import __path__ as logs_dir
+# from config import __path__ as config_dir
+# from data import __path__ as data_dir
+
+
+# data_dir = Path(data_dir[0])
+# results_dir = Path(results_dir[0])
+# config_dir = Path(config_dir[0])
+# logs_dir = Path(logs_dir[0])
+
+data_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/data")
+logs_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/logs")
+config_dir = Path(
+    "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/config"
+)
+
 
 engine = db.engine()
 
