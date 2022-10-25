@@ -9,23 +9,22 @@ from pathlib import Path
 import psutil
 import yaml
 
-from config import __path__ as config_dir
-from data import __path__ as data_dir
-from logs import __path__ as logs_dir
-from results import __path__ as results_dir
+from src import logger
 
 # from loguru import logger
-from src import __path__ as source_dir
-from src import logger
+
 
 # import logging.config
 
 
-data_dir = data_dir[0]
-results_dir = results_dir[0]
-source_dir = source_dir[0]
-logs_dir = logs_dir[0]
-config_dir = config_dir[0]
+data_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/data")
+logs_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/logs")
+config_dir = Path(
+    "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/config"
+)
+results_dir = Path(
+    "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex" "/results"
+)
 
 
 def get_config(path=f".{config_dir}/model_config.yaml"):
