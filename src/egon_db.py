@@ -60,7 +60,8 @@ def config_settings() -> dict[str, dict[str, str]]:
         settings()["egon-data"]["--database-name"]
 
     """
-    files = paths(pid="*") + paths()
+    # files = paths(pid="*") + paths()
+    files = paths()
     if not files[0].exists():
         #         logger.warning(
         #             f"Configuration file:"
