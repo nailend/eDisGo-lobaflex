@@ -262,5 +262,5 @@ def run_hp_integration(edisgo_obj=False, save=False):
 
 
 if __name__ == "__main__":
-
+    engine = db.engine()
     edisgo_obj = run_hp_integration()

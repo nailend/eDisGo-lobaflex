@@ -36,6 +36,7 @@ def paths(pid=None):
     insert = f".pid-{pid}" if pid is not None else ""
     filename = f"egon-data{insert}.configuration.yaml"
     if pid == "*":
+        breakpoint()
         return [p.absolute() for p in Path(cfg_dir).glob(filename)]
     else:
         return [(Path(cfg_dir) / filename).absolute()]
