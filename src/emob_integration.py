@@ -4,7 +4,8 @@ from pathlib import Path
 
 # from edisgo.edisgo import EDisGo,
 from edisgo.edisgo import import_edisgo_from_files
-from loguru import logger
+# from loguru import logger
+from src import logger
 
 from config import __path__ as config_dir
 from data import __path__ as data_dir
