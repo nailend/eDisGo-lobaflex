@@ -10,6 +10,7 @@ from edisgo.edisgo import EDisGo  # , import_edisgo_from_files
 # from edisgo.tools.logger import setup_logger
 # from loguru import logger
 from logger import logger
+# import logger
 from tools import get_config, timeit
 
 # from config import __path__ as config_dir

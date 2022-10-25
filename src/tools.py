@@ -10,7 +10,7 @@ import psutil
 import yaml
 
 from logger import logger
-
+# import logger
 # from loguru import logger
 
 
@@ -23,7 +23,7 @@ config_dir = Path(
     "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/config"
 )
 results_dir = Path(
-    "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex" "/results"
+    "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/results"
 )
 
 
