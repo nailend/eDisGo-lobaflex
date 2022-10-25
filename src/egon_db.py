@@ -15,8 +15,9 @@ import yaml
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-from config import __path__ as cfg_dir
-
+cfg_dir = Path(
+    "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/config"
+)
 
 def paths(pid=None):
     """Obtain configuration file paths.
