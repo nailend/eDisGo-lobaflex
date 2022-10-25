@@ -62,6 +62,7 @@ def config_settings() -> dict[str, dict[str, str]]:
     """
     # files = paths(pid="*") + paths()
     file = paths()
+    breakpoint()
     if not file.exists():
         #         logger.warning(
         #             f"Configuration file:"
