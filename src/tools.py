@@ -9,7 +9,7 @@ from pathlib import Path
 import psutil
 import yaml
 
-from src import logger
+from logger import logger
 
 # from loguru import logger
 
