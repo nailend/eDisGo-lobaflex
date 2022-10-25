@@ -14,7 +14,7 @@ from results import __path__ as results_dir
 # from edisgo.network.electromobility import get_energy_bands_for_optimization
 # from edisgo.tools.logger import setup_logger
 # from loguru import logger
-from src import logger
+from logger import logger
 from tools import get_config, timeit
 
 # from src.tools import setup_logger

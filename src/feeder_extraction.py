@@ -5,6 +5,7 @@ import traceback
 
 import networkx as nx
 import pandas as pd
+from pathlib import Path
 
 from edisgo.edisgo import import_edisgo_from_files
 from edisgo.network.electromobility import get_energy_bands_for_optimization
@@ -15,48 +16,21 @@ from edisgo.tools.complexity_reduction import (
     extract_feeders_nx,
     remove_1m_lines_from_edisgo,
 )
+from tools import get_config, timeit
 
+from config import __path__ as config_dir
 from data import __path__ as data_dir
+from logs import __path__ as logs_dir
 from results import __path__ as results_dir
 
-data_dir = data_dir[0]
-results_dir = results_dir[0]
-
+data_dir = Path(data_dir[0])
+results_dir = Path(results_dir[0])
+config_dir = Path(config_dir[0])
+logs_dir = Path(logs_dir[0])
 
 # Script to prepare grids for optimisation. The necessary steps are:
 # Timeseries: Extract extreme weeks
 # Topology: Remove 1m lines, extract feeders, extract downstream nodes matrix
-
-# TODO Adapt directories
-# import
-# import directory needs folder with : grid_id/dump/*
-grid_dir = r"/home/local/RL-INSTITUT/julian.endres/Projekte/Thesis/Anya_Dump/2534/full_grid_h_2011"
-# export
-data_dir = r"/home/local/RL-INSTITUT/julian.endres/Projekte/Thesis/Anya_Dump/2534/extracted_grid"
-# others
-# grid_dir_ladina = r"H:\Grids Ladina"
-# ts_reduction_dir = r"C:\Users\aheider\Documents\Grids\simbev_nep_2035_results"
-# bands_dir = r"C:\Users\aheider\Documents\Grids"
-
-strategy = "dump"
-
-# TODO Select grids
-# grid_ids = [176, 177, 1056, 1690, 1811, 2534]
-grid_ids = [2534]
-
-
-only_flex_ev = False
-use_mp = False
-remove_1m_lines = False
-extract_bands = False
-extract_extreme_weeks = False
-extract_extreme_weeks_no_hp = False
-reduce_timeseries_to_extreme_weeks = False
-reduce_timeseries_to_extreme_weeks_no_hp = False
-reduce_bands_to_extreme_weeks = False
-extract_feeders = True
-get_downstream_node_matrix = True
-cpu_count = 1  # int(mp.cpu_count()/2)
 
 
 def remove_1m_lines_from_edisgo_parallel(grid_id):
@@ -375,8 +349,7 @@ def get_downstream_nodes_matrix_iterative(grid):
     return downstream_node_matrix
 
 
-if __name__ == "__main__":
-
+def run_feeder_extraction():
     if cpu_count > 1:
         pool = mp.Pool(cpu_count)
         if remove_1m_lines:
@@ -449,3 +422,42 @@ if __name__ == "__main__":
                     get_downstream_node_matrix_feeders_parallel_server(
                         (grid_id, feeder)
                     )
+
+if __name__ == "__main__":
+    # TODO Adapt directories
+
+    cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
+
+    grid_id = cfg["model"].get("grid-id")
+    import_dir = cfg["directories"]["load_integration"].get("import")
+
+    # import
+    # import directory needs folder with : grid_id/dump/*
+    grid_dir = r"/home/local/RL-INSTITUT/julian.endres/Projekte/Thesis/Anya_Dump/2534/full_grid_h_2011"
+    # export
+    data_dir = r"/home/local/RL-INSTITUT/julian.endres/Projekte/Thesis/Anya_Dump/2534/extracted_grid"
+    # others
+    # grid_dir_ladina = r"H:\Grids Ladina"
+    # ts_reduction_dir = r"C:\Users\aheider\Documents\Grids\simbev_nep_2035_results"
+    # bands_dir = r"C:\Users\aheider\Documents\Grids"
+
+    strategy = "dump"
+
+    # TODO Select grids
+    # grid_ids = [176, 177, 1056, 1690, 1811, 2534]
+    grid_ids = [2534]
+
+    only_flex_ev = False
+    use_mp = False
+    remove_1m_lines = False
+    extract_bands = False
+    extract_extreme_weeks = False
+    extract_extreme_weeks_no_hp = False
+    reduce_timeseries_to_extreme_weeks = False
+    reduce_timeseries_to_extreme_weeks_no_hp = False
+    reduce_bands_to_extreme_weeks = False
+    extract_feeders = True
+    get_downstream_node_matrix = True
+    cpu_count = 1  # int(mp.cpu_count()/2)
+
+    run_feeder_extraction()

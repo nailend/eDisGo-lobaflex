@@ -27,7 +27,7 @@ from results import __path__ as results_dir
 # from edisgo.opf.lopf import BANDS, import_flexibility_bands
 # from edisgo.tools.tools import convert_impedances_to_mv
 # from loguru import logger
-from src import logger
+from logger import logger
 
 # from src import __path__ as source_dir
 from tools import get_config, timeit
