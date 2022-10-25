@@ -37,8 +37,6 @@ from saio.openstreetmap import osm_buildings_synthetic
 from saio.supply import egon_era5_renewable_feedin
 
 
-
-
 @timeit
 def get_random_residential_buildings(scenario, limit):
     """"""

@@ -15,9 +15,8 @@ import yaml
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-cfg_dir = Path(
-    "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/config"
-)
+cfg_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/config")
+
 
 def paths(pid=None):
     """Obtain configuration file paths.
@@ -37,9 +36,9 @@ def paths(pid=None):
     insert = f".pid-{pid}" if pid is not None else ""
     filename = f"egon-data{insert}.configuration.yaml"
     if pid == "*":
-        return [p.absolute() for p in Path(cfg_dir[0]).glob(filename)]
+        return [p.absolute() for p in Path(cfg_dir).glob(filename)]
     else:
-        return [(Path(cfg_dir[0]) / filename).absolute()]
+        return [(Path(cfg_dir) / filename).absolute()]
 
 
 def config_settings() -> dict[str, dict[str, str]]:
