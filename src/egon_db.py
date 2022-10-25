@@ -40,8 +40,8 @@ def paths(pid=None):
     #     return [p.absolute() for p in Path(cfg_dir).glob(filename)]
     # else:
     #     return [(Path(cfg_dir) / filename).absolute()]
-    filename = f"egon-data.configuration.yaml"
-    return Path(cfg_dir) / filename
+    filename = "egon-data.configuration.yaml"
+    return cfg_dir / filename
 
 
 def config_settings() -> dict[str, dict[str, str]]:
