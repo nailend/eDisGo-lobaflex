@@ -5,7 +5,8 @@ from pathlib import Path
 
 from loguru import logger
 
-from logs import __path__ as logs_dir
+logs_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/logs")
+
 
 logs_dir = Path(logs_dir[0])
 
