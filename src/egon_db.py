@@ -32,14 +32,16 @@ def paths(pid=None):
     is returned. This can be used for error checking, because there
     should only ever be one such file.
     """
-    pid = os.getpid() if pid == "current" else pid
-    insert = f".pid-{pid}" if pid is not None else ""
-    filename = f"egon-data{insert}.configuration.yaml"
-    if pid == "*":
-        breakpoint()
-        return [p.absolute() for p in Path(cfg_dir).glob(filename)]
-    else:
-        return [(Path(cfg_dir) / filename).absolute()]
+    # pid = os.getpid() if pid == "current" else pid
+    # insert = f".pid-{pid}" if pid is not None else ""
+    # filename = f"egon-data{insert}.configuration.yaml"
+    # if pid == "*":
+    #     breakpoint()
+    #     return [p.absolute() for p in Path(cfg_dir).glob(filename)]
+    # else:
+    #     return [(Path(cfg_dir) / filename).absolute()]
+    filename = f"egon-data.configuration.yaml"
+    return Path(cfg_dir) / filename
 
 
 def config_settings() -> dict[str, dict[str, str]]:
