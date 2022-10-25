@@ -61,8 +61,8 @@ def config_settings() -> dict[str, dict[str, str]]:
 
     """
     # files = paths(pid="*") + paths()
-    files = paths()
-    if not files[0].exists():
+    file = paths()
+    if not file.exists():
         #         logger.warning(
         #             f"Configuration file:"
         #             f"\n\n{files[0]}\n\nnot found.\nUsing defaults."
@@ -84,7 +84,7 @@ def config_settings() -> dict[str, dict[str, str]]:
                 "--processes-per-task": 1,
             }
         }
-    with open(files[0]) as f:
+    with open(file) as f:
         return yaml.safe_load(f)
 
 
