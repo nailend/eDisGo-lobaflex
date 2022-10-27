@@ -62,8 +62,8 @@ def run_emob_integration(edisgo_obj=False, save=False):
         logger.info(f"Saved grid to {export_path}")
 
         for name, df in flex_bands.items():
-            df.to_csv(f"{export_dir}/{name}_flexibility_band.csv")
-        logger.info(f"Flexibility bands exported to: {export_dir}")
+            df.to_csv(f"{export_path}/{name}_flexibility_band.csv")
+        logger.info(f"Flexibility bands exported to: {export_path}")
 
     return edisgo_obj, flex_bands
 
