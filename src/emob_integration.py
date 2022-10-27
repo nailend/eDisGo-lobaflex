@@ -7,38 +7,22 @@ from edisgo.edisgo import import_edisgo_from_files
 
 # from loguru import logger
 from logger import logger
-
-# from config import __path__ as config_dir
-# from data import __path__ as data_dir
-# from logs import __path__ as logs_dir
-# from results import __path__ as results_dir
-from tools import get_config, timeit
+from tools import get_config, get_dir, timeit
 
 # import pandas as pd
 
-
-# from src.tools import setup_logger
-
-
-# data_dir = Path(data_dir[0])
-# results_dir = Path(results_dir[0])
-# config_dir = Path(config_dir[0])
-# logs_dir = Path(logs_dir[0])
-
-data_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/data")
-logs_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/logs")
-config_dir = Path(
-    "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/config"
-)
+logs_dir = get_dir(key="logs")
+data_dir = get_dir(key="data")
+config_dir = get_dir(key="config")
 
 
 @timeit
 def run_emob_integration(edisgo_obj=False, save=False):
 
     cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
+    grid_id = cfg["model"].get("grid-id")
     if not edisgo_obj:
 
-        grid_id = cfg["model"].get("grid-id")
         import_dir = cfg["directories"]["emob_integration"].get("import")
         import_path = data_dir / import_dir / str(grid_id)
         logger.info(f"Import Grid from file: {import_path}")

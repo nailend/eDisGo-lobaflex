@@ -10,6 +10,7 @@ import psutil
 import yaml
 
 from logger import logger
+
 # import logger
 # from loguru import logger
 
@@ -17,17 +18,15 @@ from logger import logger
 # import logging.config
 
 
-data_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/data")
-logs_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/logs")
-config_dir = Path(
-    "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/config"
-)
-results_dir = Path(
-    "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/results"
-)
+def get_dir(key):
+    """Get directories parallel to src level"""
+    src_dir = Path(".").absolute()
+    repo_dir = src_dir.parent
+    key_dir = repo_dir / key
+    return key_dir
 
 
-def get_config(path=f".{config_dir}/model_config.yaml"):
+def get_config(path=f".{get_dir(key='config')}/model_config.yaml"):
     """
     Returns the config.
     """
@@ -79,6 +78,7 @@ def setup_logger(name=None, loglevel=logging.DEBUG):
     -------
     instance of logger
     """
+    logs_dir = get_dir(key="logs")
     os.makedirs(logs_dir, exist_ok=True)
 
     logger = logging.getLogger(name)  # use filename as name in log

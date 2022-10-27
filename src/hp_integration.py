@@ -24,25 +24,13 @@ from db_data import (  # create_timeseries_for_building,; get_random_residential
 from logger import logger
 
 # from src import __path__ as source_dir
-from tools import get_config, timeit
+from tools import get_config, get_dir, timeit
 
 # from model_solving import get_downstream_matrix
-# from results import __path__ as results_dir
-# from logs import __path__ as logs_dir
-# from config import __path__ as config_dir
-# from data import __path__ as data_dir
 
-
-# data_dir = Path(data_dir[0])
-# results_dir = Path(results_dir[0])
-# config_dir = Path(config_dir[0])
-# logs_dir = Path(logs_dir[0])
-
-data_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/data")
-logs_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/logs")
-config_dir = Path(
-    "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/config"
-)
+logs_dir = get_dir(key="logs")
+data_dir = get_dir(key="data")
+config_dir = get_dir(key="config")
 
 
 engine = db.engine()
