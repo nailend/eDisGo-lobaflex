@@ -32,16 +32,13 @@ def paths(pid=None):
     is returned. This can be used for error checking, because there
     should only ever be one such file.
     """
-    # pid = os.getpid() if pid == "current" else pid
-    # insert = f".pid-{pid}" if pid is not None else ""
-    # filename = f"egon-data{insert}.configuration.yaml"
-    # if pid == "*":
-    #     breakpoint()
-    #     return [p.absolute() for p in Path(cfg_dir).glob(filename)]
-    # else:
-    #     return [(Path(cfg_dir) / filename).absolute()]
-    filename = "egon-data.configuration.yaml"
-    return cfg_dir / filename
+    pid = os.getpid() if pid == "current" else pid
+    insert = f".pid-{pid}" if pid is not None else ""
+    filename = f"egon-data{insert}.configuration.yaml"
+    if pid == "*":
+        return [p.absolute() for p in Path(cfg_dir).glob(filename)]
+    else:
+        return [(Path(cfg_dir) / filename).absolute()]
 
 
 def config_settings() -> dict[str, dict[str, str]]:
@@ -60,10 +57,8 @@ def config_settings() -> dict[str, dict[str, str]]:
         settings()["egon-data"]["--database-name"]
 
     """
-    # files = paths(pid="*") + paths()
-    file = paths()
-    breakpoint()
-    if not file.exists():
+    files = paths(pid="*") + paths()
+    if not files[0].exists():
         #         logger.warning(
         #             f"Configuration file:"
         #             f"\n\n{files[0]}\n\nnot found.\nUsing defaults."
@@ -85,7 +80,7 @@ def config_settings() -> dict[str, dict[str, str]]:
                 "--processes-per-task": 1,
             }
         }
-    with open(file) as f:
+    with open(files[0]) as f:
         return yaml.safe_load(f)
 
 
