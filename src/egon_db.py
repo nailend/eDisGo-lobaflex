@@ -14,7 +14,9 @@ import yaml
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-cfg_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/config")
+from tools import get_dir
+
+cfg_dir = get_dir(key="config")
 
 
 def paths(pid=None):
