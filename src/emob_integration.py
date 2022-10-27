@@ -2,10 +2,8 @@ import os
 
 from pathlib import Path
 
-# from edisgo.edisgo import EDisGo,
 from edisgo.edisgo import import_edisgo_from_files
 
-# from loguru import logger
 from logger import logger
 from tools import get_config, get_dir, timeit
 

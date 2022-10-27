@@ -1,32 +1,22 @@
 """"""
 import os
 
-# from datetime import datetime
 from pathlib import Path
 
-# import edisgo.opf.lopf as lopf
 import pandas as pd
 
 from edisgo.edisgo import import_edisgo_from_files
 
 import egon_db as db
 
-from db_data import (  # create_timeseries_for_building,; get_random_residential_buildings,
+from db_data import (
     calc_residential_heat_profiles_per_mvgd,
     determine_minimum_hp_capacity_per_building,
     get_cop,
     identify_similar_mvgd,
 )
-
-# from edisgo.opf.lopf import BANDS, import_flexibility_bands
-# from edisgo.tools.tools import convert_impedances_to_mv
-# from loguru import logger
 from logger import logger
-
-# from src import __path__ as source_dir
 from tools import get_config, get_dir, timeit
-
-# from model_solving import get_downstream_matrix
 
 logs_dir = get_dir(key="logs")
 data_dir = get_dir(key="data")

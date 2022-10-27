@@ -5,14 +5,13 @@
 from __future__ import annotations
 
 import os
-import sys
 
 from contextlib import contextmanager
 from pathlib import Path
 
 import yaml
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 cfg_dir = Path("/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/config")

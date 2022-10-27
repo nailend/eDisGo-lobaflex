@@ -1,7 +1,6 @@
 import os
 
 from datetime import date
-from pathlib import Path
 
 from loguru import logger
 

@@ -11,12 +11,6 @@ import yaml
 
 from logger import logger
 
-# import logger
-# from loguru import logger
-
-
-# import logging.config
-
 
 def get_dir(key):
     """Get directories parallel to src level"""
