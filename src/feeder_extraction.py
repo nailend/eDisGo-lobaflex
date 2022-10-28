@@ -197,9 +197,9 @@ def run_feeder_extraction():
     grid_id = cfg["model"].get("grid-id")
     grid_ids = [grid_id]
 
-    import_dir = cfg["directories"]["feeder-extraction"].get("import")
+    import_dir = cfg["directories"]["feeder_extraction"].get("import")
     import_path = data_dir / import_dir / str(grid_id)
-    export_dir = cfg["directories"]["feeder-extraction"].get("export")
+    export_dir = cfg["directories"]["feeder_extraction"].get("export")
     export_path = data_dir / export_dir / str(grid_id)
 
 
