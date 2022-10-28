@@ -26,7 +26,7 @@ directories:
     import: "load_n_gen_n_emob_grids"
     export: "load_n_gen_n_emob_n_hp_grids"
   feeder_extraction:
-    import:
-    export:
+    import: "load_n_gen_n_emob_n_hp_grids"
+    export: "load_n_gen_n_emob_n_hp_grids_extracted"
     settings:
 
