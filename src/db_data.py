@@ -507,7 +507,8 @@ def identify_similar_mvgd(number_of_residentials):
                 egon_map_zensus_mvgd_buildings.bus_id,
                 func.count(egon_map_zensus_mvgd_buildings.building_id).label("count"),
             )
-            .filter(egon_map_zensus_mvgd_buildings.sector == "residential")
+            .filter(egon_map_zensus_mvgd_buildings.sector == "residential",
+                    egon_map_zensus_mvgd_buildings.heat == True)
             .group_by(egon_map_zensus_mvgd_buildings.bus_id)
         )
 
