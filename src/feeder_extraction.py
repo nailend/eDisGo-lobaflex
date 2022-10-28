@@ -8,7 +8,7 @@ import pandas as pd
 from pathlib import Path
 
 from edisgo.edisgo import import_edisgo_from_files
-from edisgo.network.electromobility import get_energy_bands_for_optimization
+# from edisgo.network.electromobility import get_energy_bands_for_optimization
 from edisgo.network.timeseries import TimeSeries
 from edisgo.network.topology import Topology
 from edisgo.opf.lopf import import_flexibility_bands
@@ -16,25 +16,20 @@ from edisgo.tools.complexity_reduction import (
     extract_feeders_nx,
     remove_1m_lines_from_edisgo,
 )
-from tools import get_config, timeit
+from tools import get_config, timeit, get_dir
 
-from config import __path__ as config_dir
-from data import __path__ as data_dir
-from logs import __path__ as logs_dir
-from results import __path__ as results_dir
 
-data_dir = Path(data_dir[0])
-results_dir = Path(results_dir[0])
-config_dir = Path(config_dir[0])
-logs_dir = Path(logs_dir[0])
+config_dir = get_dir(key="config")
+data_dir = get_dir(key="data")
 
 # Script to prepare grids for optimisation. The necessary steps are:
 # Timeseries: Extract extreme weeks
 # Topology: Remove 1m lines, extract feeders, extract downstream nodes matrix
 
 
-def remove_1m_lines_from_edisgo_parallel(grid_id):
-    edisgo = import_edisgo_from_files(os.path.join(grid_dir, str(grid_id), strategy))
+def remove_1m_lines_from_edisgo_parallel(import_path, export_path):
+
+    edisgo = import_edisgo_from_files(import_path)
     no_bus_pre = len(edisgo.topology.buses_df)
     no_line_pre = len(edisgo.topology.lines_df)
     print(
@@ -55,7 +50,7 @@ def remove_1m_lines_from_edisgo_parallel(grid_id):
             no_bus_pre - no_bus_after, no_bus_pre - no_line_after
         )
     )
-    edisgo.topology.to_csv(os.path.join(grid_dir, str(grid_id), strategy, "topology"))
+    edisgo.topology.to_csv(export_path)
 
 
 def extract_and_save_bands_parallel(grid_id):
@@ -84,178 +79,16 @@ def extract_and_save_bands_parallel(grid_id):
         print(traceback.format_exc())
 
 
-def save_extreme_weeks_timeindex(grid_id):
-    # load extreme weeks
-    ts = pd.read_csv(
-        os.path.join(
-            ts_reduction_dir,
-            str(grid_id),
-            strategy,
-            "timeseries",
-            "charging_points_active_power.csv",
-        ),
-        index_col=0,
-        parse_dates=True,
-    )
-    timeindex = pd.DataFrame(index=ts.index)
-    timeindex.to_csv(
-        os.path.join(grid_dir, str(grid_id), "timeindex_extreme_weeks.csv")
-    )
 
+def extract_feeders_parallel(import_path, export_path, only_flex_ev):
 
-def save_extreme_weeks_timeindex_no_hp(grid_id):
-    # get extreme week generation
-    ts = pd.read_csv(
-        os.path.join(
-            grid_dir, str(grid_id), "timeseries", "generators_active_power.csv"
-        ),
-        index_col=0,
-        parse_dates=True,
-    ).sum(axis=1)
-    max_gen = ts[ts == ts.max()]
-    week = max_gen.index.isocalendar().week[0]
-    # adapt week if timestep is within the first seven hours
-    extreme_week = ts[ts.index.isocalendar().week == week].reset_index()
-    if extreme_week.loc[extreme_week.snapshot == max_gen.index[0]].index[0] < 7:
-        week = week - 1
-        extreme_week = ts[ts.index.isocalendar().week == week].reset_index()
-    week_max_gen = pd.date_range(
-        extreme_week.loc[7, "snapshot"], periods=7 * 24, freq="1h"
-    )
-    # extreme week with highest demand from heat: 8
-    week_max_heat_demand = pd.date_range(
-        "2011-02-21 07:00:00", periods=7 * 24, freq="1h"
-    )
-    if week < 8:
-        index = week_max_gen.append(week_max_heat_demand)
-    elif week == 8:
-        raise NotImplementedError(
-            "Weeks of highest demand and generation are the same."
-        )
-    else:
-        index = week_max_heat_demand.append(week_max_gen)
-    timeindex = pd.DataFrame(index=index)
-    timeindex.to_csv(
-        os.path.join(grid_dir, str(grid_id), "timeindex_extreme_weeks.csv")
-    )
-
-
-def extract_extreme_weeks_parallel(grid_id):
-    """
-    Method to get extreme weeks from previous run and reduce new objects to these weeks.
-    """
-    # load extreme weeks
-    ts = pd.read_csv(
-        os.path.join(grid_dir, str(grid_id), "timeindex_extreme_weeks.csv"),
-        index_col=0,
-        parse_dates=True,
-    )
-    timeindex = ts.index
-    # load original edisgo object
-    edisgo = import_edisgo_from_files(
-        os.path.join(grid_dir, str(grid_id), strategy),
-        import_topology=False,
-        import_timeseries=True,
-    )
-    if not (timeindex.isin(edisgo.timeseries.timeindex)).all():
-        raise ValueError("Edisgo object does not contain the given extreme weeks")
-    # adapt timeseries
-    attributes = TimeSeries()._attributes
-    edisgo.timeseries.timeindex = timeindex
-    for attr in attributes:
-        if not getattr(edisgo.timeseries, attr).empty:
-            setattr(
-                edisgo.timeseries, attr, getattr(edisgo.timeseries, attr).loc[timeindex]
-            )
-    # save adapted timeseries object
-    edisgo.timeseries.to_csv(
-        os.path.join(grid_dir, str(grid_id), strategy, "timeseries")
-    )
-    # Todo: adapt flexibility bands
-
-
-def extract_extreme_weeks_ladina(grid_id, adapt_edisgo=False, adapt_bands=True):
-    """
-    Method to get extreme weeks from previous run and reduce new objects to these weeks.
-    """
-    # load extreme weeks
-    ts = pd.read_csv(
-        os.path.join(grid_dir, str(grid_id), "timeindex_extreme_weeks.csv"),
-        index_col=0,
-        parse_dates=True,
-    )
-    timeindex = ts.index
-    if adapt_edisgo:
-        # load original edisgo object
-        edisgo = import_edisgo_from_files(
-            os.path.join(grid_dir, str(grid_id)),
-            import_topology=True,
-            import_timeseries=True,
-        )
-        if not (timeindex.isin(edisgo.timeseries.timeindex)).all():
-            raise ValueError("Edisgo object does not contain the given extreme weeks")
-        # adapt timeseries
-        attributes = TimeSeries()._attributes
-        edisgo.timeseries.timeindex = timeindex
-        for attr in attributes:
-            if not getattr(edisgo.timeseries, attr).empty:
-                setattr(
-                    edisgo.timeseries,
-                    attr,
-                    getattr(edisgo.timeseries, attr).loc[timeindex],
-                )
-        # save adapted timeseries object
-        edisgo.save(os.path.join(grid_dir_ladina, str(grid_id)))
-    if adapt_bands:
-        # adapt flexibility bands
-        bands = import_flexibility_bands(
-            os.path.join(data_dir, str(grid_id)), use_cases=["home", "work"]
-        )
-        for name, band in bands.items():
-            if name == "upper_power":
-                band.resample("1h").mean().loc[timeindex].to_csv(
-                    os.path.join(grid_dir_ladina, str(grid_id), name + ".csv")
-                )
-            else:
-                band.resample("1h").max().loc[timeindex].to_csv(
-                    os.path.join(grid_dir_ladina, str(grid_id), name + ".csv")
-                )
-            # elif name == "lower_energy":
-            #     band.resample("1h").min().loc[timeindex].to_csv(
-            #         os.path.join(grid_dir_ladina, str(grid_id), name + ".csv"))
-
-
-def extract_extreme_weeks_from_bands(grid_id):
-    """
-    Method to reduce energy bands to extreme weeks and save them
-    """
-    ts = pd.read_csv(
-        os.path.join(grid_dir, str(grid_id), "timeindex_extreme_weeks.csv"),
-        index_col=0,
-        parse_dates=True,
-    )
-    timeindex = ts.index
-    bands = ["upper_power", "upper_energy", "lower_energy"]
-    bands_dict = {}
-    for use_case in ["home", "work"]:
-        for band in bands:
-            bands_dict[band] = pd.read_csv(
-                bands_dir + r"\{}\{}_{}.csv".format(grid_id, band, use_case),
-                index_col=0,
-                parse_dates=True,
-            )
-            bands_dict[band].loc[timeindex].to_csv(
-                os.path.join(grid_dir, str(grid_id), "{}_{}.csv".format(band, use_case))
-            )
-
-
-def extract_feeders_parallel(grid_id, only_flex_ev):
     # try:
-    edisgo_dir = os.path.join(grid_dir, str(grid_id), strategy)
-    save_dir = os.path.join(data_dir, str(grid_id))
-    edisgo_obj = import_edisgo_from_files(edisgo_dir, import_timeseries=True)
+
+    edisgo_obj = import_edisgo_from_files(import_path, import_timeseries=True,
+                                          import_electromobility=True,
+                                          import_heat_pump=True)
     extract_feeders_nx(
-        edisgo_obj=edisgo_obj, save_dir=save_dir, only_flex_ev=only_flex_ev
+        edisgo_obj=edisgo_obj, save_dir=export_path, only_flex_ev=only_flex_ev
     )
     # except Exception as e:
     #     print("Problem in grid {}.".format(grid_id))
@@ -349,7 +182,27 @@ def get_downstream_nodes_matrix_iterative(grid):
     return downstream_node_matrix
 
 
+@timeit
 def run_feeder_extraction():
+
+    only_flex_ev = False
+    use_mp = False
+    remove_1m_lines = False
+    extract_bands = False
+    extract_feeders = True
+    get_downstream_node_matrix = True
+    cpu_count = 1  # int(mp.cpu_count()/2)
+
+    cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
+    grid_id = cfg["model"].get("grid-id")
+    grid_ids = [grid_id]
+
+    import_dir = cfg["directories"]["feeder-extraction"].get("import")
+    import_path = data_dir / import_dir / str(grid_id)
+    export_dir = cfg["directories"]["feeder-extraction"].get("export")
+    export_path = data_dir / export_dir / str(grid_id)
+
+
     if cpu_count > 1:
         pool = mp.Pool(cpu_count)
         if remove_1m_lines:
@@ -358,21 +211,6 @@ def run_feeder_extraction():
         if extract_bands:
             print("Extracting flexibility bands.")
             pool.map_async(extract_and_save_bands_parallel, grid_ids).get()
-        if extract_extreme_weeks:
-            print("Extracting extreme weeks.")
-            pool.map_async(save_extreme_weeks_timeindex, grid_ids).get()
-        if extract_extreme_weeks_no_hp:
-            print("Extracting extreme weeks no hp.")
-            pool.map_async(save_extreme_weeks_timeindex_no_hp, grid_ids).get()
-        if reduce_timeseries_to_extreme_weeks:
-            print("Reducing timeseries.")
-            pool.map_async(extract_extreme_weeks_parallel, grid_ids).get()
-        if reduce_timeseries_to_extreme_weeks_no_hp:
-            print("Reducing timeseries and bands no hp.")
-            pool.map_async(extract_extreme_weeks_ladina, grid_ids).get()
-        if reduce_bands_to_extreme_weeks:
-            print("Reducing bands.")
-            pool.map_async(extract_extreme_weeks_from_bands, grid_ids).get()
         if extract_feeders:
             print("Extracting feeders.")
             pool.map_async(extract_feeders_parallel, grid_ids, only_flex_ev).get()
@@ -380,7 +218,7 @@ def run_feeder_extraction():
             print("Getting downstream nodes matrices")
             grid_id_feeder_tuples = []
             for grid_id in grid_ids:
-                feeder_dir = os.path.join(grid_dir, str(grid_id), "feeder")
+                feeder_dir = import_path / "feeder"
                 for feeder in os.listdir(feeder_dir):
                     grid_id_feeder_tuples.append((grid_id, feeder))
             pool.map_async(
@@ -393,31 +231,16 @@ def run_feeder_extraction():
             print("Preparing grid {}".format(grid_id))
             if remove_1m_lines:
                 print("Removing 1m lines")
-                remove_1m_lines_from_edisgo_parallel(grid_id)
+                remove_1m_lines_from_edisgo_parallel(import_path, export_path)
             if extract_bands:
                 print("Extracting flexibility bands.")
                 extract_and_save_bands_parallel(grid_id)
-            if extract_extreme_weeks:
-                print("Extracting extreme weeks.")
-                save_extreme_weeks_timeindex(grid_id)
-            if extract_extreme_weeks_no_hp:
-                print("Extracting extreme weeks no hp.")
-                save_extreme_weeks_timeindex_no_hp(grid_id)
-            if reduce_bands_to_extreme_weeks:
-                print("Reducing bands.")
-                extract_extreme_weeks_from_bands(grid_id)
-            if reduce_timeseries_to_extreme_weeks:
-                print("Reducing timeseries.")
-                extract_extreme_weeks_parallel(grid_id)
-            if reduce_timeseries_to_extreme_weeks_no_hp:
-                print("Reducing timeseries and bands no hp.")
-                extract_extreme_weeks_ladina(grid_id)
             if extract_feeders:
                 print("Extracting feeders.")
                 extract_feeders_parallel(grid_id, only_flex_ev)
             if get_downstream_node_matrix:
                 print("Getting downstream nodes matrices")
-                feeder_dir = os.path.join(data_dir, str(grid_id), "feeder")
+                feeder_dir = import_path / "feeder"
                 for feeder in os.listdir(feeder_dir):
                     get_downstream_node_matrix_feeders_parallel_server(
                         (grid_id, feeder)
@@ -429,35 +252,14 @@ if __name__ == "__main__":
     cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
 
     grid_id = cfg["model"].get("grid-id")
-    import_dir = cfg["directories"]["load_integration"].get("import")
-
-    # import
-    # import directory needs folder with : grid_id/dump/*
-    grid_dir = r"/home/local/RL-INSTITUT/julian.endres/Projekte/Thesis/Anya_Dump/2534/full_grid_h_2011"
-    # export
-    data_dir = r"/home/local/RL-INSTITUT/julian.endres/Projekte/Thesis/Anya_Dump/2534/extracted_grid"
-    # others
-    # grid_dir_ladina = r"H:\Grids Ladina"
-    # ts_reduction_dir = r"C:\Users\aheider\Documents\Grids\simbev_nep_2035_results"
-    # bands_dir = r"C:\Users\aheider\Documents\Grids"
+    import_dir = cfg["directories"]["feeder_extraction"].get("import")
+    export_dir = cfg["directories"]["feeder_extraction"].get("export")
 
     strategy = "dump"
 
     # TODO Select grids
     # grid_ids = [176, 177, 1056, 1690, 1811, 2534]
-    grid_ids = [2534]
-
-    only_flex_ev = False
-    use_mp = False
-    remove_1m_lines = False
-    extract_bands = False
-    extract_extreme_weeks = False
-    extract_extreme_weeks_no_hp = False
-    reduce_timeseries_to_extreme_weeks = False
-    reduce_timeseries_to_extreme_weeks_no_hp = False
-    reduce_bands_to_extreme_weeks = False
-    extract_feeders = True
-    get_downstream_node_matrix = True
-    cpu_count = 1  # int(mp.cpu_count()/2)
+    # grid_ids = [2534]
+    grid_ids = [grid_id]
 
     run_feeder_extraction()
