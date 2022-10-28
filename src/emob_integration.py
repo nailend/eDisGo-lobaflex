@@ -15,7 +15,7 @@ config_dir = get_dir(key="config")
 
 
 @timeit
-def run_emob_integration(edisgo_obj=False, save=False):
+def run_emob_integration(edisgo_obj=False, save=False, freq="1h"):
 
     cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
     grid_id = cfg["model"].get("grid-id")
@@ -43,6 +43,9 @@ def run_emob_integration(edisgo_obj=False, save=False):
         simbev_directory=data_dir / "simbev_results" / str(grid_id),
         tracbev_directory=data_dir / "tracbev_results" / str(grid_id),
     )
+
+    logger.info(f"Resample timeseries to {freq}.")
+    edisgo_obj.resample_timeseries(method="ffill", freq=freq)
 
     logger.info("Calculate flexibility bands")
     flex_bands = edisgo_obj.electromobility.get_flexibility_bands(
