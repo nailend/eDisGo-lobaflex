@@ -200,9 +200,9 @@ def run_hp_integration(edisgo_obj=False, save=False):
     # TODO use SH1 59776
 
     cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
+    grid_id = cfg["model"].get("grid-id")
     if not edisgo_obj:
 
-        grid_id = cfg["model"].get("grid-id")
         import_dir = cfg["directories"]["hp_integration"].get("import")
         import_path = data_dir / import_dir / str(grid_id)
         logger.info(f"Import Grid from file: {import_path}")
@@ -234,7 +234,7 @@ def run_hp_integration(edisgo_obj=False, save=False):
         logger.info(f"Saved grid to {export_path}")
 
         # TODO write metadata
-        write_metadata(export_path, edisgo_obj)
+        # write_metadata(export_path, edisgo_obj)
 
     return edisgo_obj
 
