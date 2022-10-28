@@ -195,12 +195,12 @@ def write_metadata(path, edisgo_obj):
 
 
 @timeit
-def run_hp_integration(edisgo_obj=False, save=False):
-
-    # TODO use SH1 59776
+def run_hp_integration(edisgo_obj=False, grid_id=False, save=False):
 
     cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
-    grid_id = cfg["model"].get("grid-id")
+    if not grid_id:
+        grid_id = cfg["model"].get("grid-id")
+
     if not edisgo_obj:
 
         import_dir = cfg["directories"]["hp_integration"].get("import")

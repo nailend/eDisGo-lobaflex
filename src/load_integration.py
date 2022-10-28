@@ -18,12 +18,15 @@ config_dir = get_dir(key="config")
 
 
 @timeit
-def run_load_integration(edisgo_obj=False, save=False):
+def run_load_integration(edisgo_obj=False, grid_id=False, save=False):
 
     cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
+
+    if not grid_id:
+        grid_id = cfg["model"].get("grid-id")
+
     if not edisgo_obj:
 
-        grid_id = cfg["model"].get("grid-id")
         import_dir = cfg["directories"]["load_integration"].get("import")
 
         ding0_grid = data_dir / import_dir / str(grid_id)

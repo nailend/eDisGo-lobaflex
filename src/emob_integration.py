@@ -15,10 +15,12 @@ config_dir = get_dir(key="config")
 
 
 @timeit
-def run_emob_integration(edisgo_obj=False, save=False, freq="1h"):
+def run_emob_integration(edisgo_obj=False, grid_id=False, save=False, freq="1h"):
 
     cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
-    grid_id = cfg["model"].get("grid-id")
+    if not grid_id:
+        grid_id = cfg["model"].get("grid-id")
+
     if not edisgo_obj:
 
         import_dir = cfg["directories"]["emob_integration"].get("import")
