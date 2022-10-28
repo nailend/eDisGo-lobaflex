@@ -3,11 +3,13 @@ import multiprocessing as mp
 import os
 import traceback
 
-import networkx as nx
-import pandas as pd
 from pathlib import Path
 
+import networkx as nx
+import pandas as pd
+
 from edisgo.edisgo import import_edisgo_from_files
+
 # from edisgo.network.electromobility import get_energy_bands_for_optimization
 from edisgo.network.timeseries import TimeSeries
 from edisgo.network.topology import Topology
@@ -16,8 +18,8 @@ from edisgo.tools.complexity_reduction import (
     extract_feeders_nx,
     remove_1m_lines_from_edisgo,
 )
-from tools import get_config, timeit, get_dir
 
+from tools import get_config, get_dir, timeit
 
 config_dir = get_dir(key="config")
 data_dir = get_dir(key="data")
@@ -79,14 +81,16 @@ def extract_and_save_bands_parallel(grid_id):
         print(traceback.format_exc())
 
 
-
 def extract_feeders_parallel(import_path, export_path, only_flex_ev):
 
     # try:
 
-    edisgo_obj = import_edisgo_from_files(import_path, import_timeseries=True,
-                                          import_electromobility=True,
-                                          import_heat_pump=True)
+    edisgo_obj = import_edisgo_from_files(
+        import_path,
+        import_timeseries=True,
+        import_electromobility=True,
+        import_heat_pump=True,
+    )
     extract_feeders_nx(
         edisgo_obj=edisgo_obj, save_dir=export_path, only_flex_ev=only_flex_ev
     )
@@ -95,16 +99,23 @@ def extract_feeders_parallel(import_path, export_path, only_flex_ev):
     #     print(e)
 
 
-def get_downstream_node_matrix_feeders_parallel_server(grid_id_feeder_tuple):
+def get_downstream_node_matrix_feeders_parallel_server(
+    import_path, export_path, grid_id_feeder_tuple
+):
     grid_id = grid_id_feeder_tuple[0]
     feeder_id = grid_id_feeder_tuple[1]
-    edisgo_dir = os.path.join(data_dir, str(grid_id), "feeder", str(feeder_id))
+    edisgo_dir = import_path / "feeder" / str(feeder_id)
     if os.path.isfile(
-        edisgo_dir + "/downstream_node_matrix_{}_{}.csv".format(grid_id, feeder_id)
+        export_path + "/downstream_node_matrix_{}_{}.csv".format(grid_id, feeder_id)
     ):
         return
     try:
-        edisgo_obj = import_edisgo_from_files(edisgo_dir)
+        edisgo_obj = import_edisgo_from_files(
+            import_path,
+            import_electromobility=True,
+            import_heat_pump=True,
+            import_timeseries=True,
+        )
         downstream_node_matrix = get_downstream_nodes_matrix_iterative(
             edisgo_obj.topology
         )
@@ -202,7 +213,6 @@ def run_feeder_extraction():
     export_dir = cfg["directories"]["feeder_extraction"].get("export")
     export_path = data_dir / export_dir / str(grid_id)
 
-
     if cpu_count > 1:
         pool = mp.Pool(cpu_count)
         if remove_1m_lines:
@@ -237,14 +247,17 @@ def run_feeder_extraction():
                 extract_and_save_bands_parallel(grid_id)
             if extract_feeders:
                 print("Extracting feeders.")
-                extract_feeders_parallel(grid_id, only_flex_ev)
+                extract_feeders_parallel(import_path, export_path, only_flex_ev)
             if get_downstream_node_matrix:
                 print("Getting downstream nodes matrices")
                 feeder_dir = import_path / "feeder"
                 for feeder in os.listdir(feeder_dir):
                     get_downstream_node_matrix_feeders_parallel_server(
-                        (grid_id, feeder)
+                        import_path=export_path,
+                        export_path=export_path,
+                        grid_id_feeder_tuple=(grid_id, feeder),
                     )
+
 
 if __name__ == "__main__":
     # TODO Adapt directories
