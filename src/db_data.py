@@ -498,7 +498,8 @@ def calc_cts_building_profiles(
 def identify_similar_mvgd(number_of_residentials):
 
     logger.info(
-        f"Looking for mvgd with more then {number_of_residentials} " f"residentials."
+        f"Looking for MVGD with more then {number_of_residentials} "
+        f"residentials."
     )
     with db.session_scope() as session:
         cells_query = (
@@ -515,7 +516,7 @@ def identify_similar_mvgd(number_of_residentials):
     df = df.loc[df["count"] > number_of_residentials]
     mvgd = df.nsmallest(1, columns="count")
     logger.info(
-        f"{mvgd['bus_id'].values} with {mvgd['count'].values} "
+        f"MVGD: {mvgd['bus_id'].values[0]} with {mvgd['count'].values[0]} "
         f"residentials "
         f"found."
     )
