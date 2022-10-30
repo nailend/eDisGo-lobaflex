@@ -21,7 +21,7 @@ for mvgd in multi_grid_ids:
     # emob integration
     logger.info(f"Start emob integration for {mvgd}.")
     edisgo_obj, flex_bands = run_emob_integration(
-        edisgo_obj=edisgo_obj, grid_id=mvgd, save=True
+        edisgo_obj=edisgo_obj, grid_id=mvgd, save=True, to_freq="1h"
     )
 
     # resample to 1h resolution
@@ -29,7 +29,7 @@ for mvgd in multi_grid_ids:
     # edisgo_obj.resample_timeseries(method="ffill", freq="1h")
 
     # hp integration
-    logger.info(f"Start heat pump integration for {mvgd}")
+    logger.info(f"Start heat pump integration for {mvgd}.")
     edisgo_obj = run_hp_integration(edisgo_obj=edisgo_obj, grid_id=mvgd, save=True)
 
     # bess integration
@@ -37,3 +37,4 @@ for mvgd in multi_grid_ids:
     # feeder extraction
 
     # model optimization
+    logger.info(f"MVGD: {mvgd} done.")

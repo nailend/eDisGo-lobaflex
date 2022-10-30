@@ -1,6 +1,6 @@
 model:
   grid-id: 2534
-  multi_grid_ids: [176, 177, 1056, 1690, 1811]
+  multi_grid_ids: [2534, 176, 177, 1056, 1690, 1811]
   feeder: False
   feeder-id: 0
 opt:

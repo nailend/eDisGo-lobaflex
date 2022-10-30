@@ -2,6 +2,8 @@ import os
 
 from pathlib import Path
 
+import pandas as pd
+
 from edisgo.edisgo import import_edisgo_from_files
 
 from logger import logger
@@ -15,7 +17,7 @@ config_dir = get_dir(key="config")
 
 
 @timeit
-def run_emob_integration(edisgo_obj=False, grid_id=False, save=False, freq="1h"):
+def run_emob_integration(edisgo_obj=False, grid_id=False, save=False, to_freq="1h"):
 
     cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
     if not grid_id:
@@ -36,9 +38,10 @@ def run_emob_integration(edisgo_obj=False, grid_id=False, save=False, freq="1h")
 
     # resample time series to have a temporal resolution of 15 minutes, which is the same
     # as the electromobility time series
-    freq = "15min"
-    logger.info(f"Resample timeseries to: {freq}")
-    edisgo_obj.resample_timeseries(method="ffill", freq=freq)
+    freq_load = pd.Series(edisgo_obj.timeseries.timeindex).diff().min()
+    if not freq_load == "15min":
+        logger.info("Resample timeseries to: 15min")
+        edisgo_obj.resample_timeseries(method="ffill", freq="15min")
 
     logger.info("Import emobility from files")
     edisgo_obj.import_electromobility(
@@ -46,8 +49,8 @@ def run_emob_integration(edisgo_obj=False, grid_id=False, save=False, freq="1h")
         tracbev_directory=data_dir / "tracbev_results" / str(grid_id),
     )
 
-    logger.info(f"Resample timeseries to {freq}.")
-    edisgo_obj.resample_timeseries(method="ffill", freq=freq)
+    logger.info(f"Resample timeseries to {to_freq}.")
+    edisgo_obj.resample_timeseries(method="ffill", freq=to_freq)
 
     logger.info("Calculate flexibility bands")
     flex_bands = edisgo_obj.electromobility.get_flexibility_bands(
