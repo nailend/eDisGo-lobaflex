@@ -66,6 +66,11 @@ def run_emob_integration(edisgo_obj=False, grid_id=False, save=False, to_freq="1
             save_topology=True,
             save_timeseries=True,
             save_electromobility=True,
+            electromobility_attributes=[
+                "integrated_charging_parks_df",
+                "simbev_config_df",
+                "flexibility_bands",
+            ]
         )
         logger.info(f"Saved grid to {export_path}")
 
