@@ -54,35 +54,9 @@ def remove_1m_lines_from_edisgo_parallel(import_path, export_path):
             no_bus_pre - no_bus_after, no_bus_pre - no_line_after
         )
     )
+    os.renames(old=import_path / "topology",
+               new=import_path / "topology_1m_lines")
     edisgo.topology.to_csv(export_path)
-
-
-def extract_and_save_bands_parallel(grid_id):
-    try:
-        for use_case in ["home", "work"]:
-            logger.info("Extracting bands for {}-{}".format(grid_id, use_case))
-            edisgo_obj = import_edisgo_from_files(
-                data_dir + r"\{}\dumb".format(grid_id),
-                import_timeseries=True,
-                import_electromobility=True,
-            )
-            power, lower, upper = get_energy_bands_for_optimization(
-                edisgo_obj, use_case
-            )
-
-            power.to_csv(data_dir + r"\{}\upper_power_{}.csv".format(grid_id, use_case))
-            lower.to_csv(
-                data_dir + r"\{}\lower_energy_{}.csv".format(grid_id, use_case)
-            )
-            upper.to_csv(
-                data_dir + r"\{}\upper_energy_{}.csv".format(grid_id, use_case)
-            )
-            logger.info(
-                "Successfully created bands for {}-{}".format(grid_id, use_case)
-            )
-    except Exception:
-        logger.info("Something went wrong with {}-{}".format(grid_id, use_case))
-        logger.info(traceback.format_exc())
 
 
 def extract_feeders_parallel(
@@ -224,12 +198,13 @@ def run_feeder_extraction():
     warnings.simplefilter(action="ignore", category=FutureWarning)
     only_flex_ev = False
     use_mp = False
-    remove_1m_lines = False
-    extract_bands = False
+    remove_1m_lines = True
+    # extract_bands = False
     extract_feeders = True
     flexible_loads = True
-    get_downstream_node_matrix = False
-    cpu_count = 1  # int(mp.cpu_count()/2)
+    get_downstream_node_matrix = True
+    cpu_count = 1
+    # cpu_count = int(mp.cpu_count()/2)
 
     cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
     grid_id = cfg["model"].get("grid-id")
@@ -242,39 +217,34 @@ def run_feeder_extraction():
     os.makedirs(export_path, exist_ok=True)
 
     if cpu_count > 1:
-        pool = mp.Pool(cpu_count)
-        if remove_1m_lines:
-            logger.info("Removing 1m lines")
-            pool.map_async(remove_1m_lines_from_edisgo, grid_ids).get()
-        if extract_bands:
-            logger.info("Extracting flexibility bands.")
-            pool.map_async(extract_and_save_bands_parallel, grid_ids).get()
-        if extract_feeders:
-            logger.info("Extracting feeders.")
-            pool.map_async(
-                extract_feeders_parallel, grid_ids, only_flex_ev, flexible_loads
-            ).get()
-        if get_downstream_node_matrix:
-            logger.info("Getting downstream nodes matrices")
-            grid_id_feeder_tuples = []
-            for grid_id in grid_ids:
-                feeder_dir = import_path / "feeder"
-                for feeder in os.listdir(feeder_dir):
-                    grid_id_feeder_tuples.append((grid_id, feeder))
-            pool.map_async(
-                get_downstream_node_matrix_feeders_parallel_server,
-                grid_id_feeder_tuples,
-            ).get()
-        pool.close()
+        # pool = mp.Pool(cpu_count)
+        # if remove_1m_lines:
+        #     logger.info("Removing 1m lines")
+        #     pool.map_async(remove_1m_lines_from_edisgo, grid_ids).get()
+        # if extract_feeders:
+        #     logger.info("Extracting feeders.")
+        #     pool.map_async(
+        #         extract_feeders_parallel, grid_ids, only_flex_ev, flexible_loads
+        #     ).get()
+        # if get_downstream_node_matrix:
+        #     logger.info("Getting downstream nodes matrices")
+        #     grid_id_feeder_tuples = []
+        #     for grid_id in grid_ids:
+        #         feeder_dir = import_path / "feeder"
+        #         for feeder in os.listdir(feeder_dir):
+        #             grid_id_feeder_tuples.append((grid_id, feeder))
+        #     pool.map_async(
+        #         get_downstream_node_matrix_feeders_parallel_server,
+        #         grid_id_feeder_tuples,
+        #     ).get()
+        # pool.close()
+        pass
     else:
         for grid_id in grid_ids:
             logger.info("Preparing grid {}".format(grid_id))
             if remove_1m_lines:
                 logger.info("Removing 1m lines")
                 remove_1m_lines_from_edisgo_parallel(import_path, export_path)
-            if extract_bands:
-                logger.info("Extracting flexibility bands.")
-                extract_and_save_bands_parallel(grid_id)
             if extract_feeders:
                 logger.info("Extracting feeders.")
                 extract_feeders_parallel(
