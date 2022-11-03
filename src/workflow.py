@@ -24,7 +24,7 @@ for mvgd in multi_grid_ids:
         edisgo_obj=edisgo_obj, grid_id=mvgd, save=True, to_freq="1h"
     )
 
-    # resample to 1h resolution
+    # # resample to 1h resolution
     # logger.info("Resample to 1h resolution")
     # edisgo_obj.resample_timeseries(method="ffill", freq="1h")
 
@@ -33,6 +33,7 @@ for mvgd in multi_grid_ids:
     edisgo_obj = run_hp_integration(edisgo_obj=edisgo_obj, grid_id=mvgd, save=True)
 
     # bess integration
+    # residential mit pv_rooftop
 
     # feeder extraction
 

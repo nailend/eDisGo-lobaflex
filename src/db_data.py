@@ -498,8 +498,7 @@ def calc_cts_building_profiles(
 def identify_similar_mvgd(number_of_residentials):
 
     logger.info(
-        f"Looking for MVGD with more then {number_of_residentials} "
-        f"residentials."
+        f"Looking for MVGD with more then {number_of_residentials} residentials."
     )
     with db.session_scope() as session:
         cells_query = (
@@ -507,8 +506,10 @@ def identify_similar_mvgd(number_of_residentials):
                 egon_map_zensus_mvgd_buildings.bus_id,
                 func.count(egon_map_zensus_mvgd_buildings.building_id).label("count"),
             )
-            .filter(egon_map_zensus_mvgd_buildings.sector == "residential",
-                    egon_map_zensus_mvgd_buildings.heat == True)
+            .filter(
+                egon_map_zensus_mvgd_buildings.sector == "residential",
+                egon_map_zensus_mvgd_buildings.heat == "True",
+            )
             .group_by(egon_map_zensus_mvgd_buildings.bus_id)
         )
 
