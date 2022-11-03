@@ -33,7 +33,7 @@ def run_load_integration(edisgo_obj=False, grid_id=False, save=False):
         edisgo_obj = EDisGo(ding0_grid=ding0_grid)
 
     # set up time series
-    timeindex = pd.date_range("1/1/2011", periods=24 * 7, freq="H")
+    timeindex = pd.date_range("1/1/2011", periods=8760, freq="H")
     edisgo_obj.set_timeindex(timeindex)
     edisgo_obj.set_time_series_active_power_predefined(
         fluctuating_generators_ts="oedb",
