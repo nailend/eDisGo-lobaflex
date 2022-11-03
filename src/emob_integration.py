@@ -52,6 +52,8 @@ def run_emob_integration(edisgo_obj=False, grid_id=False, save=False, to_freq="1
     logger.info(f"Resample timeseries to {to_freq}.")
     edisgo_obj.resample_timeseries(method="ffill", freq=to_freq)
 
+    edisgo_obj.apply_charging_strategy()
+
     logger.info("Calculate flexibility bands")
     flex_bands = edisgo_obj.electromobility.get_flexibility_bands(
         edisgo_obj, ["home", "work"]

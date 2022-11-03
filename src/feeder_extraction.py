@@ -2,11 +2,12 @@
 import multiprocessing as mp
 import os
 import traceback
-
+import warnings
 from pathlib import Path
 
 import networkx as nx
 import pandas as pd
+from logger import logger
 
 from edisgo.edisgo import import_edisgo_from_files
 
@@ -34,7 +35,7 @@ def remove_1m_lines_from_edisgo_parallel(import_path, export_path):
     edisgo = import_edisgo_from_files(import_path)
     no_bus_pre = len(edisgo.topology.buses_df)
     no_line_pre = len(edisgo.topology.lines_df)
-    print(
+    logger.info(
         "Grid has {} buses and {} lines before reduction".format(
             no_bus_pre, no_line_pre
         )
@@ -42,12 +43,12 @@ def remove_1m_lines_from_edisgo_parallel(import_path, export_path):
     edisgo = remove_1m_lines_from_edisgo(edisgo)
     no_bus_after = len(edisgo.topology.buses_df)
     no_line_after = len(edisgo.topology.lines_df)
-    print(
+    logger.info(
         "Grid has {} buses and {} lines after reduction".format(
             no_bus_after, no_line_after
         )
     )
-    print(
+    logger.info(
         "{} buses and {} lines removed".format(
             no_bus_pre - no_bus_after, no_bus_pre - no_line_after
         )
@@ -58,7 +59,7 @@ def remove_1m_lines_from_edisgo_parallel(import_path, export_path):
 def extract_and_save_bands_parallel(grid_id):
     try:
         for use_case in ["home", "work"]:
-            print("Extracting bands for {}-{}".format(grid_id, use_case))
+            logger.info("Extracting bands for {}-{}".format(grid_id, use_case))
             edisgo_obj = import_edisgo_from_files(
                 data_dir + r"\{}\dumb".format(grid_id),
                 import_timeseries=True,
@@ -75,13 +76,14 @@ def extract_and_save_bands_parallel(grid_id):
             upper.to_csv(
                 data_dir + r"\{}\upper_energy_{}.csv".format(grid_id, use_case)
             )
-            print("Successfully created bands for {}-{}".format(grid_id, use_case))
+            logger.info("Successfully created bands for {}-{}".format(grid_id, use_case))
     except Exception:
-        print("Something went wrong with {}-{}".format(grid_id, use_case))
-        print(traceback.format_exc())
+        logger.info("Something went wrong with {}-{}".format(grid_id, use_case))
+        logger.info(traceback.format_exc())
 
 
-def extract_feeders_parallel(import_path, export_path, only_flex_ev):
+def extract_feeders_parallel(import_path, export_path, only_flex_ev: bool,
+                             flexible_loads: bool):
 
     # try:
 
@@ -91,12 +93,29 @@ def extract_feeders_parallel(import_path, export_path, only_flex_ev):
         import_electromobility=True,
         import_heat_pump=True,
     )
+
+    # filter flexible loads
+    #     - heat_pump
+    #       - charging_point
+    #           - home
+    #           - work
+    if flexible_loads:
+        flexible_loads = edisgo_obj.topology.loads_df.loc[
+            edisgo_obj.topology.loads_df["type"].isin(["heat_pump",
+                                                       "charging_point"])]
+
+        flexible_loads = flexible_loads.drop(
+            flexible_loads.loc[(flexible_loads["type"] == "charging_point") &
+                               (flexible_loads["sector"] == "public")].index)
+        flexible_loads = flexible_loads.index.to_list()
+
     extract_feeders_nx(
-        edisgo_obj=edisgo_obj, save_dir=export_path, only_flex_ev=only_flex_ev
+        edisgo_obj=edisgo_obj, save_dir=export_path, only_flex_ev=only_flex_ev,
+        flexible_loads=flexible_loads
     )
     # except Exception as e:
-    #     print("Problem in grid {}.".format(grid_id))
-    #     print(e)
+    #     logger.info("Problem in grid {}.".format(grid_id))
+    #     logger.info(e)
 
 
 def get_downstream_node_matrix_feeders_parallel_server(
@@ -104,9 +123,9 @@ def get_downstream_node_matrix_feeders_parallel_server(
 ):
     grid_id = grid_id_feeder_tuple[0]
     feeder_id = grid_id_feeder_tuple[1]
-    edisgo_dir = import_path / "feeder" / str(feeder_id)
+
     if os.path.isfile(
-        export_path + "/downstream_node_matrix_{}_{}.csv".format(grid_id, feeder_id)
+        export_path / f"downstream_node_matrix_{grid_id}_{feeder_id}.csv"
     ):
         return
     try:
@@ -120,12 +139,12 @@ def get_downstream_node_matrix_feeders_parallel_server(
             edisgo_obj.topology
         )
         downstream_node_matrix.to_csv(
-            edisgo_dir + "/downstream_node_matrix_{}_{}.csv".format(grid_id, feeder_id)
+            export_path / f"downstream_node_matrix_{grid_id}_{feeder_id}.csv"
         )
     except Exception as e:
-        print("Problem in feeder {} of grid {}.".format(feeder_id, grid_id))
-        print(e.args)
-        print(e)
+        logger.info("Problem in feeder {} of grid {}.".format(feeder_id, grid_id))
+        logger.info(e.args)
+        logger.info(e)
     return
 
 
@@ -161,12 +180,12 @@ def get_downstream_nodes_matrix_iterative(grid):
         # current_bus = current_feeder.pop()
         downstream_node_matrix.loc[current_feeder, current_bus] = 1
         visited_buses.append(current_bus)
-        if len(visited_buses) % 10 == 0:
-            print(
-                "{} % of the buses have been checked".format(
-                    len(visited_buses) / len(buses) * 100
-                )
-            )
+        # if len(visited_buses) % 10 == 0:
+        #     logger.info(
+        #         "{} % of the buses have been checked".format(
+        #             len(visited_buses) / len(buses) * 100
+        #         )
+        #     )
         current_feeder.pop()
 
     buses = grid.buses_df.index.values
@@ -178,11 +197,11 @@ def get_downstream_nodes_matrix_iterative(grid):
         slack = grid.transformers_df.bus1.iloc[0]
     tree = nx.bfs_tree(graph, slack)
 
-    print("Matrix for {} buses is extracted.".format(len(buses)))
+    logger.info("Matrix for {} buses is extracted.".format(len(buses)))
     downstream_node_matrix = pd.DataFrame(columns=buses, index=buses)
     downstream_node_matrix.fillna(0, inplace=True)
 
-    print("Starting iteration.")
+    logger.info("Starting iteration.")
     visited_buses = []
     current_feeder = []
 
@@ -196,12 +215,14 @@ def get_downstream_nodes_matrix_iterative(grid):
 @timeit
 def run_feeder_extraction():
 
+    warnings.simplefilter(action='ignore', category=FutureWarning)
     only_flex_ev = False
     use_mp = False
     remove_1m_lines = False
     extract_bands = False
     extract_feeders = True
-    get_downstream_node_matrix = True
+    flexible_loads = True
+    get_downstream_node_matrix = False
     cpu_count = 1  # int(mp.cpu_count()/2)
 
     cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
@@ -212,20 +233,25 @@ def run_feeder_extraction():
     import_path = data_dir / import_dir / str(grid_id)
     export_dir = cfg["directories"]["feeder_extraction"].get("export")
     export_path = data_dir / export_dir / str(grid_id)
+    os.makedirs(export_path, exist_ok=True)
 
     if cpu_count > 1:
         pool = mp.Pool(cpu_count)
         if remove_1m_lines:
-            print("Removing 1m lines")
+            logger.info("Removing 1m lines")
             pool.map_async(remove_1m_lines_from_edisgo, grid_ids).get()
         if extract_bands:
-            print("Extracting flexibility bands.")
+            logger.info("Extracting flexibility bands.")
             pool.map_async(extract_and_save_bands_parallel, grid_ids).get()
         if extract_feeders:
-            print("Extracting feeders.")
-            pool.map_async(extract_feeders_parallel, grid_ids, only_flex_ev).get()
+            logger.info("Extracting feeders.")
+            pool.map_async(extract_feeders_parallel,
+                           grid_ids,
+                           only_flex_ev,
+                           flexible_loads
+            ).get()
         if get_downstream_node_matrix:
-            print("Getting downstream nodes matrices")
+            logger.info("Getting downstream nodes matrices")
             grid_id_feeder_tuples = []
             for grid_id in grid_ids:
                 feeder_dir = import_path / "feeder"
@@ -238,41 +264,32 @@ def run_feeder_extraction():
         pool.close()
     else:
         for grid_id in grid_ids:
-            print("Preparing grid {}".format(grid_id))
+            logger.info("Preparing grid {}".format(grid_id))
             if remove_1m_lines:
-                print("Removing 1m lines")
+                logger.info("Removing 1m lines")
                 remove_1m_lines_from_edisgo_parallel(import_path, export_path)
             if extract_bands:
-                print("Extracting flexibility bands.")
+                logger.info("Extracting flexibility bands.")
                 extract_and_save_bands_parallel(grid_id)
             if extract_feeders:
-                print("Extracting feeders.")
-                extract_feeders_parallel(import_path, export_path, only_flex_ev)
+                logger.info("Extracting feeders.")
+                extract_feeders_parallel(import_path,
+                                         export_path,
+                                         only_flex_ev,
+                                         flexible_loads=flexible_loads)
             if get_downstream_node_matrix:
-                print("Getting downstream nodes matrices")
-                feeder_dir = import_path / "feeder"
-                for feeder in os.listdir(feeder_dir):
+                logger.info("Getting downstream nodes matrices")
+                feeder_dir = export_path / "feeder"
+                for feeder in sorted(os.listdir(feeder_dir)):
+                    logger.info(f"Feeder: {feeder} of grid: {grid_id}")
                     get_downstream_node_matrix_feeders_parallel_server(
-                        import_path=export_path,
+                        import_path=feeder_dir / str(feeder),
                         export_path=export_path,
                         grid_id_feeder_tuple=(grid_id, feeder),
                     )
 
 
 if __name__ == "__main__":
-    # TODO Adapt directories
 
-    cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
-
-    grid_id = cfg["model"].get("grid-id")
-    import_dir = cfg["directories"]["feeder_extraction"].get("import")
-    export_dir = cfg["directories"]["feeder_extraction"].get("export")
-
-    strategy = "dump"
-
-    # TODO Select grids
-    # grid_ids = [176, 177, 1056, 1690, 1811, 2534]
-    # grid_ids = [2534]
-    grid_ids = [grid_id]
 
     run_feeder_extraction()
