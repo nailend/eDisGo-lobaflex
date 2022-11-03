@@ -31,7 +31,7 @@ data_dir = get_dir(key="data")
 # Topology: Remove 1m lines, extract feeders, extract downstream nodes matrix
 
 
-def remove_1m_lines_from_edisgo_parallel(import_path, export_path):
+def remove_1m_lines_from_edisgo_parallel(import_path):
 
     edisgo = import_edisgo_from_files(import_path)
     no_bus_pre = len(edisgo.topology.buses_df)
@@ -54,9 +54,8 @@ def remove_1m_lines_from_edisgo_parallel(import_path, export_path):
             no_bus_pre - no_bus_after, no_bus_pre - no_line_after
         )
     )
-    os.renames(old=import_path / "topology",
-               new=import_path / "topology_1m_lines")
-    edisgo.topology.to_csv(export_path)
+    os.renames(old=import_path / "topology", new=import_path / "topology_1m_lines")
+    edisgo.topology.to_csv(import_path)
 
 
 def extract_feeders_parallel(
@@ -244,7 +243,7 @@ def run_feeder_extraction():
             logger.info("Preparing grid {}".format(grid_id))
             if remove_1m_lines:
                 logger.info("Removing 1m lines")
-                remove_1m_lines_from_edisgo_parallel(import_path, export_path)
+                remove_1m_lines_from_edisgo_parallel(import_path)
             if extract_feeders:
                 logger.info("Extracting feeders.")
                 extract_feeders_parallel(
