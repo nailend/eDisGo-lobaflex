@@ -5,6 +5,7 @@ from pathlib import Path
 from emob_integration import run_emob_integration
 from hp_integration import run_hp_integration
 from load_integration import run_load_integration
+from feeder_extraction import run_feeder_extraction
 from logger import logger
 from tools import get_config, get_dir
 
@@ -36,6 +37,6 @@ for mvgd in multi_grid_ids:
     # residential mit pv_rooftop
 
     # feeder extraction
-
+    run_feeder_extraction()
     # model optimization
     logger.info(f"MVGD: {mvgd} done.")

@@ -93,6 +93,7 @@ def extract_feeders_parallel(
 
     edisgo_obj = import_edisgo_from_files(
         import_path,
+        import_topology=True,
         import_timeseries=True,
         import_electromobility=True,
         import_heat_pump=True,
