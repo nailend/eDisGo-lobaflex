@@ -159,18 +159,23 @@ def create_heatpumps_from_db(edisgo_obj):
     edisgo_obj.heat_pump.building_ids_df = pd.concat(
         [
             pd.Series(residential_loads.index),
-            pd.DataFrame.from_dict(map_hp_to_loads.items()),
+            pd.Series(map_hp_to_loads.keys()),
+            pd.Series(map_hp_to_loads.values()),
+            pd.Series(range(residential_loads.shape[0]))
         ],
-        keys=["residential_buildilng_id", "db_building_id", "hp_building_id"],
+        keys=["residential_building_id", "db_building_id", "hp_building_id",
+              "building_ids"
+              ],
         axis=1,
-    ).droplevel(1, axis=1)
+    )
 
     # Add to edisgo obj
     edisgo_obj.heat_pump.heat_demand_df = heat_demand_df
     edisgo_obj.heat_pump.cop_df = cop_df
     edisgo_obj.heat_pump.thermal_storage_units_df = thermal_storage_units_df
 
-    edisgo_obj.topology.loads_df = pd.concat([edisgo_obj.topology.loads_df, loads_df])
+    edisgo_obj.topology.loads_df = pd.concat(
+        [edisgo_obj.topology.loads_df, loads_df])
     logger.info(
         f"{sum(loads_df.p_set):.2f} MW of heat pumps for individual "
         f"heating integrated."
