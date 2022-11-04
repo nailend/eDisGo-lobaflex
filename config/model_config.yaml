@@ -1,5 +1,5 @@
 model:
-  grid-id: 2534
+  grid-id: 176
   multi_grid_ids: [2534, 176, 177, 1056, 1690, 1811]
   feeder: False
   feeder-id: 0
@@ -15,13 +15,15 @@ opt:
 logger:
   log_file: 'log.txt'
   log_to_file: True
-directories:
+grid_generation:
+  grids: [2534, 176, 177, 1056, 1690, 1811]
   load_integration:
     import: "elia_ding0_grids"
     export: "load_n_gen_grids"
   emob_integration:
     import: "load_n_gen_grids"
     export: "load_n_gen_n_emob_grids"
+    to_freq: "1h"
     flexbands: ""
   hp_integration:
     import: "load_n_gen_n_emob_grids"
@@ -29,4 +31,8 @@ directories:
   feeder_extraction:
     import: "load_n_gen_n_emob_n_hp_grids"
     export: "load_n_gen_n_emob_n_hp_grids_extracted"
-    settings:
+    flexible_loads: True
+    only_flex_ev: False
+  dnm_generation:
+    import: "load_n_gen_n_emob_n_hp_grids_extracted"
+    export: "downstream_node_matrix"
