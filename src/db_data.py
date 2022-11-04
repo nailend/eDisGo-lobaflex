@@ -10,10 +10,11 @@ import egon_db as db
 
 from tools import timeit
 
-saio.register_schema("demand", engine=db.engine())
-saio.register_schema("boundaries", engine=db.engine())
-saio.register_schema("supply", engine=db.engine())
-saio.register_schema("openstreetmap", engine=db.engine())
+engine = db.engine()
+saio.register_schema("demand", engine=engine)
+saio.register_schema("boundaries", engine=engine)
+saio.register_schema("supply", engine=engine)
+saio.register_schema("openstreetmap", engine=engine)
 
 from saio.boundaries import (
     egon_map_zensus_buildings_residential,
