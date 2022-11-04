@@ -202,15 +202,14 @@ def write_metadata(path, edisgo_obj):
 
 
 @timeit
-def run_hp_integration(edisgo_obj=False, grid_id=False, save=False):
+def run_hp_integration(grid_id, edisgo_obj=False, targets=False,
+                       doit=False):
 
-    cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
-    if not grid_id:
-        grid_id = cfg["model"].get("grid-id")
+    logger.info(f"Start heat pump integration for {grid_id}.")
+    cfg = get_config(path=config_dir / "model_config.yaml")
 
     if not edisgo_obj:
-
-        import_dir = cfg["directories"]["hp_integration"].get("import")
+        import_dir = cfg["grid_generation"]["hp_integration"].get("import")
         import_path = data_dir / import_dir / str(grid_id)
         logger.info(f"Import Grid from file: {import_path}")
 
@@ -227,9 +226,17 @@ def run_hp_integration(edisgo_obj=False, grid_id=False, save=False):
     edisgo_obj = create_heatpumps_from_db(edisgo_obj)
     logger.info("Added heat pumps to eDisGo")
 
-    if save:
-        export_dir = cfg["directories"]["hp_integration"].get("export")
-        export_path = data_dir / export_dir / str(grid_id)
+    if targets:
+        if isinstance(targets, Path):
+            logger.debug("Use export dir given as parameter.")
+            export_path = targets
+        elif isinstance(targets, str):
+            logger.debug("Use export dir given as parameter.")
+            export_path = Path(targets)
+        else:
+            logger.debug("Use export dir from config file.")
+            export_dir = cfg["grid_generation"]["hp_integration"].get("export")
+            export_path = data_dir / export_dir / str(grid_id)
         os.makedirs(export_path, exist_ok=True)
         edisgo_obj.save(
             export_path,
@@ -243,9 +250,12 @@ def run_hp_integration(edisgo_obj=False, grid_id=False, save=False):
         # TODO write metadata
         # write_metadata(export_path, edisgo_obj)
 
-    return edisgo_obj
+    if doit:
+        return True
+    else:
+        return edisgo_obj
 
 
 if __name__ == "__main__":
 
-    edisgo_obj = run_hp_integration()
+    edisgo_obj = run_hp_integration(grid_id=176)
