@@ -197,7 +197,7 @@ def run_feeder_extraction():
     warnings.simplefilter(action="ignore", category=FutureWarning)
     only_flex_ev = False
     use_mp = False
-    remove_1m_lines = True
+    remove_1m_lines = False
     # extract_bands = False
     extract_feeders = True
     flexible_loads = True
