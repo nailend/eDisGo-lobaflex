@@ -71,17 +71,20 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, targets=False, doit=False):
             import_timeseries=True,
             import_electromobility=True,
         )
-
-    if isinstance(targets, Path):
-        logger.debug("Use export dir given as parameter.")
-        export_path = targets
-    elif isinstance(targets, str):
-        export_path = Path(targets)
+        
+    if targets:
+        if isinstance(targets, Path):
+            logger.debug("Use export dir given as parameter.")
+            export_path = targets
+        elif isinstance(targets, str):
+            export_path = Path(targets)
+        else:
+            logger.debug("Use export dir from config file.")
+            export_dir = cfg["grid_generation"]["feeder_extraction"].get(
+                "export")
+            export_path = data_dir / export_dir / str(grid_id)
     else:
-        logger.debug("Use export dir from config file.")
-        export_dir = cfg["grid_generation"]["feeder_extraction"].get(
-            "export")
-        export_path = data_dir / export_dir / str(grid_id)
+        export_path = False
 
     os.makedirs(export_path, exist_ok=True)
 
