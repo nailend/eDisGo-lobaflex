@@ -17,15 +17,15 @@ config_dir = get_dir(key="config")
 
 
 @timeit
-def run_emob_integration(edisgo_obj=False, grid_id=False, save=False, to_freq="1h"):
+def run_emob_integration(grid_id, edisgo_obj=False,
+                         targets=False,
+                         to_freq="1h", doit=False):
 
-    cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
-    if not grid_id:
-        grid_id = cfg["model"].get("grid-id")
-
+    logger.info(f"Start emob integration for {grid_id}.")
+    cfg = get_config(path=config_dir / "model_config.yaml")
     if not edisgo_obj:
 
-        import_dir = cfg["directories"]["emob_integration"].get("import")
+        import_dir = cfg["grid_generation"]["emob_integration"].get("import")
         import_path = data_dir / import_dir / str(grid_id)
         logger.info(f"Import Grid from file: {import_path}")
 
@@ -59,9 +59,17 @@ def run_emob_integration(edisgo_obj=False, grid_id=False, save=False, to_freq="1
         edisgo_obj, ["home", "work"]
     )
 
-    if save:
-        export_dir = cfg["directories"]["emob_integration"].get("export")
-        export_path = data_dir / export_dir / str(grid_id)
+    if targets:
+        if isinstance(targets, Path):
+            logger.debug("Use export dir given as parameter.")
+            export_path = targets
+        elif isinstance(targets, str):
+            logger.debug("Use export dir given as parameter.")
+            export_path = Path(targets)
+        else:
+            logger.debug("Use export dir from config file.")
+            export_dir = cfg["grid_generation"]["emob_integration"].get("export")
+            export_path = data_dir / export_dir / str(grid_id)
         os.makedirs(export_path, exist_ok=True)
         edisgo_obj.save(
             export_path,
@@ -80,9 +88,12 @@ def run_emob_integration(edisgo_obj=False, grid_id=False, save=False, to_freq="1
             df.to_csv(f"{export_path}/{name}_flexibility_band.csv")
         logger.info(f"Flexibility bands exported to: {export_path}")
 
-    return edisgo_obj, flex_bands
+    if doit:
+        return True
+    else:
+        return edisgo_obj, flex_bands
 
 
 if __name__ == "__main__":
 
-    edisgo_obj, flex_bands = run_emob_integration(save=True)
+    edisgo_obj, flex_bands = run_emob_integration(grid_id=176)
