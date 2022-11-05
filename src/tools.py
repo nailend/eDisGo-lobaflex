@@ -186,3 +186,18 @@ def timeit(func):
         return result
 
     return measure_time
+
+
+def write_metadata(path, edisgo_obj):
+    """"""
+
+    # TODO generate metadat from edisgo_obj
+    # copy from  check_integrity
+    # edisgo_obj
+    metadata = ["This is Delhi \n", "This is Paris \n", "This is London \n"]
+    grid_id = edisgo_obj.topology.mv_grid
+    # Writing to file
+    with open(Path(f"{path}/metadata.md"), "w") as file:
+        # Writing data to a file
+        file.write(f"METADATA for Grid {grid_id} \n {'*'*20} \n \n")
+        file.writelines(metadata)

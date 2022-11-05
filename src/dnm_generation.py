@@ -9,7 +9,7 @@ from edisgo.edisgo import import_edisgo_from_files
 
 from edisgo.network.topology import Topology
 from logger import logger
-from tools import get_config, get_dir, timeit
+from tools import get_config, get_dir, timeit, write_metadata
 
 
 config_dir = get_dir(key="config")
@@ -142,6 +142,7 @@ def run_dnm_generation(grid_id, targets=False, doit=False):
             downstream_node_matrix.to_csv(
                 export_path / f"downstream_node_matrix_{grid_id}_{feeder}.csv"
             )
+            write_metadata(export_path, edisgo_obj)
 
     if doit:
         return True

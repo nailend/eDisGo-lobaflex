@@ -7,7 +7,7 @@ import pandas as pd
 from edisgo.edisgo import import_edisgo_from_files
 
 from logger import logger
-from tools import get_config, get_dir, timeit
+from tools import get_config, get_dir, timeit, write_metadata
 
 # import pandas as pd
 
@@ -82,11 +82,12 @@ def run_emob_integration(grid_id, edisgo_obj=False,
                 "flexibility_bands",
             ],
         )
+        write_metadata(export_path, edisgo_obj)
         logger.info(f"Saved grid to {export_path}")
 
-        for name, df in flex_bands.items():
-            df.to_csv(f"{export_path}/{name}_flexibility_band.csv")
-        logger.info(f"Flexibility bands exported to: {export_path}")
+        # for name, df in flex_bands.items():
+        #     df.to_csv(f"{export_path}/{name}_flexibility_band.csv")
+        # logger.info(f"Flexibility bands exported to: {export_path}")
 
     if doit:
         return True

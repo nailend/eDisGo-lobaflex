@@ -7,7 +7,7 @@ import pandas as pd
 from edisgo.edisgo import EDisGo
 
 from logger import logger
-from tools import get_config, get_dir, timeit
+from tools import get_config, get_dir, timeit, write_metadata
 
 logs_dir = get_dir(key="logs")
 data_dir = get_dir(key="data")
@@ -58,6 +58,7 @@ def run_load_integration(grid_id, edisgo_obj=False, targets=False,
             save_topology=True,
             save_timeseries=True,
         )
+        write_metadata(export_path, edisgo_obj)
         logger.info(f"Saved grid to {export_path}")
 
     if doit:

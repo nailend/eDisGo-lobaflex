@@ -13,7 +13,7 @@ from edisgo.tools.complexity_reduction import (
 )
 
 from logger import logger
-from tools import get_config, get_dir, timeit
+from tools import get_config, get_dir, timeit, write_metadata
 
 config_dir = get_dir(key="config")
 data_dir = get_dir(key="data")
@@ -71,7 +71,7 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, targets=False, doit=False):
             import_timeseries=True,
             import_electromobility=True,
         )
-        
+
     if targets:
         if isinstance(targets, Path):
             logger.debug("Use export dir given as parameter.")
@@ -94,7 +94,9 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, targets=False, doit=False):
         only_flex_ev=only_flex_ev,
         flexible_loads=flexible_loads,
     )
-
+    for feeder_id in len(feeders):
+        export_path = export_path / "feeder" / str(feeder_id)
+        write_metadata(export_path, edisgo_obj=feeders[feeder_id])
     if doit:
         return True
     else:

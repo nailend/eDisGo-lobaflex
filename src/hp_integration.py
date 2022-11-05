@@ -16,7 +16,7 @@ from db_data import (
     identify_similar_mvgd,
 )
 from logger import logger
-from tools import get_config, get_dir, timeit
+from tools import get_config, get_dir, timeit, write_metadata
 
 logs_dir = get_dir(key="logs")
 data_dir = get_dir(key="data")
@@ -186,20 +186,6 @@ def create_heatpumps_from_db(edisgo_obj):
     return edisgo_obj
 
 
-def write_metadata(path, edisgo_obj):
-    """"""
-
-    # TODO generate metadat from edisgo_obj
-    # copy from  check_integrity
-    # edisgo_obj
-    metadata = ["This is Delhi \n", "This is Paris \n", "This is London \n"]
-    grid_id = edisgo_obj.topology.mv_grid
-    # Writing to file
-    with open(Path(f"{path}/metadata.md"), "w") as file:
-        # Writing data to a file
-        file.write(f"METADATA for Grid {grid_id} \n {'*'*20} \n \n")
-        file.writelines(metadata)
-
 
 @timeit
 def run_hp_integration(grid_id, edisgo_obj=False, targets=False,
@@ -245,6 +231,7 @@ def run_hp_integration(grid_id, edisgo_obj=False, targets=False,
             save_electromobility=True,
             save_heatpump=True,
         )
+        write_metadata(export_path, edisgo_obj)
         logger.info(f"Saved grid to {export_path}")
 
         # TODO write metadata

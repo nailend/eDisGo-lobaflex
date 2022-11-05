@@ -28,7 +28,7 @@ def load_integration_task(mvgd):
         'doc': 'docs for X',
         'targets': [data_dir / export_dir / str(mvgd)],
         'file_dep': [config_dir / "model_config.yaml",
-                     data_dir / import_dir / str(mvgd)
+                     data_dir / import_dir / str(mvgd) / "metadata.md"
                      ],
         'verbosity': 2,
         }
@@ -50,7 +50,7 @@ def emob_integration_task(mvgd):
         'doc': 'docs for X',
         'targets': [data_dir / export_dir / str(mvgd)],
         'file_dep': [config_dir / "model_config.yaml",
-                     data_dir / import_dir / str(mvgd)
+                     data_dir / import_dir / str(mvgd) / "metadata.md"
                      ],
         'verbosity': 2,
         }
@@ -70,7 +70,7 @@ def hp_integration_task(mvgd):
         'doc': 'docs for X',
         'targets': [data_dir / export_dir / str(mvgd)],
         'file_dep': [config_dir / "model_config.yaml",
-                     data_dir / import_dir / str(mvgd)
+                     data_dir / import_dir / str(mvgd) / "metadata.md"
                      ],
         'verbosity': 2,
         }
@@ -90,7 +90,7 @@ def feeder_extraction_task(mvgd):
         'doc': 'docs for X',
         'targets': [data_dir / export_dir / str(mvgd)],
         'file_dep': [config_dir / "model_config.yaml",
-                     data_dir / import_dir / str(mvgd)
+                     data_dir / import_dir / str(mvgd) / "metadata.md"
                      ],
         'verbosity': 2,
         }
@@ -110,7 +110,7 @@ def dnm_generation_task(mvgd):
         'doc': 'docs for X',
         'targets': [data_dir / export_dir / str(mvgd)],
         'file_dep': [config_dir / "model_config.yaml",
-                     data_dir / import_dir / str(mvgd)
+                     data_dir / import_dir / str(mvgd) / "metadata.md"
                      ],
         'verbosity': 2,
         }
