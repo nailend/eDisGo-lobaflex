@@ -188,7 +188,7 @@ def timeit(func):
     return measure_time
 
 
-def write_metadata(path, edisgo_obj):
+def write_metadata(path, edisgo_obj, text=False):
     """"""
 
     # TODO generate metadat from edisgo_obj
@@ -201,3 +201,6 @@ def write_metadata(path, edisgo_obj):
         # Writing data to a file
         file.write(f"METADATA for Grid {grid_id} \n {'*'*20} \n \n")
         file.writelines(metadata)
+        if text:
+            file.writelines(f"\n {'*'*20} \n {text}")
+

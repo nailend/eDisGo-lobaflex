@@ -15,7 +15,7 @@ config_dir = get_dir(key="config")
 
 
 @timeit
-def run_load_integration(grid_id, edisgo_obj=False, targets=False, doit=False):
+def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
 
     logger.info(f"Start load integration for {grid_id}.")
     cfg = get_config(path=config_dir / "model_config.yaml")
@@ -26,6 +26,8 @@ def run_load_integration(grid_id, edisgo_obj=False, targets=False, doit=False):
 
         ding0_grid = data_dir / import_dir / str(grid_id)
         edisgo_obj = EDisGo(ding0_grid=ding0_grid)
+        logger.info(f"Grid {grid_id} imported")
+
 
     # set up time series
     timeindex = pd.date_range("1/1/2011", periods=8760, freq="H")
@@ -37,19 +39,24 @@ def run_load_integration(grid_id, edisgo_obj=False, targets=False, doit=False):
         ),
         conventional_loads_ts="demandlib",
     )
+    logger.info(f"Timeseries imported.")
     edisgo_obj.set_time_series_reactive_power_control()
+    logger.info(f"Reactive power is set.")
 
-    if targets:
-        if isinstance(targets, Path):
-            logger.debug("Use export dir given as parameter.")
-            export_path = targets
-        elif isinstance(targets, str):
-            logger.debug("Use export dir given as parameter.")
-            export_path = Path(targets)
-        else:
-            logger.debug("Use export dir from config file.")
-            export_dir = cfg["grid_generation"]["load_integration"].get("export")
-            export_path = data_dir / export_dir / str(grid_id)
+    if save:
+        # if isinstance(targets, Path):
+        #     logger.debug("Use export dir given as parameter.")
+        #     export_path = targets
+        # elif isinstance(targets, str):
+        #     logger.debug("Use export dir given as parameter.")
+        #     export_path = Path(targets)
+        # else:
+        #     logger.debug("Use export dir from config file.")
+        #     export_dir = cfg["grid_generation"]["load_integration"].get("export")
+        #     export_path = data_dir / export_dir / str(grid_id)
+
+        export_dir = cfg["grid_generation"]["load_integration"].get("export")
+        export_path = data_dir / export_dir / str(grid_id)
 
         os.makedirs(export_path, exist_ok=True)
         edisgo_obj.save(

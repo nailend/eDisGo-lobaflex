@@ -18,7 +18,7 @@ config_dir = get_dir(key="config")
 
 @timeit
 def run_emob_integration(
-    grid_id, edisgo_obj=False, targets=False, to_freq="1h", doit=False
+    grid_id, edisgo_obj=False, save=False, to_freq="1h", doit=False
 ):
 
     logger.info(f"Start emob integration for {grid_id}.")
@@ -59,17 +59,17 @@ def run_emob_integration(
         edisgo_obj, ["home", "work"]
     )
 
-    if targets:
-        if isinstance(targets, Path):
-            logger.debug("Use export dir given as parameter.")
-            export_path = targets
-        elif isinstance(targets, str):
-            logger.debug("Use export dir given as parameter.")
-            export_path = Path(targets)
-        else:
-            logger.debug("Use export dir from config file.")
-            export_dir = cfg["grid_generation"]["emob_integration"].get("export")
-            export_path = data_dir / export_dir / str(grid_id)
+    if save:
+        # if isinstance(targets, Path):
+        #     logger.debug("Use export dir given as parameter.")
+        #     export_path = targets
+        # elif isinstance(targets, str):
+        #     logger.debug("Use export dir given as parameter.")
+        #     export_path = Path(targets)
+        # else:
+        logger.debug("Use export dir from config file.")
+        export_dir = cfg["grid_generation"]["emob_integration"].get("export")
+        export_path = data_dir / export_dir / str(grid_id)
         os.makedirs(export_path, exist_ok=True)
         edisgo_obj.save(
             export_path,

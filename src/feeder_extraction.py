@@ -43,7 +43,7 @@ def extract_feeders_parallel(
 
 
 @timeit
-def run_feeder_extraction(grid_id, edisgo_obj=False, targets=False, doit=False):
+def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
 
     logger.info(f"Extracting feeders of {grid_id}.")
 
@@ -67,30 +67,37 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, targets=False, doit=False):
             import_electromobility=True,
         )
 
-    if targets:
-        if isinstance(targets, Path):
-            logger.debug("Use export dir given as parameter.")
-            export_path = targets
-        elif isinstance(targets, str):
-            export_path = Path(targets)
-        else:
-            logger.debug("Use export dir from config file.")
-            export_dir = cfg["grid_generation"]["feeder_extraction"].get("export")
-            export_path = data_dir / export_dir / str(grid_id)
+    if save:
+        # if isinstance(targets, Path):
+        #     logger.debug("Use export dir given as parameter.")
+        #     export_path = targets
+        # elif isinstance(targets, str):
+        #     export_path = Path(targets)
+        # else:
+        logger.debug("Use export dir from config file.")
+        export_dir = cfg["grid_generation"]["feeder_extraction"].get("export")
+        export_path = data_dir / export_dir / str(grid_id)
+        os.makedirs(export_path, exist_ok=True)
+
+        feeders, buses_with_feeders = extract_feeders_parallel(
+            edisgo_obj=edisgo_obj,
+            export_path=export_path,
+            only_flex_ev=only_flex_ev,
+            flexible_loads=flexible_loads,
+        )
+        for feeder_id in len(feeders):
+            write_metadata(export_path / "feeder" / str(feeder_id),
+                           edisgo_obj=feeders[feeder_id])
+        write_metadata(export_path, edisgo_obj=edisgo_obj)
+
     else:
-        export_path = False
+        feeders, buses_with_feeders = extract_feeders_parallel(
+            edisgo_obj=edisgo_obj,
+            export_path=False,
+            only_flex_ev=only_flex_ev,
+            flexible_loads=flexible_loads,
+        )
 
-    os.makedirs(export_path, exist_ok=True)
-
-    feeders, buses_with_feeders = extract_feeders_parallel(
-        edisgo_obj=edisgo_obj,
-        export_path=export_path,
-        only_flex_ev=only_flex_ev,
-        flexible_loads=flexible_loads,
-    )
-    for feeder_id in len(feeders):
-        export_path = export_path / "feeder" / str(feeder_id)
-        write_metadata(export_path, edisgo_obj=feeders[feeder_id])
     if doit:
         return True
     else:

@@ -53,7 +53,25 @@ def get_downstream_matrix(import_path, edisgo_obj):
     return downstream_nodes_matrix
 
 
-if __name__ == "__main__":
+def run_optimization():
+
+    cfg = get_config(Path(f"{config_dir}/model_config.yaml"))
+    if not grid_id:
+        grid_id = cfg["model"].get("grid-id")
+
+    if not edisgo_obj:
+
+        import_dir = cfg["directories"]["hp_integration"].get("import")
+        import_path = data_dir / import_dir / str(grid_id)
+        logger.info(f"Import Grid from file: {import_path}")
+
+        edisgo_obj = import_edisgo_from_files(
+            import_path,
+            import_topology=True,
+            import_timeseries=True,
+            import_heat_pump=True,
+            import_electromobility=True,
+        )
 
     cfg = get_config(Path(config_dir) / "model_config.yaml")
     cfg_m = cfg["model"]

@@ -82,7 +82,7 @@ def get_downstream_nodes_matrix_iterative(grid):
 
 
 @timeit
-def run_dnm_generation(grid_id, targets=False, doit=False):
+def run_dnm_generation(grid_id, save=False, doit=False):
 
     logger.info(f"Extracting feeders of {grid_id}.")
 
@@ -93,24 +93,26 @@ def run_dnm_generation(grid_id, targets=False, doit=False):
     import_dir = cfg["grid_generation"]["feeder_extraction"].get("import")
     import_path = data_dir / import_dir / str(grid_id)
 
-    if isinstance(targets, Path):
-        logger.debug("Use export dir given as parameter.")
-        export_path = targets
-    elif isinstance(targets, str):
-        logger.debug("Use export dir given as parameter.")
-        export_path = Path(targets)
-    else:
-        logger.debug("Use export dir from config file.")
-        export_dir = cfg["grid_generation"]["feeder_extraction"].get("export")
-        export_path = data_dir / export_dir / str(grid_id)
+    # if isinstance(targets, Path):
+    #     logger.debug("Use export dir given as parameter.")
+    #     export_path = targets
+    # elif isinstance(targets, str):
+    #     logger.debug("Use export dir given as parameter.")
+    #     export_path = Path(targets)
+    # else:
+    logger.debug("Use export dir from config file.")
+    export_dir = cfg["grid_generation"]["feeder_extraction"].get("export")
+    export_path = data_dir / export_dir / str(grid_id)
 
     feeder_dir = export_path / "feeder"
     feeder_list = sorted(os.listdir(feeder_dir))
-    logger.info(f"Getting downstream nodes matrices of {len(feeder_list)} " f"feeder.")
+    logger.info(f"Getting downstream nodes matrices of {len(feeder_list)} "
+                f"feeder.")
     for feeder in sorted(os.listdir(feeder_dir)):
 
         logger.info(
-            f"Generate downstream node matrix. \n" f"Feeder {feeder} of grid: {grid_id}"
+            f"Generate downstream node matrix. \n" f"Feeder {feeder} of grid:"
+            f" {grid_id}"
         )
 
         edisgo_obj = import_edisgo_from_files(
@@ -124,24 +126,27 @@ def run_dnm_generation(grid_id, targets=False, doit=False):
         # if os.path.isfile(export_path / f"downstream_node_matrix_{grid_id}"
         #                                 f"_{feeder}.csv"):
         #     continue
+
         downstream_node_matrix = get_downstream_nodes_matrix_iterative(
             edisgo_obj.topology
         )
 
-        if targets:
-            if isinstance(targets, Path):
-                export_path = targets
-            elif isinstance(targets, str):
-                export_path = Path(targets)
-            else:
-                export_dir = cfg["grid_generation"]["feeder_extraction"].get("export")
-                export_path = data_dir / export_dir / str(grid_id)
+        if save:
+            # if isinstance(targets, Path):
+            #     export_path = targets
+            # elif isinstance(targets, str):
+            #     export_path = Path(targets)
+            # else:
+            export_dir = cfg["grid_generation"]["feeder_extraction"].get("export")
+            export_path = data_dir / export_dir / str(grid_id)
             os.makedirs(export_path, exist_ok=True)
 
             downstream_node_matrix.to_csv(
-                export_path / f"downstream_node_matrix_{grid_id}_{feeder}.csv"
-            )
-            write_metadata(export_path, edisgo_obj)
+                export_path / f"downstream_node_matrix_{grid_id}_"
+                              f"{feeder}.csv")
+        if save:
+            write_metadata(export_path, edisgo_obj,
+                           text=f"Downstream Node Matrix of {feeder+1} feeder")
 
     if doit:
         return True

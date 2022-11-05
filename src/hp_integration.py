@@ -187,7 +187,7 @@ def create_heatpumps_from_db(edisgo_obj):
 
 
 @timeit
-def run_hp_integration(grid_id, edisgo_obj=False, targets=False, doit=False):
+def run_hp_integration(grid_id, edisgo_obj=False, save=False, doit=False):
 
     logger.info(f"Start heat pump integration for {grid_id}.")
     cfg = get_config(path=config_dir / "model_config.yaml")
@@ -210,17 +210,17 @@ def run_hp_integration(grid_id, edisgo_obj=False, targets=False, doit=False):
     edisgo_obj = create_heatpumps_from_db(edisgo_obj)
     logger.info("Added heat pumps to eDisGo")
 
-    if targets:
-        if isinstance(targets, Path):
-            logger.debug("Use export dir given as parameter.")
-            export_path = targets
-        elif isinstance(targets, str):
-            logger.debug("Use export dir given as parameter.")
-            export_path = Path(targets)
-        else:
-            logger.debug("Use export dir from config file.")
-            export_dir = cfg["grid_generation"]["hp_integration"].get("export")
-            export_path = data_dir / export_dir / str(grid_id)
+    if save:
+        # if isinstance(targets, Path):
+        #     logger.debug("Use export dir given as parameter.")
+        #     export_path = targets
+        # elif isinstance(targets, str):
+        #     logger.debug("Use export dir given as parameter.")
+        #     export_path = Path(targets)
+        # else:
+        logger.debug("Use export dir from config file.")
+        export_dir = cfg["grid_generation"]["hp_integration"].get("export")
+        export_path = data_dir / export_dir / str(grid_id)
         os.makedirs(export_path, exist_ok=True)
         edisgo_obj.save(
             export_path,
