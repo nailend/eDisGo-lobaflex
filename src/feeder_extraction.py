@@ -6,11 +6,7 @@ import warnings
 from pathlib import Path
 
 from edisgo.edisgo import import_edisgo_from_files
-
-
-from edisgo.tools.complexity_reduction import (
-    extract_feeders_nx,
-)
+from edisgo.tools.complexity_reduction import extract_feeders_nx
 
 from logger import logger
 from tools import get_config, get_dir, timeit, write_metadata
@@ -19,15 +15,14 @@ config_dir = get_dir(key="config")
 data_dir = get_dir(key="data")
 
 
-def extract_feeders_parallel(edisgo_obj, export_path, flexible_loads,
-                             only_flex_ev=False
+def extract_feeders_parallel(
+    edisgo_obj, export_path, flexible_loads, only_flex_ev=False
 ):
 
     # filter flexible loads: heat_pump, charging_point [home, work]
     if flexible_loads:
         flexible_loads = edisgo_obj.topology.loads_df.loc[
-            edisgo_obj.topology.loads_df["type"].isin(["heat_pump",
-                                                       "charging_point"])
+            edisgo_obj.topology.loads_df["type"].isin(["heat_pump", "charging_point"])
         ]
 
         flexible_loads = flexible_loads.drop(
@@ -45,6 +40,8 @@ def extract_feeders_parallel(edisgo_obj, export_path, flexible_loads,
         flexible_loads=flexible_loads,
     )
     return feeders, buses_with_feeders
+
+
 @timeit
 def run_feeder_extraction(grid_id, edisgo_obj=False, targets=False, doit=False):
 
@@ -54,10 +51,8 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, targets=False, doit=False):
 
     cfg = get_config(path=config_dir / "model_config.yaml")
 
-    only_flex_ev = cfg["grid_generation"]["feeder_extraction"].get(
-        "only_flex_ev")
-    flexible_loads = cfg["grid_generation"]["feeder_extraction"].get(
-        "flexible_loads")
+    only_flex_ev = cfg["grid_generation"]["feeder_extraction"].get("only_flex_ev")
+    flexible_loads = cfg["grid_generation"]["feeder_extraction"].get("flexible_loads")
 
     import_dir = cfg["grid_generation"]["feeder_extraction"].get("import")
     import_path = data_dir / import_dir / str(grid_id)
@@ -80,8 +75,7 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, targets=False, doit=False):
             export_path = Path(targets)
         else:
             logger.debug("Use export dir from config file.")
-            export_dir = cfg["grid_generation"]["feeder_extraction"].get(
-                "export")
+            export_dir = cfg["grid_generation"]["feeder_extraction"].get("export")
             export_path = data_dir / export_dir / str(grid_id)
     else:
         export_path = False

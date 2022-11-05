@@ -1,16 +1,17 @@
 """"""
 import os
 import warnings
+
 from pathlib import Path
+
 import networkx as nx
 import pandas as pd
 
 from edisgo.edisgo import import_edisgo_from_files
-
 from edisgo.network.topology import Topology
+
 from logger import logger
 from tools import get_config, get_dir, timeit, write_metadata
-
 
 config_dir = get_dir(key="config")
 data_dir = get_dir(key="data")
@@ -100,18 +101,17 @@ def run_dnm_generation(grid_id, targets=False, doit=False):
         export_path = Path(targets)
     else:
         logger.debug("Use export dir from config file.")
-        export_dir = cfg["grid_generation"]["feeder_extraction"].get(
-            "export")
+        export_dir = cfg["grid_generation"]["feeder_extraction"].get("export")
         export_path = data_dir / export_dir / str(grid_id)
 
     feeder_dir = export_path / "feeder"
     feeder_list = sorted(os.listdir(feeder_dir))
-    logger.info(f"Getting downstream nodes matrices of {len(feeder_list)} "
-                f"feeder.")
+    logger.info(f"Getting downstream nodes matrices of {len(feeder_list)} " f"feeder.")
     for feeder in sorted(os.listdir(feeder_dir)):
 
-        logger.info(f"Generate downstream node matrix. \n"
-                    f"Feeder {feeder} of grid: {grid_id}")
+        logger.info(
+            f"Generate downstream node matrix. \n" f"Feeder {feeder} of grid: {grid_id}"
+        )
 
         edisgo_obj = import_edisgo_from_files(
             import_path / str(feeder),
@@ -134,8 +134,7 @@ def run_dnm_generation(grid_id, targets=False, doit=False):
             elif isinstance(targets, str):
                 export_path = Path(targets)
             else:
-                export_dir = cfg["grid_generation"]["feeder_extraction"].get(
-                    "export")
+                export_dir = cfg["grid_generation"]["feeder_extraction"].get("export")
                 export_path = data_dir / export_dir / str(grid_id)
             os.makedirs(export_path, exist_ok=True)
 

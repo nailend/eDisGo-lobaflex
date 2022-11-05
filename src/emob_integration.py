@@ -17,9 +17,9 @@ config_dir = get_dir(key="config")
 
 
 @timeit
-def run_emob_integration(grid_id, edisgo_obj=False,
-                         targets=False,
-                         to_freq="1h", doit=False):
+def run_emob_integration(
+    grid_id, edisgo_obj=False, targets=False, to_freq="1h", doit=False
+):
 
     logger.info(f"Start emob integration for {grid_id}.")
     cfg = get_config(path=config_dir / "model_config.yaml")

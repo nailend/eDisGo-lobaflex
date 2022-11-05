@@ -186,10 +186,8 @@ def create_heatpumps_from_db(edisgo_obj):
     return edisgo_obj
 
 
-
 @timeit
-def run_hp_integration(grid_id, edisgo_obj=False, targets=False,
-                       doit=False):
+def run_hp_integration(grid_id, edisgo_obj=False, targets=False, doit=False):
 
     logger.info(f"Start heat pump integration for {grid_id}.")
     cfg = get_config(path=config_dir / "model_config.yaml")

@@ -15,8 +15,7 @@ config_dir = get_dir(key="config")
 
 
 @timeit
-def run_load_integration(grid_id, edisgo_obj=False, targets=False,
-                         doit=False):
+def run_load_integration(grid_id, edisgo_obj=False, targets=False, doit=False):
 
     logger.info(f"Start load integration for {grid_id}.")
     cfg = get_config(path=config_dir / "model_config.yaml")
