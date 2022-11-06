@@ -86,9 +86,10 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
             only_flex_ev=only_flex_ev,
             flexible_loads=flexible_loads,
         )
-        for feeder_id in len(feeders):
-            write_metadata(export_path / "feeder" / str(feeder_id),
-                           edisgo_obj=feeders[feeder_id])
+        for feeder_id, feeder in enumerate(feeders):
+            write_metadata(
+                export_path / "feeder" / str(feeder_id), edisgo_obj=feeder
+            )
         write_metadata(export_path, edisgo_obj=edisgo_obj)
 
     else:
