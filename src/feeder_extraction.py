@@ -65,6 +65,7 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
             import_topology=True,
             import_timeseries=True,
             import_electromobility=True,
+            import_heat_pump=True,
         )
 
     if save:
