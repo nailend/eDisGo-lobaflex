@@ -90,7 +90,7 @@ def run_dnm_generation(grid_id, save=False, doit=False):
 
     cfg = get_config(path=config_dir / "model_config.yaml")
 
-    import_dir = cfg["grid_generation"]["feeder_extraction"].get("import")
+    import_dir = cfg["grid_generation"]["dnm_generation"].get("import")
     import_path = data_dir / import_dir / str(grid_id)
 
     # if isinstance(targets, Path):
@@ -101,17 +101,18 @@ def run_dnm_generation(grid_id, save=False, doit=False):
     #     export_path = Path(targets)
     # else:
     logger.debug("Use export dir from config file.")
-    export_dir = cfg["grid_generation"]["feeder_extraction"].get("export")
+    export_dir = cfg["grid_generation"]["dnm_generation"].get("export")
     export_path = data_dir / export_dir / str(grid_id)
 
-    feeder_dir = export_path / "feeder"
+    feeder_dir = import_path / "feeder"
     feeder_list = sorted(os.listdir(feeder_dir))
     logger.info(f"Getting downstream nodes matrices of {len(feeder_list)} "
                 f"feeder.")
     for feeder in sorted(os.listdir(feeder_dir)):
 
         logger.info(
-            f"Generate downstream node matrix. \n" f"Feeder {feeder} of grid:"
+            f"Generate downstream node matrix. \n"
+            f"Feeder {feeder} of grid:"
             f" {grid_id}"
         )
 
@@ -142,11 +143,14 @@ def run_dnm_generation(grid_id, save=False, doit=False):
             os.makedirs(export_path, exist_ok=True)
 
             downstream_node_matrix.to_csv(
-                export_path / f"downstream_node_matrix_{grid_id}_"
-                              f"{feeder}.csv")
+                export_path / f"downstream_node_matrix_{grid_id}_{feeder}.csv"
+            )
         if save:
-            write_metadata(export_path, edisgo_obj,
-                           text=f"Downstream Node Matrix of {feeder+1} feeder")
+            write_metadata(
+                export_path,
+                edisgo_obj,
+                text=f"Downstream Node Matrix of {feeder+1} feeder",
+            )
 
     if doit:
         return True
