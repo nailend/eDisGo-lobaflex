@@ -117,7 +117,7 @@ def run_dnm_generation(grid_id, save=False, doit=False):
         )
 
         edisgo_obj = import_edisgo_from_files(
-            import_path / str(feeder),
+            feeder_dir / str(feeder),
             import_topology=True,
             import_electromobility=True,
             import_heat_pump=True,
