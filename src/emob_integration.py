@@ -51,13 +51,14 @@ def run_emob_integration(
 
     edisgo_obj.apply_charging_strategy()
 
-    logger.info(f"Resample timeseries to {to_freq}.")
-    edisgo_obj.resample_timeseries(method="ffill", freq=to_freq)
-
     logger.info("Calculate flexibility bands")
     flex_bands = edisgo_obj.electromobility.get_flexibility_bands(
         edisgo_obj, ["home", "work"]
     )
+    # TODO Resampling flex bands not working yet @birgit
+    logger.info(f"Resample timeseries to {to_freq}.")
+    edisgo_obj.resample_timeseries(method="ffill", freq=to_freq)
+
 
     if save:
         # if isinstance(targets, Path):
