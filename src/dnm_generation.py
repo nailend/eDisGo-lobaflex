@@ -84,7 +84,7 @@ def get_downstream_nodes_matrix_iterative(grid):
 @timeit
 def run_dnm_generation(grid_id, save=False, doit=False):
 
-    logger.info(f"Extracting feeders of {grid_id}.")
+    logger.info(f"Get Downstream Node Matrix of  {grid_id} feeders.")
 
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
