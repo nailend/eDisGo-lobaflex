@@ -228,6 +228,11 @@ def run_hp_integration(grid_id, edisgo_obj=False, save=False, doit=False):
             save_timeseries=True,
             save_electromobility=True,
             save_heatpump=True,
+            electromobility_attributes=[
+                "integrated_charging_parks_df",
+                "simbev_config_df",
+                "flexibility_bands",
+            ],
         )
         write_metadata(export_path, edisgo_obj)
         logger.info(f"Saved grid to {export_path}")
