@@ -145,12 +145,12 @@ def run_dnm_generation(grid_id, save=False, doit=False):
             downstream_node_matrix.to_csv(
                 export_path / f"downstream_node_matrix_{grid_id}_{feeder}.csv"
             )
-        if save:
-            write_metadata(
-                export_path,
-                edisgo_obj,
-                text=f"Downstream Node Matrix of {feeder+1} feeder",
-            )
+    if save:
+        write_metadata(
+            export_path,
+            edisgo_obj,
+            text=f"Downstream Node Matrix of {int(feeder)+1} feeder",
+        )
 
     if doit:
         return True
