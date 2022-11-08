@@ -54,10 +54,9 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
     only_flex_ev = cfg["grid_generation"]["feeder_extraction"].get("only_flex_ev")
     flexible_loads = cfg["grid_generation"]["feeder_extraction"].get("flexible_loads")
 
-    import_dir = cfg["grid_generation"]["feeder_extraction"].get("import")
-    import_path = data_dir / import_dir / str(grid_id)
-
     if not edisgo_obj:
+        import_dir = cfg["grid_generation"]["feeder_extraction"].get("import")
+        import_path = data_dir / import_dir / str(grid_id)
         logger.info(f"Import Grid from file: {import_path}")
 
         edisgo_obj = import_edisgo_from_files(
@@ -87,9 +86,8 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
             flexible_loads=flexible_loads,
         )
         for feeder_id, feeder in enumerate(feeders):
-            write_metadata(
-                export_path / "feeder" / str(feeder_id), edisgo_obj=feeder
-            )
+            write_metadata(export_path / "feeder" / str(feeder_id),
+                           edisgo_obj=feeder)
         write_metadata(export_path, edisgo_obj=edisgo_obj)
 
     else:
