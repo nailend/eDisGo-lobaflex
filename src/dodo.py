@@ -12,6 +12,17 @@ data_dir = get_dir(key="data")
 config_dir = get_dir(key="config")
 cfg = get_config(path=config_dir / "model_config.yaml")
 
+# TODO
+#   1. split config file and set file dependency on dir and grids only
+#   2. file dependency with timestamp otherwise to expensive (big files)
+#   3. add task dependency (only if not uptodate)
+#   4. alternative uptodate function: version,
+#   5. add groups
+#   6. clean
+#   7. callback telegram bot
+#   8. watch param
+#   9. subclass grids
+
 
 DOIT_CONFIG = {
     'action_string_formatting': 'new',
