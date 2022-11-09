@@ -38,18 +38,6 @@ def task_get_config_global():
 
 def load_integration_task(mvgd):
 
-    import_dir = cfg["load_integration"].get("import")
-    export_dir = cfg["load_integration"].get("export")
-
-    # Metadata describing the generated data.
-    target_path = data_dir / export_dir / str(mvgd) / "metadata.md"
-    # List of files which the task depends on
-    list_files_dep = get_csv_in_subdirs(path=data_dir / import_dir / str(mvgd))
-    # List of files to check if timestamp uptodate
-    list_uptodate = list_files_dep
-    list_uptodate += [str(config_dir / ".grids.yaml")]
-    list_uptodate += [str(src_dir / "load_integration.py")]
-
     yield {
         "name": f"{mvgd}_load_integration",
         "actions": [
@@ -63,15 +51,6 @@ def load_integration_task(mvgd):
                 },
             )
         ],
-        # 'title': "title",
-        # "doc": "docs for X",
-        "targets": [target_path],
-        "file_dep": [
-            config_dir / ".grids.yaml",
-            data_dir / import_dir / str(mvgd) / "metadata.md",
-        ]
-        + list_files_dep,
-        "uptodate": [check_timestamp_unchanged(i) for i in list_uptodate],
         "verbosity": 2,
     }
 
@@ -79,18 +58,8 @@ def load_integration_task(mvgd):
 def emob_integration_task(mvgd):
     """Import emob"""
 
-    import_dir = cfg["emob_integration"].get("import")
-    export_dir = cfg["emob_integration"].get("export")
     to_freq = cfg["emob_integration"].get("to_freq")
 
-    # Metadata describing the generated data.
-    target_path = data_dir / export_dir / str(mvgd) / "metadata.md"
-    # List of files which the task depends on
-    list_files_dep = get_csv_in_subdirs(path=data_dir / import_dir / str(mvgd))
-    # List of files to check if timestamp uptodate
-    list_uptodate = list_files_dep
-    list_uptodate += [str(config_dir / ".grids.yaml")]
-    list_uptodate += [str(src_dir / "emob_integration.py")]
     yield {
         "name": f"{mvgd}_emob_integration",
         "actions": [
@@ -105,33 +74,12 @@ def emob_integration_task(mvgd):
                 },
             )
         ],
-        # 'title': "title",
-        # "doc": "docs for X",
-        "targets": [target_path],
-        "file_dep": [
-            config_dir / ".grids.yaml",
-            data_dir / import_dir / str(mvgd) / "metadata.md",
-        ]
-        + list_files_dep,
-        "uptodate": [check_timestamp_unchanged(i) for i in list_uptodate],
         "task_dep": [f"grids:{mvgd}_load_integration"],
         "verbosity": 2,
     }
 
 
 def hp_integration_task(mvgd):
-
-    import_dir = cfg["hp_integration"].get("import")
-    export_dir = cfg["hp_integration"].get("export")
-
-    # Metadata describing the generated data.
-    target_path = data_dir / export_dir / str(mvgd) / "metadata.md"
-    # List of files which the task depends on
-    list_files_dep = get_csv_in_subdirs(path=data_dir / import_dir / str(mvgd))
-    # List of files to check if timestamp uptodate
-    list_uptodate = list_files_dep
-    list_uptodate += [str(config_dir / ".grids.yaml")]
-    list_uptodate += [str(src_dir / "hp_integration.py")]
 
     yield {
         "name": f"{mvgd}_hp_integration",
@@ -146,33 +94,12 @@ def hp_integration_task(mvgd):
                 },
             )
         ],
-        # 'title': "title",
-        # "doc": "docs for X",
-        "targets": [target_path],
-        "file_dep": [
-            config_dir / ".grids.yaml",
-            data_dir / import_dir / str(mvgd) / "metadata.md",
-        ]
-        + list_files_dep,
-        "uptodate": [check_timestamp_unchanged(i) for i in list_uptodate],
         "task_dep": [f"grids:{mvgd}_emob_integration"],
         "verbosity": 2,
     }
 
 
 def feeder_extraction_task(mvgd):
-
-    import_dir = cfg["feeder_extraction"].get("import")
-    export_dir = cfg["feeder_extraction"].get("export")
-
-    # Metadata describing the generated data.
-    target_path = data_dir / export_dir / str(mvgd) / "metadata.md"
-    # List of files which the task depends on
-    list_files_dep = get_csv_in_subdirs(path=data_dir / import_dir / str(mvgd))
-    # List of files to check if timestamp uptodate
-    list_uptodate = list_files_dep
-    list_uptodate += [str(config_dir / ".grids.yaml")]
-    list_uptodate += [str(src_dir / "feeder_extraction.py")]
 
     yield {
         "name": f"{mvgd}_feeder_extraction",
@@ -187,34 +114,12 @@ def feeder_extraction_task(mvgd):
                 },
             )
         ],
-        # 'title': "title",
-        # "doc": "docs for X",
-        "targets": [target_path],
-        "file_dep": [
-            config_dir / "grids.yaml",
-            data_dir / import_dir / str(mvgd) / "metadata.md",
-        ]
-        + list_files_dep,
-        "uptodate": [check_timestamp_unchanged(i) for i in list_uptodate],
         "task_dep": [f"grids:{mvgd}_hp_integration"],
         "verbosity": 2,
     }
 
 
 def dnm_generation_task(mvgd):
-
-    import_dir = cfg["dnm_generation"].get("import")
-    export_dir = cfg["dnm_generation"].get("export")
-
-    # Metadata describing the generated data.
-    target_path = data_dir / export_dir / str(mvgd) / "metadata.md"
-    # List of files which the task depends on
-    list_files_dep = get_csv_in_subdirs(path=data_dir / import_dir / str(mvgd) / "feeder")
-    # List of files to check if timestamp uptodate
-    list_uptodate = list_files_dep
-    list_uptodate = [i for i in list_uptodate if not i.startswith("downstream")]
-    list_uptodate += [str(config_dir / ".grids.yaml")]
-    list_uptodate += [str(src_dir / "dnm_generation.py")]
 
     yield {
         "name": f"{mvgd}_dnm_generation",
@@ -229,20 +134,9 @@ def dnm_generation_task(mvgd):
                 },
             )
         ],
-        # 'title': "title",
-        # "doc": "docs for X",
-        "targets": [target_path],
-        "file_dep": [
-            config_dir / ".grids.yaml",
-            data_dir / import_dir / str(mvgd) / "metadata.md",
-        ]
-        + files_dep,
-        "uptodate": [check_timestamp_unchanged(i) for i in list_uptodate],
         "task_dep": [f"grids:{mvgd}_feeder_extraction"],
         "verbosity": 2,
     }
-
-
 
 
 def task_grids():
