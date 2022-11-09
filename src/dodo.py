@@ -47,7 +47,7 @@ def load_integration_task(mvgd):
     list_uptodate += [str(src_dir / "load_integration.py")]
 
     yield {
-        "basename": f"load_integration_mvgd-{mvgd}",
+        "name": f"load_integration_mvgd-{mvgd}",
         "actions": [
             (
                 run_load_integration,
@@ -87,7 +87,7 @@ def emob_integration_task(mvgd):
     list_uptodate += [str(config_dir / "model_config.yaml")]
     list_uptodate += [str(src_dir / "emob_integration.py")]
     yield {
-        "basename": f"emob_integration_mvgd-{mvgd}",
+        "name": f"emob_integration_mvgd-{mvgd}",
         "actions": [
             (
                 run_emob_integration,
@@ -129,7 +129,7 @@ def hp_integration_task(mvgd):
     list_uptodate += [str(src_dir / "hp_integration.py")]
 
     yield {
-        "basename": f"hp_integration_mvgd-{mvgd}",
+        "name": f"hp_integration_mvgd-{mvgd}",
         "actions": [
             (
                 run_hp_integration,
@@ -170,7 +170,7 @@ def feeder_extraction_task(mvgd):
     list_uptodate += [str(src_dir / "feeder_extraction.py")]
 
     yield {
-        "basename": f"feeder_extraction_mvgd-{mvgd}",
+        "name": f"feeder_extraction_mvgd-{mvgd}",
         "actions": [
             (
                 run_feeder_extraction,
@@ -213,7 +213,7 @@ def dnm_generation_task(mvgd):
     list_uptodate += [str(src_dir / "dnm_generation.py")]
 
     yield {
-        "basename": f"dnm_generation_mvgd-{mvgd}",
+        "name": f"dnm_generation_mvgd-{mvgd}",
         "actions": [
             (
                 run_dnm_generation,
