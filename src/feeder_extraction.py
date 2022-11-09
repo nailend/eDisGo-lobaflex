@@ -31,7 +31,6 @@ def extract_feeders_parallel(
                 & (flexible_loads["sector"] == "public")
             ].index
         )
-        flexible_loads = flexible_loads.index.to_list()
 
     feeders, buses_with_feeders = extract_feeders_nx(
         edisgo_obj=edisgo_obj,
