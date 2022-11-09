@@ -219,9 +219,9 @@ def write_metadata(path, edisgo_obj, text=False):
 def split_yaml(yaml_file, save_to):
     """Split yaml file into multiple yamls by sections"""
     for subconfig in yaml_file:
-        content = yaml.dump(yaml_file[subconfig],
-                            default_flow_style=False,
-                            sort_keys=False)
-        path = save_to / f"{subconfig}.yaml"
+        content = yaml.dump(
+            yaml_file[subconfig], default_flow_style=False, sort_keys=False
+        )
+        path = save_to / f".{subconfig}.yaml"
         with open(path, "w") as file:
             file.write(content)
