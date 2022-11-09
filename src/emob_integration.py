@@ -22,10 +22,11 @@ def run_emob_integration(
 ):
 
     logger.info(f"Start emob integration for {grid_id}.")
-    cfg = get_config(path=config_dir / "model_config.yaml")
+    cfg = get_config(path=config_dir / "grid_generation.yaml")
+
     if not edisgo_obj:
 
-        import_dir = cfg["grid_generation"]["emob_integration"].get("import")
+        import_dir = cfg["emob_integration"].get("import")
         import_path = data_dir / import_dir / str(grid_id)
         logger.info(f"Import Grid from file: {import_path}")
 
@@ -60,7 +61,7 @@ def run_emob_integration(
     edisgo_obj.resample_timeseries(method="ffill", freq=to_freq)
 
     if save:
-        export_dir = cfg["grid_generation"]["emob_integration"].get("export")
+        export_dir = cfg["emob_integration"].get("export")
         export_path = data_dir / export_dir / str(grid_id)
         os.makedirs(export_path, exist_ok=True)
         edisgo_obj.save(

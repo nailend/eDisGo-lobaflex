@@ -88,9 +88,9 @@ def run_dnm_generation(grid_id, save=False, doit=False):
 
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
-    cfg = get_config(path=config_dir / "model_config.yaml")
+    cfg = get_config(path=config_dir / "grid_generation.yaml")
 
-    import_dir = cfg["grid_generation"]["dnm_generation"].get("import")
+    import_dir = cfg["dnm_generation"].get("import")
     import_path = data_dir / import_dir / str(grid_id)
 
     # if isinstance(targets, Path):
@@ -101,7 +101,7 @@ def run_dnm_generation(grid_id, save=False, doit=False):
     #     export_path = Path(targets)
     # else:
     logger.debug("Use export dir from config file.")
-    export_dir = cfg["grid_generation"]["dnm_generation"].get("export")
+    export_dir = cfg["dnm_generation"].get("export")
     export_path = data_dir / export_dir / str(grid_id)
 
     feeder_dir = import_path / "feeder"
@@ -129,7 +129,7 @@ def run_dnm_generation(grid_id, save=False, doit=False):
         )
 
         if save:
-            export_dir = cfg["grid_generation"]["feeder_extraction"].get("export")
+            export_dir = cfg["feeder_extraction"].get("export")
             export_path = data_dir / export_dir / str(grid_id) / "feeder" / feeder
             os.makedirs(export_path, exist_ok=True)
 

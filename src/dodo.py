@@ -4,8 +4,7 @@ from feeder_extraction import run_feeder_extraction
 from hp_integration import run_hp_integration
 from load_integration import run_load_integration
 from logger import logger
-from tools import get_config, get_dir
-import glob
+from tools import get_config, get_dir, split_yaml
 
 logs_dir = get_dir(key="logs")
 data_dir = get_dir(key="data")
@@ -24,9 +23,10 @@ cfg = get_config(path=config_dir / "model_config.yaml")
 #   9. subclass grids
 
 
-DOIT_CONFIG = {
-    'action_string_formatting': 'new',
-}
+def task_split_model_config_in_subconfig():
+    config_dir = get_dir(key="config")
+    cfg = get_config(path=config_dir / "model_config.yaml")
+    split_yaml(yaml_file=cfg, save_to=config_dir)
 
 
 def set_target(task, values):

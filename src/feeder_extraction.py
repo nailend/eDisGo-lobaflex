@@ -48,13 +48,13 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
 
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
-    cfg = get_config(path=config_dir / "model_config.yaml")
+    cfg = get_config(path=config_dir / "grid_generation.yaml")
 
-    only_flex_ev = cfg["grid_generation"]["feeder_extraction"].get("only_flex_ev")
-    flexible_loads = cfg["grid_generation"]["feeder_extraction"].get("flexible_loads")
+    only_flex_ev = cfg["feeder_extraction"].get("only_flex_ev")
+    flexible_loads = cfg["feeder_extraction"].get("flexible_loads")
 
     if not edisgo_obj:
-        import_dir = cfg["grid_generation"]["feeder_extraction"].get("import")
+        import_dir = cfg["feeder_extraction"].get("import")
         import_path = data_dir / import_dir / str(grid_id)
         logger.info(f"Import Grid from file: {import_path}")
 
@@ -67,7 +67,7 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
         )
 
     if save:
-        export_dir = cfg["grid_generation"]["feeder_extraction"].get("export")
+        export_dir = cfg["feeder_extraction"].get("export")
         export_path = data_dir / export_dir / str(grid_id)
         os.makedirs(export_path, exist_ok=True)
 
