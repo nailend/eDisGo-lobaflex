@@ -42,7 +42,7 @@ def extract_feeders_parallel(
 
 
 @timeit
-def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
+def run_feeder_extraction(grid_id, edisgo_obj=False, save=False):
 
     logger.info(f"Extracting feeders of {grid_id}.")
 
@@ -91,10 +91,7 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
             flexible_loads=flexible_loads,
         )
 
-    if doit:
-        return True
-    else:
-        return feeders, buses_with_feeders
+    return feeders, buses_with_feeders
 
 
 if __name__ == "__main__":

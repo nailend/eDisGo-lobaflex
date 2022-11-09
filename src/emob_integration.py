@@ -82,10 +82,7 @@ def run_emob_integration(
         #     df.to_csv(f"{export_path}/{name}_flexibility_band.csv")
         # logger.info(f"Flexibility bands exported to: {export_path}")
 
-    if doit:
-        return True
-    else:
-        return edisgo_obj, flex_bands
+    return edisgo_obj, flex_bands
 
 
 if __name__ == "__main__":
