@@ -211,14 +211,6 @@ def run_hp_integration(grid_id, edisgo_obj=False, save=False, doit=False):
     logger.info("Added heat pumps to eDisGo")
 
     if save:
-        # if isinstance(targets, Path):
-        #     logger.debug("Use export dir given as parameter.")
-        #     export_path = targets
-        # elif isinstance(targets, str):
-        #     logger.debug("Use export dir given as parameter.")
-        #     export_path = Path(targets)
-        # else:
-        logger.debug("Use export dir from config file.")
         export_dir = cfg["grid_generation"]["hp_integration"].get("export")
         export_path = data_dir / export_dir / str(grid_id)
         os.makedirs(export_path, exist_ok=True)

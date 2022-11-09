@@ -28,7 +28,6 @@ def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
         edisgo_obj = EDisGo(ding0_grid=ding0_grid)
         logger.info(f"Grid {grid_id} imported")
 
-
     # set up time series
     timeindex = pd.date_range("1/1/2011", periods=8760, freq="H")
     edisgo_obj.set_timeindex(timeindex)
@@ -44,17 +43,6 @@ def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
     logger.info(f"Reactive power is set.")
 
     if save:
-        # if isinstance(targets, Path):
-        #     logger.debug("Use export dir given as parameter.")
-        #     export_path = targets
-        # elif isinstance(targets, str):
-        #     logger.debug("Use export dir given as parameter.")
-        #     export_path = Path(targets)
-        # else:
-        #     logger.debug("Use export dir from config file.")
-        #     export_dir = cfg["grid_generation"]["load_integration"].get("export")
-        #     export_path = data_dir / export_dir / str(grid_id)
-
         export_dir = cfg["grid_generation"]["load_integration"].get("export")
         export_path = data_dir / export_dir / str(grid_id)
 

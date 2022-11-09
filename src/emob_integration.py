@@ -59,16 +59,7 @@ def run_emob_integration(
     logger.info(f"Resample timeseries to {to_freq}.")
     edisgo_obj.resample_timeseries(method="ffill", freq=to_freq)
 
-
     if save:
-        # if isinstance(targets, Path):
-        #     logger.debug("Use export dir given as parameter.")
-        #     export_path = targets
-        # elif isinstance(targets, str):
-        #     logger.debug("Use export dir given as parameter.")
-        #     export_path = Path(targets)
-        # else:
-        logger.debug("Use export dir from config file.")
         export_dir = cfg["grid_generation"]["emob_integration"].get("export")
         export_path = data_dir / export_dir / str(grid_id)
         os.makedirs(export_path, exist_ok=True)

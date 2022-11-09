@@ -124,20 +124,11 @@ def run_dnm_generation(grid_id, save=False, doit=False):
             import_timeseries=True,
         )
 
-        # if os.path.isfile(export_path / f"downstream_node_matrix_{grid_id}"
-        #                                 f"_{feeder}.csv"):
-        #     continue
-
         downstream_node_matrix = get_downstream_nodes_matrix_iterative(
             edisgo_obj.topology
         )
 
         if save:
-            # if isinstance(targets, Path):
-            #     export_path = targets
-            # elif isinstance(targets, str):
-            #     export_path = Path(targets)
-            # else:
             export_dir = cfg["grid_generation"]["feeder_extraction"].get("export")
             export_path = data_dir / export_dir / str(grid_id)
             os.makedirs(export_path, exist_ok=True)
