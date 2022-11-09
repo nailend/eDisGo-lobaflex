@@ -1,11 +1,14 @@
+from doit.tools import check_timestamp_unchanged, result_dep
+
 from dnm_generation import run_dnm_generation
 from emob_integration import run_emob_integration
 from feeder_extraction import run_feeder_extraction
 from hp_integration import run_hp_integration
 from load_integration import run_load_integration
 from logger import logger
-from tools import get_config, get_dir, split_yaml
+from tools import get_config, get_csv_in_subdirs, get_dir, split_yaml
 
+src_dir = get_dir(key="src")
 logs_dir = get_dir(key="logs")
 data_dir = get_dir(key="data")
 config_dir = get_dir(key="config")
@@ -29,11 +32,6 @@ def task_split_model_config_in_subconfig():
     split_yaml(yaml_file=cfg, save_to=config_dir)
 
 
-def set_target(task, values):
-    version = task.options.get('version', '0')
-    task.targets.append(f'targetfile{version}')
-
-
 def load_integration_task(mvgd):
 
     import_dir = cfg["grid_generation"]["load_integration"].get("import")
@@ -42,7 +40,11 @@ def load_integration_task(mvgd):
     # Metadata describing the generated data.
     target_path = data_dir / export_dir / str(mvgd) / "metadata.md"
     # List of files which the task depends on
-    files_list = list((data_dir / import_dir / str(mvgd)).glob("*.csv"))
+    files_dep = get_csv_in_subdirs(path=data_dir / import_dir / str(mvgd))
+    # List of files to check if timestamp uptodate
+    list_uptodate = get_csv_in_subdirs(path=data_dir / import_dir / str(mvgd))
+    list_uptodate += [str(config_dir / "model_config.yaml")]
+    list_uptodate += [str(src_dir / "load_integration.py")]
 
     yield {
         "basename": f"load_integration_mvgd-{mvgd}",
@@ -58,13 +60,14 @@ def load_integration_task(mvgd):
             )
         ],
         # 'title': "title",
-        "doc": "docs for X",
+        # "doc": "docs for X",
         "targets": [target_path],
         "file_dep": [
             config_dir / "model_config.yaml",
             data_dir / import_dir / str(mvgd) / "metadata.md",
-        ] + files_list,
-        # 'uptodate': [set_target],
+        ]
+        + files_dep,
+        "uptodate": [check_timestamp_unchanged(i) for i in list_uptodate],
         "verbosity": 2,
     }
 
@@ -78,8 +81,11 @@ def emob_integration_task(mvgd):
     # Metadata describing the generated data.
     target_path = data_dir / export_dir / str(mvgd) / "metadata.md"
     # List of files which the task depends on
-    files_list = list((data_dir / import_dir / str(mvgd)).glob("*.csv"))
-
+    files_dep = get_csv_in_subdirs(path=data_dir / import_dir / str(mvgd))
+    # List of files to check if timestamp uptodate
+    list_uptodate = get_csv_in_subdirs(path=data_dir / import_dir / str(mvgd))
+    list_uptodate += [str(config_dir / "model_config.yaml")]
+    list_uptodate += [str(src_dir / "emob_integration.py")]
     yield {
         "basename": f"emob_integration_mvgd-{mvgd}",
         "actions": [
@@ -95,12 +101,15 @@ def emob_integration_task(mvgd):
             )
         ],
         # 'title': "title",
-        "doc": "docs for X",
+        # "doc": "docs for X",
         "targets": [target_path],
         "file_dep": [
             config_dir / "model_config.yaml",
             data_dir / import_dir / str(mvgd) / "metadata.md",
-        ]+files_list,
+        ]
+        + files_dep,
+        "uptodate": [check_timestamp_unchanged(i) for i in list_uptodate],
+        "task_dep": [f"load_integration_mvgd-{mvgd}"],
         "verbosity": 2,
     }
 
@@ -113,7 +122,11 @@ def hp_integration_task(mvgd):
     # Metadata describing the generated data.
     target_path = data_dir / export_dir / str(mvgd) / "metadata.md"
     # List of files which the task depends on
-    files_list = list((data_dir / import_dir / str(mvgd)).glob("*.csv"))
+    files_dep = get_csv_in_subdirs(path=data_dir / import_dir / str(mvgd))
+    # List of files to check if timestamp uptodate
+    list_uptodate = get_csv_in_subdirs(path=data_dir / import_dir / str(mvgd))
+    list_uptodate += [str(config_dir / "model_config.yaml")]
+    list_uptodate += [str(src_dir / "hp_integration.py")]
 
     yield {
         "basename": f"hp_integration_mvgd-{mvgd}",
@@ -129,12 +142,15 @@ def hp_integration_task(mvgd):
             )
         ],
         # 'title': "title",
-        "doc": "docs for X",
+        # "doc": "docs for X",
         "targets": [target_path],
         "file_dep": [
             config_dir / "model_config.yaml",
             data_dir / import_dir / str(mvgd) / "metadata.md",
-        ]+files_list,
+        ]
+        + files_dep,
+        "uptodate": [check_timestamp_unchanged(i) for i in list_uptodate],
+        "task_dep": [f"emob_integration_mvgd-{mvgd}"],
         "verbosity": 2,
     }
 
@@ -147,7 +163,11 @@ def feeder_extraction_task(mvgd):
     # Metadata describing the generated data.
     target_path = data_dir / export_dir / str(mvgd) / "metadata.md"
     # List of files which the task depends on
-    files_list = list((data_dir / import_dir / str(mvgd)).glob("*.csv"))
+    files_dep = get_csv_in_subdirs(path=data_dir / import_dir / str(mvgd))
+    # List of files to check if timestamp uptodate
+    list_uptodate = get_csv_in_subdirs(path=data_dir / import_dir / str(mvgd))
+    list_uptodate += [str(config_dir / "model_config.yaml")]
+    list_uptodate += [str(src_dir / "feeder_extraction.py")]
 
     yield {
         "basename": f"feeder_extraction_mvgd-{mvgd}",
@@ -163,12 +183,15 @@ def feeder_extraction_task(mvgd):
             )
         ],
         # 'title': "title",
-        "doc": "docs for X",
+        # "doc": "docs for X",
         "targets": [target_path],
         "file_dep": [
             config_dir / "model_config.yaml",
             data_dir / import_dir / str(mvgd) / "metadata.md",
-        ] + files_list,
+        ]
+        + files_dep,
+        "uptodate": [check_timestamp_unchanged(i) for i in list_uptodate],
+        "task_dep": [f"hp_integration_mvgd-{mvgd}"],
         "verbosity": 2,
     }
 
@@ -181,8 +204,13 @@ def dnm_generation_task(mvgd):
     # Metadata describing the generated data.
     target_path = data_dir / export_dir / str(mvgd) / "metadata.md"
     # List of files which the task depends on
-    files_list = list((data_dir / import_dir / str(mvgd) / "feeder").glob(
-                                                           "*.csv"))
+    files_dep = get_csv_in_subdirs(path=data_dir / import_dir / str(mvgd) / "feeder")
+    # List of files to check if timestamp uptodate
+    list_uptodate = get_csv_in_subdirs(
+        path=data_dir / import_dir / str(mvgd) / "feeder"
+    )
+    list_uptodate += [str(config_dir / "model_config.yaml")]
+    list_uptodate += [str(src_dir / "dnm_generation.py")]
 
     yield {
         "basename": f"dnm_generation_mvgd-{mvgd}",
@@ -198,12 +226,15 @@ def dnm_generation_task(mvgd):
             )
         ],
         # 'title': "title",
-        "doc": "docs for X",
+        # "doc": "docs for X",
         "targets": [target_path],
         "file_dep": [
             config_dir / "model_config.yaml",
             data_dir / import_dir / str(mvgd) / "metadata.md",
-        ] + files_list,
+        ]
+        + files_dep,
+        "uptodate": [check_timestamp_unchanged(i) for i in list_uptodate],
+        "task_dep": [f"feeder_extraction_mvgd-{mvgd}"],
         "verbosity": 2,
     }
 

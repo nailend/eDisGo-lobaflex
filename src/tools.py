@@ -10,6 +10,7 @@ import psutil
 import yaml
 
 from logger import logger
+from glob import glob
 
 
 def get_dir(key):
@@ -18,6 +19,16 @@ def get_dir(key):
     repo_dir = src_dir.parent
     key_dir = repo_dir / key
     return key_dir
+
+
+def get_csv_in_subdirs(path):
+    """Creates a list of all csv files in its subdirectories"""
+    list_files = []
+    pattern = "*.csv"
+    for dir, _, _ in os.walk(path):
+        list_files.extend(glob(os.path.join(dir, pattern)))
+
+    return list_files
 
 
 def get_config(path=f".{get_dir(key='config')}/model_config.yaml"):
