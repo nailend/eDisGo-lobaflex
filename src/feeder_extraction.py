@@ -78,7 +78,8 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
             flexible_loads=flexible_loads,
         )
         for feeder_id, feeder in enumerate(feeders):
-            write_metadata(export_path / "feeder" / str(feeder_id),
+            # TODO sth is off here. Feeder id == 0 doesnt exist? investigate!
+            write_metadata(export_path / "feeder" / str(feeder_id+1),
                            edisgo_obj=feeder)
         write_metadata(export_path, edisgo_obj=edisgo_obj)
 
