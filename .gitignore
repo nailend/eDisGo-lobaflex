@@ -23,7 +23,8 @@ results/*
 data/*
 # exclude logs
 logs/*
-
+# exclude doit files
+src/doit/*
 # exclude locally built docs
 doc/_html
 
