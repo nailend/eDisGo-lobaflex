@@ -153,6 +153,27 @@ def task_grids():
         yield dnm_generation_task(mvgd)
 
 
+def task_group():
+    """Groups tasks"""
+    mvgds = sorted(cfg.get("mvgd"))
+    tasks = [i for i in cfg.keys() if "mvgd" not in i]
+    for mvgd in mvgds:
+        yield {
+            "actions": None,
+            "name": str(mvgd),
+            "doc": "mvgd",
+            "task_dep": [f"grids:{mvgd}_{i}" for i in tasks]
+        }
+
+    for task in tasks:
+        yield {
+            "actions": None,
+            "name": str(task),
+            "doc": "task",
+            "task_dep": [f"grids:{i}_{task}" for i in mvgds]
+        }
+
+
 if __name__ == "__main__":
     import doit
 
