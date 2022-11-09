@@ -130,7 +130,7 @@ def run_dnm_generation(grid_id, save=False, doit=False):
 
         if save:
             export_dir = cfg["grid_generation"]["feeder_extraction"].get("export")
-            export_path = data_dir / export_dir / str(grid_id)
+            export_path = data_dir / export_dir / str(grid_id) / "feeder" / feeder
             os.makedirs(export_path, exist_ok=True)
 
             downstream_node_matrix.to_csv(
