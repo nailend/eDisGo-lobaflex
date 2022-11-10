@@ -14,15 +14,10 @@ data_dir = get_dir(key="data")
 config_dir = get_dir(key="config")
 
 # TODO
-#   1. split config file and set file dependency on dir and grids only
-#   2. file dependency with timestamp otherwise to expensive (big files)
-#   3. add task dependency (only if not uptodate)
 #   4. alternative uptodate function: version,
-#   5. add groups
 #   6. clean
 #   7. callback telegram bot
 #   8. watch param
-#   9. subclass grids
 
 
 def task_split_model_config_in_subconfig():
