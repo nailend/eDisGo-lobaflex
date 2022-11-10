@@ -1,10 +1,9 @@
 import os
 
-from pathlib import Path
-
 import pandas as pd
 
 from edisgo.edisgo import EDisGo
+from edisgo.io.ding0_import import remove_1m_end_lines
 
 from logger import logger
 from tools import get_config, get_dir, timeit, write_metadata
@@ -27,6 +26,9 @@ def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
         ding0_grid = data_dir / import_dir / str(grid_id)
         edisgo_obj = EDisGo(ding0_grid=ding0_grid)
         logger.info(f"Grid {grid_id} imported")
+
+        logger.info("Remove 1m end lines")
+        edisgo_obj = remove_1m_end_lines(edisgo_obj)
 
     # set up time series
     timeindex = pd.date_range("1/1/2011", periods=8760, freq="H")
