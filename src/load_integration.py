@@ -55,7 +55,10 @@ def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
         write_metadata(export_path, edisgo_obj)
         logger.info(f"Saved grid to {export_path}")
 
-    return edisgo_obj
+    if doit:
+        return True
+    else:
+        return edisgo_obj
 
 
 if __name__ == "__main__":

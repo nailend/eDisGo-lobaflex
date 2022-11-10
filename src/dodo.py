@@ -42,6 +42,7 @@ def load_integration_task(mvgd):
                 [],  # args
                 {  # kwargs
                     "grid_id": mvgd,
+                    "doit": True,
                     "save": True,
                 },
             )
@@ -64,6 +65,7 @@ def emob_integration_task(mvgd):
                 {  # kwargs
                     "grid_id": mvgd,
                     "to_freq": to_freq,
+                    "doit": True,
                     "save": True,
                 },
             )
@@ -83,6 +85,7 @@ def hp_integration_task(mvgd):
                 [],  # args
                 {  # kwargs
                     "grid_id": mvgd,
+                    "doit": True,
                     "save": True,
                 },
             )
@@ -102,6 +105,7 @@ def feeder_extraction_task(mvgd):
                 [],  # args
                 {  # kwargs
                     "grid_id": mvgd,
+                    "doit": True,
                     "save": True,
                 },
             )
@@ -121,6 +125,7 @@ def dnm_generation_task(mvgd):
                 [],
                 {
                     "grid_id": mvgd,
+                    "doit": True,
                     "save": True,
                 },
             )
