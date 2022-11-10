@@ -25,6 +25,8 @@ data/*
 logs/*
 # exclude doit files
 src/doit/*
+config/.*
+src/.*
 # exclude locally built docs
 doc/_html
 
