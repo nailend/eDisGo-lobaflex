@@ -24,13 +24,14 @@ def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
         import_dir = cfg["load_integration"].get("import")
 
         ding0_grid = data_dir / import_dir / str(grid_id)
+        logger.info(f"Import Grid: {grid_id} from {ding0_grid}")
         edisgo_obj = EDisGo(ding0_grid=ding0_grid)
-        logger.info(f"Grid {grid_id} imported")
 
         logger.info("Remove 1m end lines")
         edisgo_obj = remove_1m_end_lines(edisgo_obj)
 
     # set up time series
+    logger.info("Import timeseries.")
     timeindex = pd.date_range("1/1/2011", periods=8760, freq="H")
     edisgo_obj.set_timeindex(timeindex)
     edisgo_obj.set_time_series_active_power_predefined(
@@ -40,14 +41,14 @@ def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
         ),
         conventional_loads_ts="demandlib",
     )
-    logger.info(f"Timeseries imported.")
+    logger.info("Set reactive power")
     edisgo_obj.set_time_series_reactive_power_control()
-    logger.info(f"Reactive power is set.")
 
     if save:
         export_dir = cfg["load_integration"].get("export")
         export_path = data_dir / export_dir / str(grid_id)
 
+        logger.info(f"Save grid to {export_path}")
         os.makedirs(export_path, exist_ok=True)
         edisgo_obj.save(
             export_path,
@@ -55,7 +56,6 @@ def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
             save_timeseries=True,
         )
         write_metadata(export_path, edisgo_obj)
-        logger.info(f"Saved grid to {export_path}")
 
     if doit:
         return True
