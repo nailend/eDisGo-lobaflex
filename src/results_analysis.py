@@ -24,7 +24,9 @@ def create_scenario_notebook(
 
     # define data and paths
     input_template = os.path.join(wn_path[0], "jupy", "templates", template)
-    output_name = "scenario_analysis_{scenario}.ipynb".format(scenario=scenario)
+    output_name = "scenario_analysis_{scenario}.ipynb".format(
+        scenario=scenario
+    )
     output_notebook = os.path.join(output_path, output_name)
 
     # execute notebook with specific parameter
@@ -121,7 +123,9 @@ def create_multiple_scenario_notebooks(
     if errors is not None:
         logger.warning(f"Errors occured during creation of notebooks.")
     else:
-        logger.info(f"Notebooks for {len(scenarios)} scenarios created without errors.")
+        logger.info(
+            f"Notebooks for {len(scenarios)} scenarios created without errors."
+        )
 
 
 if __name__ == "__main__":

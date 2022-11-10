@@ -34,11 +34,18 @@ def get_downstream_nodes_matrix_iterative(grid):
     """
 
     def recursive_downstream_node_matrix_filling(
-        current_bus, current_feeder, downstream_node_matrix, grid, visited_buses
+        current_bus,
+        current_feeder,
+        downstream_node_matrix,
+        grid,
+        visited_buses,
     ):
         current_feeder.append(current_bus)
         for neighbor in tree.successors(current_bus):
-            if neighbor not in visited_buses and neighbor not in current_feeder:
+            if (
+                neighbor not in visited_buses
+                and neighbor not in current_feeder
+            ):
                 recursive_downstream_node_matrix_filling(
                     neighbor,
                     current_feeder,
@@ -84,7 +91,7 @@ def get_downstream_nodes_matrix_iterative(grid):
 @timeit
 def run_dnm_generation(grid_id, save=False):
 
-    logger.info(f"Get Downstream Node Matrix of  {grid_id} feeders.")
+    logger.info(f"Get Downstream Node Matrix of {grid_id} feeders.")
 
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -106,8 +113,9 @@ def run_dnm_generation(grid_id, save=False):
 
     feeder_dir = import_path / "feeder"
     feeder_list = sorted(os.listdir(feeder_dir))
-    logger.info(f"Getting downstream nodes matrices of {len(feeder_list)} "
-                f"feeder.")
+    logger.info(
+        f"Getting downstream nodes matrices of {len(feeder_list)} feeder."
+    )
     for feeder in sorted(os.listdir(feeder_dir)):
 
         logger.info(
@@ -130,7 +138,9 @@ def run_dnm_generation(grid_id, save=False):
 
         if save:
             export_dir = cfg["feeder_extraction"].get("export")
-            export_path = data_dir / export_dir / str(grid_id) / "feeder" / feeder
+            export_path = (
+                data_dir / export_dir / str(grid_id) / "feeder" / feeder
+            )
             os.makedirs(export_path, exist_ok=True)
 
             downstream_node_matrix.to_csv(
@@ -142,7 +152,6 @@ def run_dnm_generation(grid_id, save=False):
             edisgo_obj,
             text=f"Downstream Node Matrix of {int(feeder)+1} feeder",
         )
-
 
 
 if __name__ == "__main__":

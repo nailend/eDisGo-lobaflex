@@ -30,7 +30,9 @@ for mvgd in multi_grid_ids:
     # edisgo_obj.resample_timeseries(method="ffill", freq="1h")
 
     # hp integration
-    edisgo_obj = run_hp_integration(edisgo_obj=edisgo_obj, grid_id=mvgd, targets=True)
+    edisgo_obj = run_hp_integration(
+        edisgo_obj=edisgo_obj, grid_id=mvgd, targets=True
+    )
 
     # bess integration
     # residential mit pv_rooftop

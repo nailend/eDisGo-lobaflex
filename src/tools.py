@@ -4,13 +4,13 @@ import os
 import time
 
 from datetime import date, datetime
+from glob import glob
 from pathlib import Path
 
 import psutil
 import yaml
 
 from logger import logger
-from glob import glob
 
 
 def get_dir(key):

@@ -177,7 +177,9 @@ def create_heatpumps_from_db(edisgo_obj):
     edisgo_obj.heat_pump.cop_df = cop_df
     edisgo_obj.heat_pump.thermal_storage_units_df = thermal_storage_units_df
 
-    edisgo_obj.topology.loads_df = pd.concat([edisgo_obj.topology.loads_df, loads_df])
+    edisgo_obj.topology.loads_df = pd.concat(
+        [edisgo_obj.topology.loads_df, loads_df]
+    )
     logger.info(
         f"{sum(loads_df.p_set):.2f} MW of heat pumps for individual "
         f"heating integrated."

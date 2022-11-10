@@ -50,7 +50,9 @@ def get_random_residential_buildings(scenario, limit):
         cells_query = (
             session.query(egon_building_electricity_peak_loads.building_id)
             .filter(egon_building_electricity_peak_loads.scenario == scenario)
-            .filter(egon_building_electricity_peak_loads.sector == "residential")
+            .filter(
+                egon_building_electricity_peak_loads.sector == "residential"
+            )
             .limit(limit)
         )
 
@@ -68,7 +70,9 @@ def get_cop(building_ids):
     with db.session_scope() as session:
         cells_query = (
             session.query(
-                egon_map_zensus_buildings_residential.id.label("egon_building_id"),
+                egon_map_zensus_buildings_residential.id.label(
+                    "egon_building_id"
+                ),
                 egon_era5_renewable_feedin.feedin,
             )
             .filter(egon_map_zensus_buildings_residential.id.in_(building_ids))
@@ -77,7 +81,8 @@ def get_cop(building_ids):
                 == egon_map_zensus_weather_cell.zensus_population_id,
             )
             .filter(
-                egon_map_zensus_weather_cell.w_id == egon_era5_renewable_feedin.w_id,
+                egon_map_zensus_weather_cell.w_id
+                == egon_era5_renewable_feedin.w_id,
             )
             .filter(egon_era5_renewable_feedin.carrier == "heat_pump_cop")
         )
@@ -87,7 +92,9 @@ def get_cop(building_ids):
         cells_query.session.bind,
         index_col=None,
     )
-    synt_building_id = set(building_ids).difference(set(df_cop_osm["egon_building_id"]))
+    synt_building_id = set(building_ids).difference(
+        set(df_cop_osm["egon_building_id"])
+    )
 
     with db.session_scope() as session:
         cells_query = (
@@ -96,14 +103,17 @@ def get_cop(building_ids):
                 egon_era5_renewable_feedin.feedin,
             )
             .filter(
-                func.cast(osm_buildings_synthetic.id, Integer).in_(synt_building_id)
+                func.cast(osm_buildings_synthetic.id, Integer).in_(
+                    synt_building_id
+                )
             )
             .filter(
                 func.cast(osm_buildings_synthetic.cell_id, Integer)
                 == egon_map_zensus_weather_cell.zensus_population_id,
             )
             .filter(
-                egon_map_zensus_weather_cell.w_id == egon_era5_renewable_feedin.w_id,
+                egon_map_zensus_weather_cell.w_id
+                == egon_era5_renewable_feedin.w_id,
             )
             .filter(egon_era5_renewable_feedin.carrier == "heat_pump_cop")
         )
@@ -113,11 +123,14 @@ def get_cop(building_ids):
         cells_query.session.bind,
         index_col=None,
     )
-    df_cop_synth["egon_building_id"] = df_cop_synth["egon_building_id"].astype(int)
+    df_cop_synth["egon_building_id"] = df_cop_synth["egon_building_id"].astype(
+        int
+    )
     df_cop = pd.concat([df_cop_osm, df_cop_synth], axis=0, ignore_index=True)
 
     df_cop = pd.DataFrame.from_dict(
-        df_cop.set_index("egon_building_id")["feedin"].to_dict(), orient="columns"
+        df_cop.set_index("egon_building_id")["feedin"].to_dict(),
+        orient="columns",
     )
 
     return df_cop
@@ -408,8 +421,15 @@ def calc_cts_building_profiles(
                 session.query(
                     egon_cts_electricity_demand_building_share,
                 )
-                .filter(egon_cts_electricity_demand_building_share.scenario == scenario)
-                .filter(egon_cts_electricity_demand_building_share.bus_id.in_(bus_ids))
+                .filter(
+                    egon_cts_electricity_demand_building_share.scenario
+                    == scenario
+                )
+                .filter(
+                    egon_cts_electricity_demand_building_share.bus_id.in_(
+                        bus_ids
+                    )
+                )
             )
 
         df_demand_share = pd.read_sql(
@@ -441,8 +461,12 @@ def calc_cts_building_profiles(
                 session.query(
                     egon_cts_heat_demand_building_share,
                 )
-                .filter(egon_cts_heat_demand_building_share.scenario == scenario)
-                .filter(egon_cts_heat_demand_building_share.bus_id.in_(bus_ids))
+                .filter(
+                    egon_cts_heat_demand_building_share.scenario == scenario
+                )
+                .filter(
+                    egon_cts_heat_demand_building_share.bus_id.in_(bus_ids)
+                )
             )
 
         df_demand_share = pd.read_sql(
@@ -481,7 +505,8 @@ def calc_cts_building_profiles(
         except KeyError:
             # This should only happen within the SH cutout
             logger.info(
-                f"No CTS profile found for substation with bus_id:" f" {bus_id}"
+                f"No CTS profile found for substation with bus_id:"
+                f" {bus_id}"
             )
             continue
 
@@ -505,7 +530,9 @@ def identify_similar_mvgd(number_of_residentials):
         cells_query = (
             session.query(
                 egon_map_zensus_mvgd_buildings.bus_id,
-                func.count(egon_map_zensus_mvgd_buildings.building_id).label("count"),
+                func.count(egon_map_zensus_mvgd_buildings.building_id).label(
+                    "count"
+                ),
             )
             .filter(
                 egon_map_zensus_mvgd_buildings.sector == "residential",
@@ -514,7 +541,9 @@ def identify_similar_mvgd(number_of_residentials):
             .group_by(egon_map_zensus_mvgd_buildings.bus_id)
         )
 
-    df = pd.read_sql(cells_query.statement, session.connection(), index_col=None)
+    df = pd.read_sql(
+        cells_query.statement, session.connection(), index_col=None
+    )
 
     df = df.loc[df["count"] > number_of_residentials]
     mvgd = df.nsmallest(1, columns="count")
@@ -579,7 +608,9 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
         logger.info(f"No profiles for MVGD: {mvgd}")
         return pd.DataFrame(columns=columns)
 
-    df_profiles = get_daily_profiles(df_profiles_ids["selected_idp_profiles"].unique())
+    df_profiles = get_daily_profiles(
+        df_profiles_ids["selected_idp_profiles"].unique()
+    )
 
     df_daily_demand_share = get_daily_demand_share(mvgd)
 
@@ -634,7 +665,9 @@ def aggregate_residential_and_cts_profiles(mvgd, scenario):
 
     """
     # ############### get residential heat demand profiles ###############
-    df_heat_ts = calc_residential_heat_profiles_per_mvgd(mvgd=mvgd, scenario=scenario)
+    df_heat_ts = calc_residential_heat_profiles_per_mvgd(
+        mvgd=mvgd, scenario=scenario
+    )
 
     # pivot to allow aggregation with CTS profiles
     df_heat_ts = df_heat_ts.pivot(

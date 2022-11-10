@@ -30,7 +30,9 @@ config_dir = config_dir[0]
 
 def setup_directory(cfg_m):
     working_dir = (
-        Path(cfg_m["working-dir"]) / Path(cfg_m["grid-id"]) / Path(cfg_m["feeder-id"])
+        Path(cfg_m["working-dir"])
+        / Path(cfg_m["grid-id"])
+        / Path(cfg_m["feeder-id"])
     )
     os.makedirs(working_dir, exist_ok=True)
 
@@ -137,7 +139,9 @@ def run_optimization():
     results = lopf.optimize(model, "gurobi")
 
     # Export HP-results
-    export_dir = Path(f"{cfg_m['working-dir']}/{cfg_m['grid-id']}/{cfg_m['feeder-id']}")
+    export_dir = Path(
+        f"{cfg_m['working-dir']}/{cfg_m['grid-id']}/{cfg_m['feeder-id']}"
+    )
     for res_name, res in results.items():
         try:
             res = res.loc[timesteps]
@@ -151,7 +155,9 @@ def run_optimization():
             res.astype(np.float16).to_csv(
                 export_dir
                 / Path("results/powerflow_results")
-                / Path(f"{res_name}_{cfg_m['grid-id']}_{cfg_m['feeder-id']}.csv")
+                / Path(
+                    f"{res_name}_{cfg_m['grid-id']}_{cfg_m['feeder-id']}.csv"
+                )
             )
     print(f"Saved results to: {export_dir}/powerflow_results.")
 

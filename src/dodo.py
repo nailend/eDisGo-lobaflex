@@ -1,3 +1,4 @@
+from doit.reporter import ConsoleReporter, JsonReporter
 from doit.tools import check_timestamp_unchanged, result_dep
 
 from dnm_generation import run_dnm_generation
@@ -152,7 +153,7 @@ def task_group():
             "actions": None,
             "name": str(mvgd),
             "doc": "mvgd",
-            "task_dep": [f"grids:{mvgd}_{i}" for i in tasks]
+            "task_dep": [f"grids:{mvgd}_{i}" for i in tasks],
         }
 
     for task in tasks:
@@ -160,7 +161,7 @@ def task_group():
             "actions": None,
             "name": str(task),
             "doc": "task",
-            "task_dep": [f"grids:{i}_{task}" for i in mvgds]
+            "task_dep": [f"grids:{i}_{task}" for i in mvgds],
         }
 
 

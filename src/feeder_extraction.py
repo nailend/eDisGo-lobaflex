@@ -22,7 +22,9 @@ def extract_feeders_parallel(
     # filter flexible loads: heat_pump, charging_point [home, work]
     if flexible_loads:
         flexible_loads = edisgo_obj.topology.loads_df.loc[
-            edisgo_obj.topology.loads_df["type"].isin(["heat_pump", "charging_point"])
+            edisgo_obj.topology.loads_df["type"].isin(
+                ["heat_pump", "charging_point"]
+            )
         ]
 
         flexible_loads = flexible_loads.drop(
@@ -79,8 +81,9 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False):
         )
         for feeder_id, feeder in enumerate(feeders):
             # TODO sth is off here. Feeder id == 0 doesnt exist? investigate!
-            write_metadata(export_path / "feeder" / str(feeder_id+1),
-                           edisgo_obj=feeder)
+            write_metadata(
+                export_path / "feeder" / str(feeder_id + 1), edisgo_obj=feeder
+            )
         write_metadata(export_path, edisgo_obj=edisgo_obj)
 
     else:
