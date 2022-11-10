@@ -95,7 +95,7 @@ def run_dnm_generation(grid_id, save=False):
 
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
-    cfg = get_config(path=config_dir / "grid_generation.yaml")
+    cfg = get_config(path=config_dir / ".grids.yaml")
 
     import_dir = cfg["dnm_generation"].get("import")
     import_path = data_dir / import_dir / str(grid_id)

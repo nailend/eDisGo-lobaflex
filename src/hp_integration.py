@@ -192,7 +192,7 @@ def create_heatpumps_from_db(edisgo_obj):
 def run_hp_integration(grid_id, edisgo_obj=False, save=False):
 
     logger.info(f"Start heat pump integration for {grid_id}.")
-    cfg = get_config(path=config_dir / "grid_generation.yaml")
+    cfg = get_config(path=config_dir / ".grids.yaml")
 
     if not edisgo_obj:
         import_dir = cfg["hp_integration"].get("import")

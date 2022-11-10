@@ -22,7 +22,7 @@ def run_emob_integration(
 ):
 
     logger.info(f"Start emob integration for {grid_id}.")
-    cfg = get_config(path=config_dir / "grid_generation.yaml")
+    cfg = get_config(path=config_dir / ".grids.yaml")
 
     if not edisgo_obj:
 

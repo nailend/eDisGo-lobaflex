@@ -18,7 +18,7 @@ config_dir = get_dir(key="config")
 def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
 
     logger.info(f"Start load integration for {grid_id}.")
-    cfg = get_config(path=config_dir / "grid_generation.yaml")
+    cfg = get_config(path=config_dir / ".grids.yaml")
 
     if not edisgo_obj:
 

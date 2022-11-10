@@ -50,7 +50,7 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False):
 
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
-    cfg = get_config(path=config_dir / "grid_generation.yaml")
+    cfg = get_config(path=config_dir / ".grids.yaml")
 
     only_flex_ev = cfg["feeder_extraction"].get("only_flex_ev")
     flexible_loads = cfg["feeder_extraction"].get("flexible_loads")
