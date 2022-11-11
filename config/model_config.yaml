@@ -1,8 +1,7 @@
-model:
-  mvgds: [2534, 176, 177, 1056, 1690, 1811]
-  feeder: False
-  feeder-id: 0
 opt:
+#  mvgds: [2534, 176, 177, 1056, 1690, 1811]
+  mvgds: [2534]
+  feeder: False
   solver: 'gurobi'
   opt_storage: False
   opt_ev: False
@@ -16,6 +15,7 @@ logger:
   log_to_file: True
 grids:
   mvgds: [2534, 176, 177, 1056, 1690, 1811]
+  start: "load_integration"
   load_integration:
     import: "elia_ding0_grids"
     export: "load_n_gen_grids"
@@ -34,4 +34,3 @@ grids:
     only_flex_ev: False
   dnm_generation:
     import: "load_n_gen_n_emob_n_hp_grids_extracted"
-    export: "downstream_node_matrix"
