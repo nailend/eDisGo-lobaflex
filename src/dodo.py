@@ -183,17 +183,20 @@ def task_opt():
 
     for mvgd in mvgds:
         feeder_path = data_dir / feeder_dir / str(mvgd) / "feeder"
-        feeder_ids = [
-            feeder_id
-            for feeder_id in os.listdir(feeder_path)
-            if os.path.isdir(feeder_path / feeder_id)
-        ]
+        try:
+            feeder_ids = [
+                feeder_id
+                for feeder_id in os.listdir(feeder_path)
+                if os.path.isdir(feeder_path / feeder_id)
+            ]
+        except FileNotFoundError:
+            continue
         for feeder in sorted(feeder_ids):
             yield optimization(mvgd=mvgd, feeder=feeder)
 
 
 def task_grids_group():
-    """Groups tasks"""
+    """Groups grid tasks"""
     cfg = get_config(path=config_dir / ".grids.yaml")
     mvgds = sorted(cfg.get("mvgds"))
     tasks = [i for i in cfg.keys() if "mvgd" not in i]
@@ -211,6 +214,34 @@ def task_grids_group():
             "name": str(task),
             "doc": "per task",
             "task_dep": [f"grids:{i}_{task}" for i in mvgds],
+        }
+
+
+def task_opt_group():
+    """Group opt tasks"""
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    mvgds = sorted(cfg_o.get("mvgds"))
+
+    cfd_g = get_config(path=config_dir / ".grids.yaml")
+    feeder_dir = cfd_g["feeder_extraction"].get("export")
+
+    for mvgd in mvgds:
+        feeder_path = data_dir / feeder_dir / str(mvgd) / "feeder"
+        try:
+            feeder_ids = [
+                feeder_id
+                for feeder_id in os.listdir(feeder_path)
+                if os.path.isdir(feeder_path / feeder_id)
+            ]
+        except FileNotFoundError:
+            continue
+        yield {
+            "actions": None,
+            "name": str(mvgd),
+            "doc": "per mvgd",
+            "task_dep": [
+                f"{mvgd}/{int(i):02}_optimization" for i in feeder_ids
+            ],
         }
 
 
