@@ -31,7 +31,7 @@ def get_dnm(mvgd, feeder):
     cfd_g = get_config(path=config_dir / ".grids.yaml")
     feeder_dir = cfd_g["dnm_generation"].get("import")
 
-    import_path = data_dir / feeder_dir / mvgd / "feeder" / feeder
+    import_path = data_dir / feeder_dir / str(mvgd) / "feeder" / str(feeder)
     file_path = import_path / f"downstream_node_matrix_{mvgd}" \
                               f"_{feeder}.csv"
     downstream_nodes_matrix = pd.read_csv(os.path.join(file_path), index_col=0)
