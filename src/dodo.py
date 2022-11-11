@@ -240,7 +240,7 @@ def task_opt_group():
             "name": str(mvgd),
             "doc": "per mvgd",
             "task_dep": [
-                f"{mvgd}/{int(i):02}_optimization" for i in feeder_ids
+                f"opt:{mvgd}/{int(i):02}_optimization" for i in feeder_ids
             ],
         }
 
