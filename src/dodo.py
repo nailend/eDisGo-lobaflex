@@ -199,21 +199,21 @@ def task_grids_group():
     """Groups grid tasks"""
     cfg = get_config(path=config_dir / ".grids.yaml")
     mvgds = sorted(cfg.get("mvgds"))
-    operations = [i for i in cfg.keys() if "mvgd" not in i]
+    tasks = [i for i in cfg.keys() if "mvgd" not in i]
     for mvgd in mvgds:
         yield {
             "actions": None,
             "name": str(mvgd),
             "doc": "per mvgd",
-            "task_dep": [f"grids:{mvgd}_{i}" for i in operations],
+            "task_dep": [f"grids:{mvgd}_{i}" for i in tasks],
         }
 
-    for operation in operations:
+    for task in tasks:
         yield {
             "actions": None,
-            "name": str(operation),
+            "name": str(task),
             "doc": "per task",
-            "task_dep": [f"grids:{i}_{operation}" for i in mvgds],
+            "task_dep": [f"grids:{i}_{task}" for i in mvgds],
         }
 
 
