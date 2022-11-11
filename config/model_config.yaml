@@ -1,6 +1,5 @@
 model:
-  grid-id: 176
-  multi_grid_ids: [2534, 176, 177, 1056, 1690, 1811]
+  mvgds: [2534, 176, 177, 1056, 1690, 1811]
   feeder: False
   feeder-id: 0
 opt:
@@ -16,7 +15,7 @@ logger:
   log_file: 'log.txt'
   log_to_file: True
 grids:
-  mvgd: [2534, 176, 177, 1056, 1690, 1811]
+  mvgds: [2534, 176, 177, 1056, 1690, 1811]
   load_integration:
     import: "elia_ding0_grids"
     export: "load_n_gen_grids"
