@@ -16,31 +16,13 @@ saio.register_schema("boundaries", engine=engine)
 saio.register_schema("supply", engine=engine)
 saio.register_schema("openstreetmap", engine=engine)
 
-from saio.boundaries import (
-    egon_map_zensus_buildings_residential,
-    egon_map_zensus_climate_zones,
-    egon_map_zensus_grid_districts,
-    egon_map_zensus_mvgd_buildings,
-    egon_map_zensus_weather_cell,
-)
-from saio.demand import (
-    egon_building_electricity_peak_loads,
-    egon_cts_electricity_demand_building_share,
-    egon_cts_heat_demand_building_share,
-    egon_daily_heat_demand_per_climate_zone,
-    egon_etrago_electricity_cts,
-    egon_etrago_heat_cts,
-    egon_heat_idp_pool,
-    egon_heat_timeseries_selected_profiles,
-    egon_peta_heat,
-)
-from saio.openstreetmap import osm_buildings_synthetic
-from saio.supply import egon_era5_renewable_feedin
-
 
 @timeit
 def get_random_residential_buildings(scenario, limit):
     """"""
+
+    from saio.demand import egon_building_electricity_peak_loads
+
     # residential
 
     with db.session_scope() as session:
@@ -66,6 +48,13 @@ def get_random_residential_buildings(scenario, limit):
 
 @timeit
 def get_cop(building_ids):
+
+    from saio.boundaries import (
+        egon_map_zensus_buildings_residential,
+        egon_map_zensus_weather_cell,
+    )
+    from saio.openstreetmap import osm_buildings_synthetic
+    from saio.supply import egon_era5_renewable_feedin
 
     with db.session_scope() as session:
         cells_query = (
@@ -157,7 +146,8 @@ def create_timeseries_for_building(building_id, scenario):
         SELECT building_demand * UNNEST(idp) as demand
         FROM
         (
-        SELECT demand.demand / building.count * daily_demand.daily_demand_share as building_demand, daily_demand.day_of_year
+        SELECT demand.demand / building.count * daily_demand.daily_demand_share
+                as building_demand, daily_demand.day_of_year
         FROM
 
         (SELECT demand FROM
@@ -243,6 +233,8 @@ def get_peta_demand(mvgd, scenario):
         the dataframe are zensus_population_id and demand.
 
     """
+    from saio.boundaries import egon_map_zensus_grid_districts
+    from saio.demand import egon_peta_heat
 
     with db.session_scope() as session:
         query = (
@@ -286,6 +278,10 @@ def get_residential_heat_profile_ids(mvgd):
         selected_idp_profiles, buildings and day_of_year.
 
     """
+
+    from saio.boundaries import egon_map_zensus_grid_districts
+    from saio.demand import egon_heat_timeseries_selected_profiles
+
     with db.session_scope() as session:
         query = (
             session.query(
@@ -336,6 +332,7 @@ def get_daily_profiles(profile_ids):
         house, temperature_class and hour.
 
     """
+    from saio.demand import egon_heat_idp_pool
 
     with db.session_scope() as session:
         query = session.query(egon_heat_idp_pool).filter(
@@ -368,6 +365,11 @@ def get_daily_demand_share(mvgd):
         are zensus_population_id, day_of_year and daily_demand_share.
 
     """
+    from saio.boundaries import (
+        egon_map_zensus_climate_zones,
+        egon_map_zensus_grid_districts,
+    )
+    from saio.demand import egon_daily_heat_demand_per_climate_zone
 
     with db.session_scope() as session:
         query = session.query(
@@ -414,6 +416,13 @@ def calc_cts_building_profiles(
         is hour of the year as int (0-8759).
 
     """
+    from saio.demand import (
+        egon_cts_electricity_demand_building_share,
+        egon_cts_heat_demand_building_share,
+        egon_etrago_electricity_cts,
+        egon_etrago_heat_cts,
+    )
+
     if sector == "electricity":
         # Get cts building electricity demand share of selected buildings
         with db.session_scope() as session:
@@ -522,6 +531,8 @@ def calc_cts_building_profiles(
 
 
 def identify_similar_mvgd(number_of_residentials):
+
+    from saio.boundaries import egon_map_zensus_mvgd_buildings
 
     logger.info(
         f"Looking for MVGD with more then {number_of_residentials} residentials."
