@@ -15,24 +15,76 @@ config_dir = get_dir(key="config")
 data_dir = get_dir(key="data")
 
 
+def get_flexible_loads(
+    edisgo_obj, heat_pump=False, electromobility=False, bess=False, **kwargs
+):
+    """
+
+    :param edisgo_obj:
+    :type edisgo_obj: eDisGo-obj
+    :param heat_pump:
+    :type heat_pump: bool
+    :param electromobility:
+    :type electromobility: bool
+    :param bess:
+    :type bess: bool
+    :return:
+    :rtype:
+
+    Other Parameters
+    ------------------
+    electromobility_sectors : None or set(str)
+        Specifies which electromobility sectores are flexibile. By default this
+        is set to None, in which case all sectors are taken.
+
+    """
+    emob_sectors = {"public", "home", "work"}
+    emob_sectors = kwargs.get("electromobility_sectors", emob_sectors)
+    emob_sectors_fix = [
+        i for i in ["public", "home", "work"] if i not in emob_sectors
+    ]
+
+    types = list()
+    if heat_pump:
+        types += ["heat_pump"]
+    if electromobility:
+        types += ["charging_point"]
+    if bess:
+        # TODO
+        raise NotImplementedError()
+        # types += "storages" #
+
+    flexible_loads = edisgo_obj.topology.loads_df.loc[
+        edisgo_obj.topology.loads_df["type"].isin(types)
+    ]
+
+    if electromobility:
+        flexible_loads = flexible_loads.drop(
+            flexible_loads.loc[
+                (flexible_loads["type"] == "charging_point")
+                & (flexible_loads["sector"].isin(emob_sectors_fix))
+            ].index
+        )
+
+    return flexible_loads
+
+
 def extract_feeders_parallel(
     edisgo_obj, export_path, flexible_loads, only_flex_ev=False
 ):
 
-    # filter flexible loads: heat_pump, charging_point [home, work]
-    if flexible_loads:
-        flexible_loads = edisgo_obj.topology.loads_df.loc[
-            edisgo_obj.topology.loads_df["type"].isin(
-                ["heat_pump", "charging_point"]
-            )
-        ]
-
-        flexible_loads = flexible_loads.drop(
-            flexible_loads.loc[
-                (flexible_loads["type"] == "charging_point")
-                & (flexible_loads["sector"] == "public")
-            ].index
-        )
+    logger.info("Get flexible loads")
+    # TODO add to config
+    flexible_loads = get_flexible_loads(
+        edisgo_obj=edisgo_obj,
+        # heat_pump=cfg_o["opt_hp"],
+        # electromobility=cfg_o["opt_ev"],
+        # bess=cfg_o["opt_bess"],
+        heat_pump=True,
+        electromobility=True,
+        bess=False,
+        electromobility_sectors=["work", "home"],
+    )
 
     feeders, buses_with_feeders = extract_feeders_nx(
         edisgo_obj=edisgo_obj,
