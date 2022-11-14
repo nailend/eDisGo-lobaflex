@@ -74,16 +74,12 @@ def extract_feeders_parallel(
 ):
 
     logger.info("Get flexible loads")
-    # TODO add to config
     flexible_loads = get_flexible_loads(
         edisgo_obj=edisgo_obj,
-        # heat_pump=cfg_o["opt_hp"],
-        # electromobility=cfg_o["opt_ev"],
-        # bess=cfg_o["opt_bess"],
-        heat_pump=True,
-        electromobility=True,
-        bess=False,
-        electromobility_sectors=["work", "home"],
+        heat_pump=flexible_loads["hp"],
+        electromobility=flexible_loads["ev"],
+        bess=flexible_loads["bess"],
+        electromobility_sectors=flexible_loads["ev_sectors"],
     )
 
     feeders, buses_with_feeders = extract_feeders_nx(

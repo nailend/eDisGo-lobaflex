@@ -29,7 +29,11 @@ grids:
   feeder_extraction:
     import: "load_n_gen_n_emob_n_hp_grids"
     export: "load_n_gen_n_emob_n_hp_grids_extracted"
-    flexible_loads: True
+    flexible_loads:
+      hp: True
+      bess: False
+      ev: True
+      ev_sectors: ["work", "home"]
     only_flex_ev: False
   dnm_generation:
     import: "load_n_gen_n_emob_n_hp_grids_extracted"
