@@ -244,6 +244,10 @@ def task_opt_group():
             ],
         }
 
+DOIT_CONFIG = {'default_tasks': [
+    "grids",
+    "opt"]}
+
 
 if __name__ == "__main__":
     import doit
