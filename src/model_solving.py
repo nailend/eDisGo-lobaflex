@@ -25,18 +25,22 @@ results_dir = get_dir(key="results")
 
 # logger = logging.getLogger(__name__)
 
-
 def get_dnm(mvgd, feeder):
     """
     Get Downstream Node Matrix that describes the influence of the nodes on
     each other
 
-    :param mvgd: MVGD id
-    :type mvgd: int
-    :param feeder: Feeder id
-    :type feeder: int
-    :return: Downstream node matrix
-    :rtype: pd.DataFrame
+    Parameters
+    ----------
+    mvgd : int
+        MVGD id
+    feeder : int
+        Feeder id
+
+    Returns
+    -------
+    pd.DataFrame
+        Downstream node matrix
     """
     cfd_g = get_config(path=config_dir / ".grids.yaml")
     feeder_dir = cfd_g["dnm_generation"].get("import")
@@ -61,11 +65,13 @@ def get_dnm(mvgd, feeder):
 
 def export_results(results, path):
     """
-    :param results: Results of the optimiziation
-    :type results: dict
-    :param path: Export path for results
-    :type path: PoxisPath
 
+    Parameters
+    ----------
+    results : dict
+        Results of the optimiziation
+    path : PosixPath
+        Export path for results
     """
 
     os.makedirs(path, exist_ok=True)
@@ -97,18 +103,17 @@ def run_optimization(grid_id, feeder_id=False, edisgo_obj=False,
                      save=False, doit=False):
     """
 
-    :param grid_id:
-    :type grid_id:
-    :param feeder_id:
-    :type feeder_id:
-    :param edisgo_obj:
-    :type edisgo_obj:
-    :param save:
-    :type save:
-    :param doit:
-    :type doit:
-    :return:
-    :rtype:
+    Parameters
+    ----------
+    grid_id :
+    feeder_id :
+    edisgo_obj :
+    save :
+    doit :
+
+    Returns
+    -------
+
     """
 
     cfg_g = get_config(path=config_dir / ".grids.yaml")
