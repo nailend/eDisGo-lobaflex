@@ -26,12 +26,25 @@ results_dir = get_dir(key="results")
 
 
 def get_dnm(mvgd, feeder):
-    """Get Downstream Node Matrix that describes the influence of the nodes on
-    each other"""
+    """
+    Get Downstream Node Matrix that describes the influence of the nodes on
+    each other
+
+    :param mvgd: MVGD id
+    :type mvgd: int
+    :param feeder: Feeder id
+    :type feeder: int
+    :return: Downstream node matrix
+    :rtype: pd.DataFrame
+    """
     cfd_g = get_config(path=config_dir / ".grids.yaml")
     feeder_dir = cfd_g["dnm_generation"].get("import")
+    feeder = f"{int(feeder):02}"
 
     import_path = data_dir / feeder_dir / str(mvgd) / "feeder" / str(feeder)
+    # TODO dirty quick fix
+    # file_path = import_path / f"downstream_node_matrix_{mvgd}" \
+    #                           f"_{feeder}.csv"
     file_path = import_path / f"downstream_node_matrix_{mvgd}" \
                               f"_{feeder}.csv"
     downstream_nodes_matrix = pd.read_csv(os.path.join(file_path), index_col=0)
@@ -45,15 +58,62 @@ def get_dnm(mvgd, feeder):
     return downstream_nodes_matrix
 
 
+def export_results(results, path):
+    """
+    :param results: Results of the optimiziation
+    :type results: dict
+    :param path: Export path for results
+    :type path: PoxisPath
+
+    """
+
+    os.makedirs(path, exist_ok=True)
+    logger.info(f"Export HP-results to: {path}")
+
+    # Export HP-results
+    for res_name, res in results.items():
+        try:
+            res = res.loc[timesteps]
+        except Exception:
+            # TODO handle this properly
+            logger.debug(f"Exception {res_name}")
+            pass
+        if "slack" in res_name:
+            res = res[res > 1e-6]  # TODO tolerance?
+            res = res.dropna(how="all")
+            res = res.dropna(how="all")
+        if not res.empty:
+            filename = path / f"{res_name}.csv"
+            res.astype(np.float16).to_csv(filename, mode="w")
+            # res.astype(np.float16).to_csv(filename, header=False, mode="a")
+
+
+
 # TODO
 #   rolling horizon
 #
 def run_optimization(grid_id, feeder_id=False, edisgo_obj=False,
                      save=False, doit=False):
+    """
+
+    :param grid_id:
+    :type grid_id:
+    :param feeder_id:
+    :type feeder_id:
+    :param edisgo_obj:
+    :type edisgo_obj:
+    :param save:
+    :type save:
+    :param doit:
+    :type doit:
+    :return:
+    :rtype:
+    """
 
     cfg_g = get_config(path=config_dir / ".grids.yaml")
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     # mvgds = cfg_g["model"].get("mvgd")
+    feeder_id = f"{feeder_id:02}"
 
     if not edisgo_obj:
         if not feeder_id:
@@ -91,40 +151,77 @@ def run_optimization(grid_id, feeder_id=False, edisgo_obj=False,
         edisgo_obj,
         downstream_nodes_matrix,
         pu=False,
-        optimize_storage=cfg_o["opt_storage"],
+        optimize_storage=cfg_o["opt_bess"],
         optimize_ev_charging=cfg_o["opt_ev"],
         optimize_hp=cfg_o["opt_hp"],
     )
 
+    # energy_level = {}
+    # charging_hp = {}
+    # charging_tes = {}
+    if cfg_o["rolling_horizon"]:
+        t_max = cfg_o["timesteps_per_iteration"]
+        # interval_start = timesteps[::t_max]
+        # interval_end = timesteps[t_max-1:][::t_max]
+        # interval_end = interval_end.append(timesteps[-1:])
+        # [timesteps[start:end] for start, end in zip(interval_start,
+        #                                             interval_end)]
+
+        interval_start = list(range(0, len(timesteps), t_max))
+        interval_end = list(range(t_max-1, len(timesteps), t_max))
+        if len(timesteps) % t_max > 0:
+            interval_end += [len(timesteps)]
+
+        [timesteps[start:end] for start, end in zip(interval_start,
+                                                    interval_end)]
+
+
+
+
     logger.info("Setup model")
     model = lopf.setup_model(
-        parameters,
+        timeinvariant_parameters=parameters,
         timesteps=timesteps,
         objective=cfg_o["objective"],
+        optimize_storage=cfg_o["opt_bess"],
+        optimize_ev_charging=cfg_o["opt_ev"],
+        optimize_hp=cfg_o["opt_hp"],
+        # charging_start_hp=charging_start,
+        # energy_level_start_tes=energy_level_start,
+        # energy_level_end_tes=energy_level_end,
+        # **kwargs,
     )
+
+
+
+
+
 
     logger.info("Optimize model")
     results = lopf.optimize(model=model, solver=cfg_o["solver"])
 
-    export_path = results_dir / grid_id / feeder_id
-    os.makedirs(export_path, exist_ok=True)
-    logger.info(f"Export HP-results to: {export_path}")
 
-    # Export HP-results
-    for res_name, res in results.items():
-        try:
-            res = res.loc[timesteps]
-        except Exception:
-            # TODO handle this properly
-            logger.debug(f"Exception {res_name}")
-            pass
-        if "slack" in res_name:
-            res = res[res > 1e-6] # TODO tolerance?
-            res = res.dropna(how="all")
-            res = res.dropna(how="all")
-        if not res.empty:
-            filename = export_path / f"{res_name}.csv"
-            res.astype(np.float16).to_csv(path=filename)
+    export_path = results_dir / str(grid_id) / str(feeder_id) / "results" / \
+                  "powerflow_results"
+    export_results(results=results, path=export_path)
+
+    # list_attr = ["charging_hp_el",
+    #              "charging_tes",
+    #              "energy_tes"
+    #              ]
+    # loads_p = pd.DataFrame()
+    # if cfg_o["opt_hp"]:
+    #     loads_p = pd.concat([loads_p, results["charging_hp_el"]], axis=1)
+    # if cfg_o["opt_ev"]:
+    #     loads_p = pd.concat([loads_p, results["charging_hp_el"]], axis=1)
+    # if cfg_p
+    #
+    # # storage_units_p = results[""]
+    #
+    # edisgo_obj.set_time_series_manual()
+    #         loads_p=None,
+    #         storage_units_p=None,
+    #         generators_q=None,
 
     # TODO
     # # TODO add results to obj
