@@ -50,8 +50,7 @@ def get_dnm(mvgd, feeder):
     # TODO dirty quick fix
     # file_path = import_path / f"downstream_node_matrix_{mvgd}" \
     #                           f"_{feeder}.csv"
-    file_path = import_path / f"downstream_node_matrix_{mvgd}" \
-                              f"_{feeder}.csv"
+    file_path = import_path / f"downstream_node_matrix_{mvgd}_{feeder}.csv"
     downstream_nodes_matrix = pd.read_csv(os.path.join(file_path), index_col=0)
     # TODO could be sparse?
     downstream_nodes_matrix = downstream_nodes_matrix.astype(np.uint8)
@@ -140,8 +139,9 @@ def run_optimization(grid_id, feeder_id=False, edisgo_obj=False,
         )
 
     # TODO temporary workaround
-    timesteps = list(range(24))
+    timesteps = list(range(24*8+1))
     timesteps = edisgo_obj.timeseries.timeindex[timesteps]
+
 
     # Due to different voltage levels, impedances need to adapted
     # TODO alternatively p.u.
@@ -149,7 +149,7 @@ def run_optimization(grid_id, feeder_id=False, edisgo_obj=False,
     edisgo_obj = convert_impedances_to_mv(edisgo_obj)
 
     logger.info("Downstream node matrix imported")
-    downstream_nodes_matrix = get_dnm(mvgd=grid_id, feeder=feeder_id)
+    downstream_nodes_matrix = get_dnm(mvgd=grid_id, feeder=int(feeder_id))
 
     logger.info("Get flexible loads")
     flexible_loads = get_flexible_loads(
