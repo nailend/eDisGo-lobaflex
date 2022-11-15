@@ -129,9 +129,13 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
         )
         for feeder_id, feeder in enumerate(feeders):
             # TODO sth is off here. Feeder id == 0 doesnt exist? investigate!
-            write_metadata(
-                export_path / "feeder" / str(feeder_id + 1), edisgo_obj=feeder
-            )
+            try:
+                # meta_path = export_path / "feeder" / str(feeder_id + 1)
+                folder = f"{feeder_id+1:02}"
+                meta_path = export_path / "feeder" / folder
+                write_metadata(meta_path, edisgo_obj=feeder)
+            except Exception:
+                logger.debug(f"No feeder folder {feeder_id} found for metadata")
         write_metadata(export_path, edisgo_obj=edisgo_obj)
 
     else:
