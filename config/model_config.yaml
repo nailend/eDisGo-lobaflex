@@ -3,10 +3,11 @@ opt:
 #  mvgds: [2534]
   feeder: False
   solver: 'gurobi'
-  opt_storage: False
-  opt_ev: False
+  opt_bess: False
+  opt_ev: True
   opt_hp: True
   objective: 'minimize_loading'
+  rolling_horizon: False
   timesteps_per_iteration: 96
   iterations_per_era: 7
   overlap_iterations: 24
