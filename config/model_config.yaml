@@ -4,8 +4,9 @@ opt:
   feeder: False
   solver: 'gurobi'
   opt_bess: False
-  opt_ev: True
   opt_hp: True
+  opt_emob: True
+  emob_sectors: ["work", "home"]
   objective: 'minimize_loading'
   rolling_horizon: False
   timesteps_per_iteration: 96
@@ -33,8 +34,8 @@ grids:
     flexible_loads:
       hp: True
       bess: False
-      ev: True
-      ev_sectors: ["work", "home"]
+      emob: True
+      emob_sectors: ["work", "home"]
     only_flex_ev: False
   dnm_generation:
     import: "load_n_gen_n_emob_n_hp_grids_extracted"

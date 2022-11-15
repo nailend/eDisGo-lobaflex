@@ -76,10 +76,10 @@ def extract_feeders_parallel(
     logger.info("Get flexible loads")
     flexible_loads = get_flexible_loads(
         edisgo_obj=edisgo_obj,
-        heat_pump=flexible_loads["hp"],
-        electromobility=flexible_loads["ev"],
         bess=flexible_loads["bess"],
-        electromobility_sectors=flexible_loads["ev_sectors"],
+        heat_pump=flexible_loads["hp"],
+        electromobility=flexible_loads["emob"],
+        electromobility_sectors=flexible_loads["emob_sectors"],
     )
 
     feeders, buses_with_feeders = extract_feeders_nx(

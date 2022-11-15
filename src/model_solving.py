@@ -11,7 +11,8 @@ import pandas as pd
 from edisgo.edisgo import import_edisgo_from_files
 from edisgo.tools.tools import convert_impedances_to_mv
 from loguru import logger
-
+# import eDisGo_lobaflex as loba
+from feeder_extraction import get_flexible_loads
 from tools import get_config, get_dir
 
 # from edisgo.tools import logger
@@ -145,6 +146,15 @@ def run_optimization(grid_id, feeder_id=False, edisgo_obj=False,
     logger.info("Downstream node matrix imported")
     downstream_nodes_matrix = get_dnm(mvgd=grid_id, feeder=feeder_id)
 
+    logger.info("Get flexible loads")
+    flexible_loads = get_flexible_loads(
+        edisgo_obj=edisgo_obj,
+        heat_pump=cfg_o["opt_hp"],
+        electromobility=cfg_o["opt_emob"],
+        bess=cfg_o["opt_bess"],
+        electromobility_sectors=cfg_o["emob_sectors"],
+    )
+
     logger.info("Extract time-invariant parameters")
     # Create dict with time invariant parameters
     parameters = lopf.prepare_time_invariant_parameters(
@@ -152,8 +162,9 @@ def run_optimization(grid_id, feeder_id=False, edisgo_obj=False,
         downstream_nodes_matrix,
         pu=False,
         optimize_storage=cfg_o["opt_bess"],
-        optimize_ev_charging=cfg_o["opt_ev"],
+        optimize_ev_charging=cfg_o["opt_emob"],
         optimize_hp=cfg_o["opt_hp"],
+        flexible_loads=flexible_loads
     )
 
     # energy_level = {}
