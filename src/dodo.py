@@ -10,7 +10,9 @@ from hp_integration import run_hp_integration
 from load_integration import run_load_integration
 from logger import logger
 from model_solving import run_optimization
-from tools import TelegramReporter, get_config, get_csv_in_subdirs, get_dir, split_yaml
+from tools import (
+    TelegramReporter, get_config, get_csv_in_subdirs, get_dir,
+    dump_yaml)
 
 src_dir = get_dir(key="src")
 logs_dir = get_dir(key="logs")
@@ -22,13 +24,13 @@ config_dir = get_dir(key="config")
 #   6. clean
 #   7. callback telegram bot
 #   8. watch param
-#   9. Check connection to db, maybe at beginnin and raise warning
+#   9. Check connection to db, maybe at beginning and raise warning
 
 
 def task_split_model_config_in_subconfig():
     config_dir = get_dir(key="config")
     cfg = get_config(path=config_dir / "model_config.yaml")
-    split_yaml(yaml_file=cfg, save_to=config_dir)
+    dump_yaml(yaml_file=cfg, save_to=config_dir, split=True)
 
 
 # def task_get_config_global():
