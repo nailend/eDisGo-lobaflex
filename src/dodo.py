@@ -10,7 +10,7 @@ from hp_integration import run_hp_integration
 from load_integration import run_load_integration
 from logger import logger
 from model_solving import run_optimization
-from tools import get_config, get_csv_in_subdirs, get_dir, split_yaml
+from tools import TelegramReporter, get_config, get_csv_in_subdirs, get_dir, split_yaml
 
 src_dir = get_dir(key="src")
 logs_dir = get_dir(key="logs")
@@ -244,9 +244,8 @@ def task_opt_group():
             ],
         }
 
-DOIT_CONFIG = {'default_tasks': [
-    "grids",
-    "opt"]}
+
+DOIT_CONFIG = {"default_tasks": ["grids", "opt"], "reporter": TelegramReporter}
 
 
 if __name__ == "__main__":
