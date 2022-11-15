@@ -113,7 +113,7 @@ def run_optimization(grid_id, feeder_id=False, edisgo_obj=False,
     cfg_g = get_config(path=config_dir / ".grids.yaml")
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     # mvgds = cfg_g["model"].get("mvgd")
-    feeder_id = f"{feeder_id:02}"
+    feeder_id = f"{int(feeder_id):02}"
 
     if not edisgo_obj:
         if not feeder_id:
