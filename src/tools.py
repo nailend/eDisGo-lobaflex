@@ -6,11 +6,14 @@ import time
 from datetime import date, datetime
 from glob import glob
 from pathlib import Path
+import requests
 
 import psutil
 import yaml
 
 from logger import logger
+from doit.exceptions import BaseFail
+import sys
 
 
 def get_dir(key):
@@ -225,3 +228,128 @@ def split_yaml(yaml_file, save_to):
         path = save_to / f".{subconfig}.yaml"
         with open(path, "w") as file:
             file.write(content)
+
+
+def telegram_bot_sendtext(text):
+    config_dir = get_dir(key="config")
+    cfg_telegram = get_config(path=config_dir / ".telegram.yaml")
+    token = cfg_telegram.get("token")
+    chat_id = cfg_telegram.get("chat_id")
+
+    params = {"chat_id": chat_id, "text": text}
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    message = requests.post(url, params=params)
+    return message
+
+
+class TelegramReporter(object):
+    """
+    """
+    # short description, used by the help system
+    desc = 'console output'
+
+    def __init__(self, outstream, options):
+        # save non-successful result information (include task errors)
+        self.failures = []
+        self.runtime_errors = []
+        self.failure_verbosity = options.get('failure_verbosity', 0)
+        self.outstream = outstream
+        self.telegram = telegram_bot_sendtext
+
+    def write(self, text):
+        self.outstream.write(text)
+        # self.telegram(text)
+
+    def initialize(self, tasks, selected_tasks):
+        """called just after tasks have been loaded before execution starts"""
+        current_time = datetime.now().strftime('%A %d-%m-%Y, %H:%M:%S')
+        self.telegram(text="Pipeline started\n" + "-" * 28 + "\n" +
+                           current_time + "\n" + "-" * 28)
+
+    def get_status(self, task):
+        """called when task is selected (check if up-to-date)"""
+        pass
+
+    def execute_task(self, task):
+        """called when execution starts"""
+        # ignore tasks that do not define actions
+        # ignore private/hidden tasks (tasks that start with an underscore)
+        if task.actions and (task.name[0] != '_'):
+            self.write('.  %s\n' % task.title())
+            self.telegram(text=f"Task {task.title()} is executed.")
+
+    def add_failure(self, task, fail: BaseFail):
+        """called when execution finishes with a failure"""
+        result = {'task': task, 'exception': fail}
+        if fail.report:
+            self.failures.append(result)
+            self._write_failure(result)
+            self.telegram(text=f"Task: {task.title()} failed.")
+
+    def add_success(self, task):
+        """called when execution finishes successfully"""
+        self.telegram(text=f"Task: {task.title()} was successful.")
+
+    def skip_uptodate(self, task):
+        """skipped up-to-date task"""
+        if task.name[0] != '_':
+            self.write("-- %s\n" % task.title())
+
+    def skip_ignore(self, task):
+        """skipped ignored task"""
+        self.write("!! %s\n" % task.title())
+
+    def cleanup_error(self, exception):
+        """error during cleanup"""
+        sys.stderr.write(exception.get_msg())
+
+    def runtime_error(self, msg):
+        """error from doit (not from a task execution)"""
+        # saved so they are displayed after task failures messages
+        self.runtime_errors.append(msg)
+
+    def teardown_task(self, task):
+        """called when starts the execution of teardown action"""
+        pass
+
+    def _write_failure(self, result, write_exception=True):
+        msg = '%s - taskid:%s\n' % (result['exception'].get_name(),
+                                    result['task'].name)
+        self.write(msg)
+        if write_exception:
+            self.write(result['exception'].get_msg())
+            self.write("\n")
+
+    def complete_run(self):
+        """called when finished running all tasks"""
+        # if test fails print output from failed task
+        for result in self.failures:
+            task = result['task']
+            # makes no sense to print output if task was not executed
+            if not task.executed:
+                continue
+            show_err = task.verbosity < 1 or self.failure_verbosity > 0
+            show_out = task.verbosity < 2 or self.failure_verbosity == 2
+            if show_err or show_out:
+                self.write("#" * 40 + "\n")
+
+            if show_err:
+                self._write_failure(result,
+                                    write_exception=self.failure_verbosity)
+                err = "".join([a.err for a in task.actions if a.err])
+                self.write("{} <stderr>:\n{}\n".format(task.name, err))
+            if show_out:
+                out = "".join([a.out for a in task.actions if a.out])
+                self.write("{} <stdout>:\n{}\n".format(task.name, out))
+
+        if self.runtime_errors:
+            self.write("#" * 40 + "\n")
+            self.write("Execution aborted.\n")
+            self.write("\n".join(self.runtime_errors))
+            self.write("\n")
+
+        current_time = datetime.now().strftime('%A %d-%m-%Y, %H:%M:%S')
+        self.telegram(text="All tasks completed \n" +
+                           "#" * 28 + "\n" + current_time
+                           # + "\n" + "#" * 28
+                      )
