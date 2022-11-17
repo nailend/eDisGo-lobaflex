@@ -121,11 +121,17 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
         export_path = data_dir / export_dir / str(grid_id)
         os.makedirs(export_path, exist_ok=True)
 
-        feeders, buses_with_feeders = extract_feeders_parallel(
+        # feeders, buses_with_feeders = extract_feeders_parallel(
+        #     edisgo_obj=edisgo_obj,
+        #     export_path=export_path,
+        #     only_flex_ev=only_flex_ev,
+        #     # flexible_loads=flexible_loads,
+        # )
+        feeders, buses_with_feeders = extract_feeders_nx(
             edisgo_obj=edisgo_obj,
-            export_path=export_path,
+            save_dir=export_path,
             only_flex_ev=only_flex_ev,
-            flexible_loads=flexible_loads,
+            # flexible_loads=flexible_loads,
         )
         for feeder_id, feeder in enumerate(feeders):
             # TODO sth is off here. Feeder id == 0 doesnt exist? investigate!
@@ -135,15 +141,23 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
                 meta_path = export_path / "feeder" / folder
                 write_metadata(meta_path, edisgo_obj=feeder)
             except Exception:
-                logger.debug(f"No feeder folder {feeder_id} found for metadata")
+                logger.debug(
+                    f"No feeder folder {feeder_id} found for metadata"
+                )
         write_metadata(export_path, edisgo_obj=edisgo_obj)
 
     else:
-        feeders, buses_with_feeders = extract_feeders_parallel(
+        # feeders, buses_with_feeders = extract_feeders_parallel(
+        #     edisgo_obj=edisgo_obj,
+        #     export_path=False,
+        #     only_flex_ev=only_flex_ev,
+        #     # flexible_loads=flexible_loads,
+        # )
+        feeders, buses_with_feeders = extract_feeders_nx(
             edisgo_obj=edisgo_obj,
-            export_path=False,
+            save_dir=False,
             only_flex_ev=only_flex_ev,
-            flexible_loads=flexible_loads,
+            # flexible_loads=flexible_loads,
         )
 
     if doit:
