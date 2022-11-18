@@ -38,10 +38,11 @@ def get_flexible_loads(
         is set to None, in which case all sectors are taken.
 
     """
-    emob_sectors = {"public", "home", "work"}
-    emob_sectors = kwargs.get("electromobility_sectors", emob_sectors)
+    emob_sectors_flex = kwargs.get(
+        "electromobility_sectors", ["public", "home", "work"]
+    )
     emob_sectors_fix = [
-        i for i in ["public", "home", "work"] if i not in emob_sectors
+        i for i in ["public", "home", "work"] if i not in emob_sectors_flex
     ]
 
     types = list()
@@ -70,16 +71,33 @@ def get_flexible_loads(
 
 
 def extract_feeders_parallel(
-    edisgo_obj, export_path, flexible_loads, only_flex_ev=False
+    edisgo_obj, export_path, cfg_flexible_loads, **kwargs
 ):
+    """
+
+    Parameters
+    ----------
+    edisgo_obj :
+    export_path :
+    cfg_flexible_loads : dict
+
+    kwargs : default = False
+        only_flex_ev :
+
+    Returns
+    -------
+
+    """
 
     logger.info("Get flexible loads")
+    only_flex_ev = kwargs.get("only_flex_ev", False)
+
     flexible_loads = get_flexible_loads(
         edisgo_obj=edisgo_obj,
-        bess=flexible_loads["bess"],
-        heat_pump=flexible_loads["hp"],
-        electromobility=flexible_loads["emob"],
-        electromobility_sectors=flexible_loads["emob_sectors"],
+        bess=cfg_flexible_loads["bess"],
+        heat_pump=cfg_flexible_loads["hp"],
+        electromobility=cfg_flexible_loads["emob"],
+        electromobility_sectors=cfg_flexible_loads["emob_flex_sectors"],
     )
 
     feeders, buses_with_feeders = extract_feeders_nx(
@@ -100,8 +118,9 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
 
     cfg = get_config(path=config_dir / ".grids.yaml")
 
+    # TODO maybe remove only flex ev?
     only_flex_ev = cfg["feeder_extraction"].get("only_flex_ev")
-    flexible_loads = cfg["feeder_extraction"].get("flexible_loads")
+    cfg_flexible_loads = cfg["feeder_extraction"].get("flexible_loads")
 
     if not edisgo_obj:
         import_dir = cfg["feeder_extraction"].get("import")
@@ -121,17 +140,11 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
         export_path = data_dir / export_dir / str(grid_id)
         os.makedirs(export_path, exist_ok=True)
 
-        # feeders, buses_with_feeders = extract_feeders_parallel(
-        #     edisgo_obj=edisgo_obj,
-        #     export_path=export_path,
-        #     only_flex_ev=only_flex_ev,
-        #     # flexible_loads=flexible_loads,
-        # )
-        feeders, buses_with_feeders = extract_feeders_nx(
+        feeders, buses_with_feeders = extract_feeders_parallel(
             edisgo_obj=edisgo_obj,
-            save_dir=export_path,
+            export_path=export_path,
             only_flex_ev=only_flex_ev,
-            # flexible_loads=flexible_loads,
+            cfg_flexible_loads=cfg_flexible_loads,
         )
         for feeder_id, feeder in enumerate(feeders):
             # TODO sth is off here. Feeder id == 0 doesnt exist? investigate!
@@ -147,17 +160,11 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
         write_metadata(export_path, edisgo_obj=edisgo_obj)
 
     else:
-        # feeders, buses_with_feeders = extract_feeders_parallel(
-        #     edisgo_obj=edisgo_obj,
-        #     export_path=False,
-        #     only_flex_ev=only_flex_ev,
-        #     # flexible_loads=flexible_loads,
-        # )
-        feeders, buses_with_feeders = extract_feeders_nx(
+        feeders, buses_with_feeders = extract_feeders_parallel(
             edisgo_obj=edisgo_obj,
-            save_dir=False,
+            export_path=False,
             only_flex_ev=only_flex_ev,
-            # flexible_loads=flexible_loads,
+            flexible_loads=cfg_flexible_loads,
         )
 
     if doit:
@@ -168,4 +175,7 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
 
 if __name__ == "__main__":
 
-    run_feeder_extraction(grid_id=176)
+    from dodo import task_split_model_config_in_subconfig
+
+    task_split_model_config_in_subconfig()
+    run_feeder_extraction(grid_id=177, save=True)
