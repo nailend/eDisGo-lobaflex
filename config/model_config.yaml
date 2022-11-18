@@ -8,10 +8,11 @@ opt:
   opt_emob: True
   emob_sectors: ["work", "home"]
   objective: 'minimize_loading'
-  rolling_horizon: False
-  timesteps_per_iteration: 96
-  iterations_per_era: 7
-  overlap_iterations: 24
+  rolling_horizon: True
+  load_results: False
+  timesteps_per_iteration: 24 # hours per day
+  iterations_per_era: 7 # one week
+  overlap_iterations: 6 # people start working at 6
 logger:
   log_file: 'log.txt'
   log_to_file: True
@@ -34,8 +35,8 @@ grids:
     flexible_loads:
       hp: True
       bess: False
-      emob: True
-      emob_sectors: ["work", "home"]
+      emob: False
+      emob_flex_sectors: ["work", "home"]
     only_flex_ev: False
   dnm_generation:
     import: "load_n_gen_n_emob_n_hp_grids_extracted"
