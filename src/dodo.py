@@ -3,14 +3,14 @@ import os
 from doit.reporter import ConsoleReporter, JsonReporter
 from doit.tools import check_timestamp_unchanged, result_dep
 
+# from model_solving import run_optimization
+from dispatch_optimization import run_dispatch_optimization
 from dnm_generation import run_dnm_generation
 from emob_integration import run_emob_integration
 from feeder_extraction import run_feeder_extraction
 from hp_integration import run_hp_integration
 from load_integration import run_load_integration
 from logger import logger
-# from model_solving import run_optimization
-from dispatch_optimization import run_dispatch_optimization
 from tools import TelegramReporter, dump_yaml, get_config, get_csv_in_subdirs, get_dir
 
 src_dir = get_dir(key="src")
@@ -231,7 +231,7 @@ def task_opt_group():
         try:
             feeder_ids = [
                 feeder_id
-                for feeder_id in os.listdir(feeder_path)
+                for feeder_id in sorted(os.listdir(feeder_path))
                 if os.path.isdir(feeder_path / feeder_id)
             ]
         except FileNotFoundError:
