@@ -81,24 +81,6 @@ def rolling_horizon_optimization(
     # mvgds = cfg_g["model"].get("mvgd")
     feeder_id = f"{int(feeder_id):02}"
 
-    # objective = "minimize_loading"
-    # timesteps_per_iteration = 24 * 4
-    # iterations_per_era = 7
-    # overlap_iterations = 24
-    # solver = "gurobi"
-
-    # kwargs = {}  # {'v_min':0.91, 'v_max':1.09, 'thermal_limit':0.9}
-    # config_dict = {
-    #     "objective": objective,
-    #     "solver": solver,
-    #     "timesteps_per_iteration": timesteps_per_iteration,
-    #     "iterations_per_era": iterations_per_era,
-    #     "overlap_iterations": overlap_iterations,
-    # }
-
-    # import_dir = cfg_g["feeder_extraction"].get("export")
-    # import_path = data_dir / import_dir / str(grid_id) / "feeder" / str(
-    #     feeder_id)
     result_path = results_dir / run / str(grid_id) / feeder_id
     os.makedirs(result_path, exist_ok=True)
 
@@ -133,21 +115,12 @@ def rolling_horizon_optimization(
     # Dump opt configs to results
     dump_yaml(yaml_file=cfg_o, save_to=result_path)
 
-    # # try:
-    # logger.info(f"Import Grid from file: {import_path}")
-    # edisgo_obj = import_edisgo_from_files(import_path,
-    #                                        import_topology=True,
-    #                                        import_timeseries=True,
-    #                                        import_electromobility=True,
-    #                                        import_heat_pump=True,
-    #                                        )
-
-    logger.info("Convert impedances to mv")
     # Due to different voltage levels, impedances need to adapted
     # alternatively p.u.
+    logger.info("Convert impedances to mv reference system")
     edisgo_obj = convert_impedances_to_mv(edisgo_obj)
 
-    logger.info("Downstream node matrix imported")
+    logger.info("Import downstream node matrix")
     downstream_nodes_matrix = get_dnm(mvgd=grid_id, feeder=int(feeder_id))
 
     logger.info("Get flexible loads")
@@ -177,8 +150,17 @@ def rolling_horizon_optimization(
     kwargs = {}
 
     # TODO adhoc workaround
+    # interval = edisgo_obj.timeseries.timeindex[:50]
     interval = edisgo_obj.timeseries.timeindex[:50]
+    # window = timesteps_per_iteration # besserer Name?
+    # intervals = timesteps / (timesteps_per_iteration - overlap_iterations)
+    # for i in range(intervals)
+    # timeindex.shift(periods = timesteps_per_iteration - overlap_iterations,
+    #                     freq = "h")
+    # iterations_per_era = 24*7 / timesteps_per_iteration - overlap_iterations
 
+    # number of iterations is derived from number of total timesteps /
+    # timesteps per iteration
     for iteration in range(
         start_iter, int(len(interval) / cfg_o["timesteps_per_iteration"])
     ):  # edisgo_obj.timeseries.timeindex.week.unique()
@@ -186,6 +168,7 @@ def rolling_horizon_optimization(
         logging.info(f"Starting optimisation for iteration {iteration}.")
 
         # if last iteration of era
+        # overlap is added to window
         if (
             iteration % cfg_o["iterations_per_era"]
             != cfg_o["iterations_per_era"] - 1
@@ -198,6 +181,8 @@ def rolling_horizon_optimization(
             ]
             energy_level_end = None
         else:
+            # Defines windows of iteration with timesteps
+            #  24h
             timesteps = edisgo_obj.timeseries.timeindex[
                 iteration
                 * cfg_o["timesteps_per_iteration"] : (iteration + 1)
@@ -210,12 +195,13 @@ def rolling_horizon_optimization(
                 timesteps=timesteps,
                 fixed_parameters=fixed_parameters,
                 objective=cfg_o["objective"],
-                optimize_bess=cfg_o["opt_bess"],
-                optimize_emob=cfg_o["opt_emob"],
-                optimize_hp=cfg_o["opt_hp"],
+                # optimize_bess=cfg_o["opt_bess"],
+                # optimize_emob=cfg_o["opt_emob"],
+                # optimize_hp=cfg_o["opt_hp"],
                 charging_start_hp=charging_start,
                 energy_level_start_tes=energy_level_start,
                 energy_level_end_tes=energy_level_end,
+                flexible_loads=flexible_loads,
                 **kwargs,
             )
         except NameError:
@@ -223,16 +209,17 @@ def rolling_horizon_optimization(
                 fixed_parameters=fixed_parameters,
                 timesteps=timesteps,
                 objective=cfg_o["objective"],
-                optimize_bess=cfg_o["opt_bess"],
-                optimize_emob=cfg_o["opt_emob"],
-                optimize_hp=cfg_o["opt_hp"],
+                # optimize_bess=cfg_o["opt_bess"],
+                # optimize_emob=cfg_o["opt_emob"],
+                # optimize_hp=cfg_o["opt_hp"],
                 charging_start_hp=charging_start,
                 energy_level_start_tes=energy_level_start,
                 energy_level_end_tes=energy_level_end,
+                flexible_loads=flexible_loads,
                 **kwargs,
             )
 
-        logger.info(f"Set up model for week {iteration}.")
+        logger.info(f"Set up model for iteration {iteration}.")
         lp_filename = result_path / f"lp_file_iteration_{iteration}.lp"
         result_dict = lopf.optimize(
             model, cfg_o["solver"], lp_filename=lp_filename
@@ -274,7 +261,8 @@ def rolling_horizon_optimization(
                     res = res.dropna(how="all")
                 if not res.empty:
                     filename = (
-                        result_path / f"{res_name}_{grid_id}_{feeder_id}"
+                        result_path / f"{res_name}_{grid_id}-"
+                                      f"{feeder_id}_iteration"
                         f"_{iteration}.csv"
                     )
                     res.astype(np.float16).to_csv(filename)
@@ -311,11 +299,12 @@ def run_dispatch_optimization(
             # TODO if feeder_id False
             raise NotImplementedError
 
-        import_dir = cfg_g["feeder_extraction"].get("export")
-        import_path = (
-            data_dir / import_dir / str(grid_id) / "feeder" / str(feeder_id)
-        )
-        logger.info(f"Import Grid from file: {import_path}")
+        else:
+            import_dir = cfg_g["feeder_extraction"].get("export")
+            import_path = (
+                data_dir / import_dir / str(grid_id) / "feeder" / str(feeder_id)
+            )
+            logger.info(f"Import Grid from file: {import_path}")
 
         edisgo_obj = import_edisgo_from_files(
             import_path,
@@ -332,7 +321,7 @@ def run_dispatch_optimization(
             run="test",
             load_results=cfg_o["load_results"],
             iteration=0,
-            save=True,
+            save=save,
         )
 
     if doit:
@@ -345,7 +334,7 @@ if __name__ == "__main__":
 
     task_split_model_config_in_subconfig()
     run_dispatch_optimization(
-        grid_id=2534, feeder_id=2, edisgo_obj=False, save=False, doit=False
+        grid_id=1056, feeder_id=2, edisgo_obj=False, save=True, doit=False
     )
 
     # lopf.combine_results_for_grid
