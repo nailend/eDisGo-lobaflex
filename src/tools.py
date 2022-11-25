@@ -1,19 +1,20 @@
 """"""
 import logging
 import os
+import sys
 import time
 
 from datetime import date, datetime
 from glob import glob
 from pathlib import Path
-import requests
 
 import psutil
+import requests
 import yaml
 
-from logger import logger
 from doit.exceptions import BaseFail
-import sys
+
+from logger import logger
 
 
 def get_dir(key):
@@ -252,16 +253,16 @@ def telegram_bot_sendtext(text):
 
 
 class TelegramReporter(object):
-    """
-    """
+    """ """
+
     # short description, used by the help system
-    desc = 'console output'
+    desc = "console output"
 
     def __init__(self, outstream, options):
         # save non-successful result information (include task errors)
         self.failures = []
         self.runtime_errors = []
-        self.failure_verbosity = options.get('failure_verbosity', 0)
+        self.failure_verbosity = options.get("failure_verbosity", 0)
         self.outstream = outstream
         self.telegram = telegram_bot_sendtext
 
@@ -271,9 +272,17 @@ class TelegramReporter(object):
 
     def initialize(self, tasks, selected_tasks):
         """called just after tasks have been loaded before execution starts"""
-        current_time = datetime.now().strftime('%A %d-%m-%Y, %H:%M:%S')
-        self.telegram(text="Pipeline started\n" + "-" * 28 + "\n" +
-                           current_time + "\n" + "-" * 28)
+        current_time = datetime.now().strftime("%A %d-%m-%Y, %H:%M:%S")
+        self.telegram(
+            text="Pipeline started\n"
+            + "-" * 28
+            + "\n"
+            + current_time
+            + "\n"
+            + "-" * 28
+        )
+        # pipeline = [f"- {i}\n" for i in tasks.keys()]
+        # self.telegram(text=f"Pipeline:\n {pipeline}")
 
     def get_status(self, task):
         """called when task is selected (check if up-to-date)"""
@@ -283,13 +292,13 @@ class TelegramReporter(object):
         """called when execution starts"""
         # ignore tasks that do not define actions
         # ignore private/hidden tasks (tasks that start with an underscore)
-        if task.actions and (task.name[0] != '_'):
-            self.write('.  %s\n' % task.title())
+        if task.actions and (task.name[0] != "_"):
+            self.write(".  %s\n" % task.title())
             self.telegram(text=f"Task {task.title()} is executed.")
 
     def add_failure(self, task, fail: BaseFail):
         """called when execution finishes with a failure"""
-        result = {'task': task, 'exception': fail}
+        result = {"task": task, "exception": fail}
         if fail.report:
             self.failures.append(result)
             self._write_failure(result)
@@ -297,12 +306,13 @@ class TelegramReporter(object):
 
     def add_success(self, task):
         """called when execution finishes successfully"""
-        self.telegram(text=f"Task: {task.title()} was successful.")
+        self.telegram(text=f"Task: {task.title()} successful.")
 
     def skip_uptodate(self, task):
         """skipped up-to-date task"""
-        if task.name[0] != '_':
+        if task.name[0] != "_":
             self.write("-- %s\n" % task.title())
+            self.telegram(text=f"Skip Task: {task.title()}.")
 
     def skip_ignore(self, task):
         """skipped ignored task"""
@@ -322,18 +332,20 @@ class TelegramReporter(object):
         pass
 
     def _write_failure(self, result, write_exception=True):
-        msg = '%s - taskid:%s\n' % (result['exception'].get_name(),
-                                    result['task'].name)
+        msg = "{} - taskid:{}\n".format(
+            result["exception"].get_name(),
+            result["task"].name,
+        )
         self.write(msg)
         if write_exception:
-            self.write(result['exception'].get_msg())
+            self.write(result["exception"].get_msg())
             self.write("\n")
 
     def complete_run(self):
         """called when finished running all tasks"""
         # if test fails print output from failed task
         for result in self.failures:
-            task = result['task']
+            task = result["task"]
             # makes no sense to print output if task was not executed
             if not task.executed:
                 continue
@@ -343,8 +355,9 @@ class TelegramReporter(object):
                 self.write("#" * 40 + "\n")
 
             if show_err:
-                self._write_failure(result,
-                                    write_exception=self.failure_verbosity)
+                self._write_failure(
+                    result, write_exception=self.failure_verbosity
+                )
                 err = "".join([a.err for a in task.actions if a.err])
                 self.write("{} <stderr>:\n{}\n".format(task.name, err))
             if show_out:
@@ -357,8 +370,11 @@ class TelegramReporter(object):
             self.write("\n".join(self.runtime_errors))
             self.write("\n")
 
-        current_time = datetime.now().strftime('%A %d-%m-%Y, %H:%M:%S')
-        self.telegram(text="All tasks completed \n" +
-                           "#" * 28 + "\n" + current_time
-                           # + "\n" + "#" * 28
-                      )
+        current_time = datetime.now().strftime("%A %d-%m-%Y, %H:%M:%S")
+        self.telegram(
+            text="Pipeline finished! \n"
+            + "#" * 28
+            + "\n"
+            + current_time
+            # + "\n" + "#" * 28
+        )
