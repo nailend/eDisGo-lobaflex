@@ -1,4 +1,5 @@
 opt:
+  import_dir: "load_n_gen_n_emob_n_hp_grids_extracted"
   mvgds: [2534, 176, 177, 1056, 1690, 1811]
 #  mvgds: [2534]
   feeder: False

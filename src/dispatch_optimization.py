@@ -289,7 +289,6 @@ def run_dispatch_optimization(
     grid_id, feeder_id=False, edisgo_obj=False, save=False, doit=False
 ):
 
-    cfg_g = get_config(path=config_dir / ".grids.yaml")
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     # mvgds = cfg_g["model"].get("mvgd")
     feeder_id = f"{int(feeder_id):02}"
@@ -300,7 +299,7 @@ def run_dispatch_optimization(
             raise NotImplementedError
 
         else:
-            import_dir = cfg_g["feeder_extraction"].get("export")
+            import_dir = cfg_o.get("import_dir")
             import_path = (
                 data_dir / import_dir / str(grid_id) / "feeder" / str(feeder_id)
             )
