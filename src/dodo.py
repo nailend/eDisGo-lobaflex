@@ -121,7 +121,7 @@ def feeder_extraction_task(mvgd):
 
 
 def dnm_generation_task(mvgd):
-
+    cfg = get_config(path=config_dir / ".grids.yaml")
     yield {
         "name": f"{mvgd}_dnm_generation",
         "actions": [
@@ -132,6 +132,7 @@ def dnm_generation_task(mvgd):
                     "grid_id": mvgd,
                     "doit": True,
                     "save": True,
+                    "feeder": cfg["dnm_generation"]["feeder"]
                 },
             )
         ],
