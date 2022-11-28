@@ -11,6 +11,7 @@ opt:
   objective: 'minimize_loading'
   rolling_horizon: True
   load_results: False
+  total_timesteps: 168
   timesteps_per_iteration: 24 # hours per day
   iterations_per_era: 7 # one week
   overlap_iterations: 6 # people start working at 6

@@ -151,7 +151,7 @@ def rolling_horizon_optimization(
 
     # TODO adhoc workaround
     # interval = edisgo_obj.timeseries.timeindex[:50]
-    interval = edisgo_obj.timeseries.timeindex[:50]
+    interval = edisgo_obj.timeseries.timeindex[: cfg_o["total_timesteps"]]
     # window = timesteps_per_iteration # besserer Name?
     # intervals = timesteps / (timesteps_per_iteration - overlap_iterations)
     # for i in range(intervals)
@@ -161,6 +161,7 @@ def rolling_horizon_optimization(
 
     # number of iterations is derived from number of total timesteps /
     # timesteps per iteration
+
     for iteration in range(
         start_iter, int(len(interval) / cfg_o["timesteps_per_iteration"])
     ):  # edisgo_obj.timeseries.timeindex.week.unique()
@@ -262,7 +263,7 @@ def rolling_horizon_optimization(
                 if not res.empty:
                     filename = (
                         result_path / f"{res_name}_{grid_id}-"
-                                      f"{feeder_id}_iteration"
+                        f"{feeder_id}_iteration"
                         f"_{iteration}.csv"
                     )
                     res.astype(np.float16).to_csv(filename)
@@ -301,7 +302,11 @@ def run_dispatch_optimization(
         else:
             import_dir = cfg_o.get("import_dir")
             import_path = (
-                data_dir / import_dir / str(grid_id) / "feeder" / str(feeder_id)
+                data_dir
+                / import_dir
+                / str(grid_id)
+                / "feeder"
+                / str(feeder_id)
             )
             logger.info(f"Import Grid from file: {import_path}")
 
