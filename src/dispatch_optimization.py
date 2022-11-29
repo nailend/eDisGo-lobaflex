@@ -322,7 +322,7 @@ def run_dispatch_optimization(
             edisgo_obj,
             grid_id,
             feeder_id,
-            run="test",
+            run=cfg_o["run"],
             load_results=cfg_o["load_results"],
             iteration=0,
             save=save,
