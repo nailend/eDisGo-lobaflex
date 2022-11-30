@@ -30,9 +30,6 @@ def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
         logger.info("Remove 1m end lines")
         edisgo_obj = remove_1m_end_lines(edisgo_obj)
 
-    # initial reinforce as ding0 grids not sufficient
-    edisgo_obj.reinforce()
-
     #
     edisgo_obj.import_generators(generator_scenario="ego100")
 
@@ -49,6 +46,9 @@ def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
     )
     logger.info("Set reactive power")
     edisgo_obj.set_time_series_reactive_power_control()
+
+    # initial reinforce as ding0 grids not sufficient
+    edisgo_obj.reinforce()
 
     if save:
         export_dir = cfg["load_integration"].get("export")
