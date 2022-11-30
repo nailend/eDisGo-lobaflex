@@ -30,6 +30,12 @@ def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
         logger.info("Remove 1m end lines")
         edisgo_obj = remove_1m_end_lines(edisgo_obj)
 
+    # initial reinforce as ding0 grids not sufficient
+    edisgo_obj.reinforce()
+
+    #
+    edisgo_obj.import_generators(generator_scenario="ego100")
+
     # set up time series
     logger.info("Import timeseries.")
     timeindex = pd.date_range("1/1/2011", periods=8760, freq="H")
