@@ -41,7 +41,7 @@ grids:
     flexible_loads:
       hp: True
       bess: False
-      emob: False
+      emob: True
       emob_flex_sectors: ["work", "home"]
     only_flex_ev: False
   dnm_generation:
