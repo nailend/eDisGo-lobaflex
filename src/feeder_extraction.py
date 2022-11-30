@@ -38,13 +38,12 @@ def get_flexible_loads(
         is set to None, in which case all sectors are taken.
 
     """
-    emob_sectors_flex = kwargs.get(
-        "electromobility_sectors", ["public", "home", "work", "hpc"]
-    )
-    emob_sectors_fix = [
-        i for i in ["public", "home", "work", "hpc"] if i not in
-                                                        emob_sectors_flex
-    ]
+    emob_sectors_flex = kwargs.get("electromobility_sectors", ["home", "work"])
+
+    emob_sectors = edisgo_obj.topology.loads_df.loc[
+        edisgo_obj.topology.loads_df["type"] == "charging_point", "sector"
+    ].unique()
+    emob_sectors_fix = [i for i in emob_sectors if i not in emob_sectors_flex]
 
     types = list()
     if heat_pump:
@@ -165,7 +164,7 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
             edisgo_obj=edisgo_obj,
             export_path=False,
             only_flex_ev=only_flex_ev,
-            flexible_loads=cfg_flexible_loads,
+            cfg_flexible_loads=cfg_flexible_loads,
         )
 
     if doit:
