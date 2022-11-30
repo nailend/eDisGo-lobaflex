@@ -56,7 +56,6 @@ def run_emob_integration(
     flex_bands = edisgo_obj.electromobility.get_flexibility_bands(
         edisgo_obj, ["home", "work"]
     )
-    # TODO Resampling flex bands not working yet @birgit
     logger.info(f"Resample timeseries to {to_freq}.")
     edisgo_obj.resample_timeseries(method="ffill", freq=to_freq)
 

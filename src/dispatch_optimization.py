@@ -225,10 +225,13 @@ def rolling_horizon_optimization(
         result_dict = lopf.optimize(
             model, cfg_o["solver"], lp_filename=lp_filename
         )
+        # TODO workaround if hps not exist
         charging_hp[iteration] = result_dict["charging_hp_el"]
         charging_tes[iteration] = result_dict["charging_tes"]
         energy_level[iteration] = result_dict["energy_tes"]
 
+        # if iteration is not the last one of era use results from last
+        # iteration as starting value (overlapping hours are neglected)
         if (
             iteration % cfg_o["iterations_per_era"]
             != cfg_o["iterations_per_era"] - 1
@@ -244,6 +247,8 @@ def rolling_horizon_optimization(
             energy_level_start = energy_level[iteration].iloc[
                 -cfg_o["overlap_iterations"]
             ]
+        # if iteration is the last one of era
+        #
         else:
             charging_start = None
             energy_level_start = None
