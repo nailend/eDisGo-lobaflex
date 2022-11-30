@@ -15,7 +15,7 @@ opt:
   total_timesteps: 168
   timesteps_per_iteration: 24 # number of timesteps which are optimized in one
 #  bulk
-  overlap_iterations: 6 # overlapping timesteps at the end of each iteration
+  overlap_iterations: 8 # overlapping timesteps at the end of each iteration
 #  is added to the iteration for optimization but results are dropped
   iterations_per_era: 7 # an era defines a closed timeframe for optimization
 #  in the last iteration of an era, the overlapping timesteps are invented
