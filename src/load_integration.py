@@ -27,28 +27,36 @@ def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
         logger.info(f"Import Grid: {grid_id} from {ding0_grid}")
         edisgo_obj = EDisGo(ding0_grid=ding0_grid)
 
-        logger.info("Remove 1m end lines")
+        logger.info("Remove 1m end lines.")
         edisgo_obj = remove_1m_end_lines(edisgo_obj)
 
-    #
-    edisgo_obj.import_generators(generator_scenario="ego100")
+    logger.info("Set worst-case analysis time series.")
+    edisgo_obj.set_time_series_worst_case_analysis()
+    # initial reinforce as ding0 grids not sufficient
+    logger.info("Start initial reinforce with worst-case time series.")
+    edisgo_obj.reinforce()
 
-    # set up time series
-    logger.info("Import timeseries.")
+    logger.info("Reset time series.")
+    edisgo_obj.timeseries.reset()
+
+    scenario = cfg["load_integration"].get("generator_scenario")
+    logger.info(f"Import generator scenario: {scenario}.")
+    edisgo_obj.import_generators(generator_scenario=scenario)
+
+    logger.info("Import timeseries for 2011.")
     timeindex = pd.date_range("1/1/2011", periods=8760, freq="H")
     edisgo_obj.set_timeindex(timeindex)
     edisgo_obj.set_time_series_active_power_predefined(
         fluctuating_generators_ts="oedb",
         dispatchable_generators_ts=pd.DataFrame(
-            data=1, columns=["other"], index=timeindex
+            data=1,
+            columns=["other"],
+            index=timeindex
         ),
         conventional_loads_ts="demandlib",
     )
     logger.info("Set reactive power")
     edisgo_obj.set_time_series_reactive_power_control()
-
-    # initial reinforce as ding0 grids not sufficient
-    edisgo_obj.reinforce()
 
     if save:
         export_dir = cfg["load_integration"].get("export")
@@ -71,4 +79,8 @@ def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
 
 if __name__ == "__main__":
 
-    edisgo_obj = run_load_integration(grid_id=176)
+    from dodo import task_split_model_config_in_subconfig
+
+    task_split_model_config_in_subconfig()
+
+    edisgo_obj = run_load_integration(grid_id=1056)
