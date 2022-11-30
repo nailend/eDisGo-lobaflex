@@ -34,15 +34,16 @@ def get_flexible_loads(
     Other Parameters
     ------------------
     electromobility_sectors : None or set(str)
-        Specifies which electromobility sectores are flexibile. By default this
+        Specifies which electromobility sectores are flexible. By default this
         is set to None, in which case all sectors are taken.
 
     """
     emob_sectors_flex = kwargs.get(
-        "electromobility_sectors", ["public", "home", "work"]
+        "electromobility_sectors", ["public", "home", "work", "hpc"]
     )
     emob_sectors_fix = [
-        i for i in ["public", "home", "work"] if i not in emob_sectors_flex
+        i for i in ["public", "home", "work", "hpc"] if i not in
+                                                        emob_sectors_flex
     ]
 
     types = list()
