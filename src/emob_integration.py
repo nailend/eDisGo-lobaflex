@@ -50,12 +50,21 @@ def run_emob_integration(
         tracbev_directory=data_dir / "tracbev_results" / str(grid_id),
     )
 
-    edisgo_obj.apply_charging_strategy()
+    edisgo_obj.apply_charging_strategy(strategy="dumb")
 
     logger.info("Calculate flexibility bands")
     flex_bands = edisgo_obj.electromobility.get_flexibility_bands(
         edisgo_obj, ["home", "work"]
     )
+
+    # TODO workaround different year flex bands / timeseries
+    for name, df in edisgo_obj.electromobility.flexibility_bands.items():
+        if df.index.shape[0] == edisgo_obj.timeseries.timeindex.shape[0]:
+            df.index = edisgo_obj.timeseries.timeindex
+            edisgo_obj.electromobility.flexibility_bands.update({name: df})
+        else:
+            raise ValueError("Length of flex bands and ts are not the same")
+
     logger.info(f"Resample timeseries to {to_freq}.")
     edisgo_obj.resample_timeseries(method="ffill", freq=to_freq)
 
