@@ -23,7 +23,7 @@ logger:
   log_file: 'log.txt'
   log_to_file: True
 grids:
-#  version: 8
+  version: 0
   mvgds: [2534, 176, 177, 1056, 1690, 1811]
 #  mvgds: [1056]
   load_integration:

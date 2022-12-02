@@ -27,6 +27,8 @@ config_dir = get_dir(key="config")
 #   8. watch param
 #   9. Check connection to db, maybe at beginning and raise warning
 
+DOIT_CONFIG = {"default_tasks": ["grids", "opt"],
+               "reporter": TelegramReporter}
 
 def task__split_model_config_in_subconfig():
     """This body is always executed to keep the respective configs uptodate"""
@@ -47,26 +49,14 @@ def task__split_model_config_in_subconfig():
 def task__set_dataset_version():
     """This tasks sets the version number of the dataset"""
 
-    def version(version):
-        print(f"Set dataset version to: {version}")
+    def version():
+        cfg = get_config(path=config_dir / ".grids.yaml")
+        version = cfg["version"]
+        print(f"Grids dataset version set to: {version}")
         return {"version": version}
 
     return {
-        "actions": [
-            (version,),
-        ],
-        "params": [
-            {
-                "name": "version",
-                "short": "v",
-                "long": "version",
-                "type": int,
-                "default": 0,
-                "help": "version number of dataset",
-            }
-        ],
-        # "uptodate":[True],
-        "verbosity": 2,
+        "actions": [version],
     }
 
 
@@ -364,7 +354,6 @@ def task_opt_group():
         }
 
 
-DOIT_CONFIG = {"default_tasks": ["grids", "opt"], "reporter": TelegramReporter}
 
 
 if __name__ == "__main__":
