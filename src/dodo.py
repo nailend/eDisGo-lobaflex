@@ -4,6 +4,8 @@ from doit.reporter import ConsoleReporter, JsonReporter
 from doit.tools import check_timestamp_unchanged, result_dep
 
 # from model_solving import run_optimization
+import doit
+
 from dispatch_optimization import run_dispatch_optimization
 from dnm_generation import run_dnm_generation
 from emob_integration import run_emob_integration
@@ -26,18 +28,68 @@ config_dir = get_dir(key="config")
 #   9. Check connection to db, maybe at beginning and raise warning
 
 
-def task_split_model_config_in_subconfig():
+def task__split_model_config_in_subconfig():
+    """This body is always executed to keep the respective configs uptodate"""
     config_dir = get_dir(key="config")
     cfg = get_config(path=config_dir / "model_config.yaml")
     dump_yaml(yaml_file=cfg, save_to=config_dir, split=True)
 
 
-# def task_get_config_global():
-#     global cfg
+# def task__init_dataset_version():
 #     cfg = get_config(path=config_dir / ".grids.yaml")
+#     dep_manager = doit.Globals.dep_manager
+#     dataset_results = dep_manager.get_result("_set_dataset_version")
+#     if dataset_results is None:
+#         dep_manager.set(task_id="_set_dataset_version",
+#                         value=0)
+
+
+def task__set_dataset_version():
+    """This tasks sets the version number of the dataset"""
+
+    def version(version):
+        print(f"Set dataset version to: {version}")
+        return {"version": version}
+
+    return {
+        # "basename":'calc1',
+        "actions": [
+            (version,),
+        ],
+        "params": [
+            {
+                "name": "version",
+                "short": "v",
+                "long": "version",
+                "type": int,
+                "default": 0,
+                "help": "version number of dataset",
+            }
+        ],
+        # "uptodate":[True],
+        "verbosity": 2,
+    }
+
+
+def version_uptodate(task):
+    """This function compares the version number of each task with the
+    dataset version. If it's smaller, the task is not uptodate"""
+    dep_manager = doit.Globals.dep_manager
+    dataset_results = dep_manager.get_result("_set_dataset_version")
+    if dataset_results is None:
+        raise ValueError("Run 'doit _set_dataset_version -v %int' first!")
+    task_results = dep_manager.get_result(task.name)
+    if task_results is None:
+        task_results = {"version": -1}
+    return (
+        True
+        if task_results["version"] >= dataset_results["version"]
+        else False
+    )
 
 
 def load_integration_task(mvgd):
+    """Generator to define load integration task for a mvgd"""
 
     yield {
         "name": f"{mvgd}_load_integration",
@@ -52,12 +104,15 @@ def load_integration_task(mvgd):
                 },
             )
         ],
+        "uptodate": [version_uptodate],
+        # take current version number of dataset
+        "getargs": {"version": ("_set_dataset_version", "version")},
         "verbosity": 2,
     }
 
 
 def emob_integration_task(mvgd):
-    """Import emob"""
+    """Generator to define emob integration task for a mvgd"""
     cfg = get_config(path=config_dir / ".grids.yaml")
     to_freq = cfg["emob_integration"].get("to_freq")
 
@@ -76,11 +131,15 @@ def emob_integration_task(mvgd):
             )
         ],
         "task_dep": [f"grids:{mvgd}_load_integration"],
+        # take current version number of dataset
+        "getargs": {"version": ("_set_dataset_version", "version")},
+        "uptodate": [version_uptodate],
         "verbosity": 2,
     }
 
 
 def hp_integration_task(mvgd):
+    """Generator to define hp integration task for a mvgd"""
 
     yield {
         "name": f"{mvgd}_hp_integration",
@@ -96,11 +155,15 @@ def hp_integration_task(mvgd):
             )
         ],
         "task_dep": [f"grids:{mvgd}_emob_integration"],
+        # take current version number of dataset
+        "getargs": {"version": ("_set_dataset_version", "version")},
+        "uptodate": [version_uptodate],
         "verbosity": 2,
     }
 
 
 def feeder_extraction_task(mvgd):
+    """Generator to define feeder extraction task for a mvgd"""
 
     yield {
         "name": f"{mvgd}_feeder_extraction",
@@ -116,11 +179,15 @@ def feeder_extraction_task(mvgd):
             )
         ],
         "task_dep": [f"grids:{mvgd}_hp_integration"],
+        # take current version number of dataset
+        "getargs": {"version": ("_set_dataset_version", "version")},
+        "uptodate": [version_uptodate],
         "verbosity": 2,
     }
 
 
 def dnm_generation_task(mvgd):
+    """Generator to define dnm generation task for a feeder or mvgd"""
     cfg = get_config(path=config_dir / ".grids.yaml")
     yield {
         "name": f"{mvgd}_dnm_generation",
@@ -132,17 +199,20 @@ def dnm_generation_task(mvgd):
                     "grid_id": mvgd,
                     "doit": True,
                     "save": True,
-                    "feeder": cfg["dnm_generation"]["feeder"]
+                    "feeder": cfg["dnm_generation"]["feeder"],
                 },
             )
         ],
         "task_dep": [f"grids:{mvgd}_feeder_extraction"],
+        # take current version number of dataset
+        "getargs": {"version": ("_set_dataset_version", "version")},
+        "uptodate": [version_uptodate],
         "verbosity": 2,
     }
 
 
 def task_grids():
-    """Generate all task for Grid generation"""
+    """Sets up all tasks for Grid generation"""
     cfg = get_config(path=config_dir / ".grids.yaml")
     mvgds = sorted(cfg.get("mvgds"))
     logger.info(f"{len(mvgds)} MVGD's in the pipeline")
@@ -156,6 +226,7 @@ def task_grids():
 
 
 def optimization(mvgd, feeder):
+    """Generator to define optimization task for a feeder"""
 
     yield {
         "name": f"{mvgd}/{int(feeder):02}_optimization",
@@ -171,12 +242,16 @@ def optimization(mvgd, feeder):
                 },
             )
         ],
+        # take current version number of dataset
+        "getargs": {"version": ("_set_dataset_version", "version")},
         # "task_dep": [f"grids:{mvgd}_feeder_extraction"],
+        "uptodate": [version_uptodate],
         "verbosity": 2,
     }
 
 
 def task_opt():
+    """Sets up optimizations task for each feeder"""
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o.get("mvgds"))
 
@@ -200,8 +275,9 @@ def task_opt():
 def task_grids_group():
     """Groups grid tasks"""
     cfg = get_config(path=config_dir / ".grids.yaml")
-    mvgds = sorted(cfg.get("mvgds"))
-    tasks = [i for i in cfg.keys() if "mvgd" not in i]
+    mvgds = sorted(cfg.pop("mvgds"))
+    cfg.pop("version", None)
+    tasks = [i for i in cfg.keys() if "mvgds" not in i]
     for mvgd in mvgds:
         yield {
             "actions": None,

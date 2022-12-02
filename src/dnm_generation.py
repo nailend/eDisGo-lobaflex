@@ -89,7 +89,9 @@ def get_downstream_nodes_matrix_iterative(grid):
 
 
 @timeit
-def run_dnm_generation(grid_id, feeder=False, save=False, doit=False):
+def run_dnm_generation(
+    grid_id, feeder=False, save=False, doit=False, version=None
+):
 
     logger.info(f"Get Downstream Node Matrix of {grid_id}")
     warnings.simplefilter(action="ignore", category=FutureWarning)
@@ -134,12 +136,18 @@ def run_dnm_generation(grid_id, feeder=False, save=False, doit=False):
 
         if save:
             if feeder:
-                export_path_dnm = (export_path / "feeder" / grid_dir.name /
-                f"downstream_node_matrix_{grid_id}_{grid_dir.name}.csv")
+                export_path_dnm = (
+                    export_path
+                    / "feeder"
+                    / grid_dir.name
+                    / f"downstream_node_matrix_{grid_id}_{grid_dir.name}.csv"
+                )
                 os.makedirs(export_path_dnm.parent, exist_ok=True)
 
             else:
-                export_path_dnm = export_path / f"downstream_node_matrix_{grid_id}.csv"
+                export_path_dnm = (
+                    export_path / f"downstream_node_matrix_{grid_id}.csv"
+                )
                 downstream_node_matrix.to_csv(export_path_dnm)
     # if save:
     #     write_metadata(
@@ -149,7 +157,7 @@ def run_dnm_generation(grid_id, feeder=False, save=False, doit=False):
     #     )
 
     if doit:
-        return True
+        return {"version": version}
 
 
 if __name__ == "__main__":

@@ -14,7 +14,9 @@ config_dir = get_dir(key="config")
 
 
 @timeit
-def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
+def run_load_integration(
+    grid_id, edisgo_obj=False, save=False, doit=False, version=None
+):
 
     logger.info(f"Start load integration for {grid_id}.")
     cfg = get_config(path=config_dir / ".grids.yaml")
@@ -49,9 +51,7 @@ def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
     edisgo_obj.set_time_series_active_power_predefined(
         fluctuating_generators_ts="oedb",
         dispatchable_generators_ts=pd.DataFrame(
-            data=1,
-            columns=["other"],
-            index=timeindex
+            data=1, columns=["other"], index=timeindex
         ),
         conventional_loads_ts="demandlib",
     )
@@ -72,7 +72,7 @@ def run_load_integration(grid_id, edisgo_obj=False, save=False, doit=False):
         write_metadata(export_path, edisgo_obj)
 
     if doit:
-        return True
+        return {"version": version}
     else:
         return edisgo_obj
 

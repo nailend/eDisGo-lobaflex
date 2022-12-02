@@ -110,7 +110,9 @@ def extract_feeders_parallel(
 
 
 @timeit
-def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
+def run_feeder_extraction(
+    grid_id, edisgo_obj=False, save=False, doit=False, version=None
+):
 
     logger.info(f"Extracting feeders of {grid_id}.")
 
@@ -168,7 +170,7 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
         )
 
     if doit:
-        return True
+        return {"version": version}
     else:
         return feeders, buses_with_feeders
 

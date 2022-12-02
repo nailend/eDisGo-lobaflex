@@ -18,7 +18,12 @@ config_dir = get_dir(key="config")
 
 @timeit
 def run_emob_integration(
-    grid_id, edisgo_obj=False, save=False, to_freq="1h", doit=False
+    grid_id,
+    edisgo_obj=False,
+    save=False,
+    to_freq="1h",
+    doit=False,
+    version=None,
 ):
 
     logger.info(f"Start emob integration for {grid_id}.")
@@ -91,7 +96,7 @@ def run_emob_integration(
         # logger.info(f"Flexibility bands exported to: {export_path}")
 
     if doit:
-        return True
+        return {"version": version}
     else:
         return edisgo_obj, flex_bands
 

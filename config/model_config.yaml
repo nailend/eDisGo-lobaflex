@@ -18,12 +18,14 @@ opt:
   overlap_iterations: 8 # overlapping timesteps at the end of each iteration
 #  is added to the iteration for optimization but results are dropped
   iterations_per_era: 7 # an era defines a closed timeframe for optimization
-#  in the last iteration of an era, the overlapping timesteps are invented
+#  in the last iteration of an era, the overlapping time steps are invented
 logger:
   log_file: 'log.txt'
   log_to_file: True
 grids:
+#  version: 8
   mvgds: [2534, 176, 177, 1056, 1690, 1811]
+#  mvgds: [1056]
   load_integration:
     generator_scenario: "ego100"
     import: "elia_ding0_grids"
