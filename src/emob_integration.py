@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from pathlib import Path
 
@@ -76,6 +77,7 @@ def run_emob_integration(
     if save:
         export_dir = cfg["emob_integration"].get("export")
         export_path = data_dir / export_dir / str(grid_id)
+        shutil.rmtree(export_path, ignore_errors=True)
         os.makedirs(export_path, exist_ok=True)
         edisgo_obj.save(
             export_path,

@@ -1,6 +1,7 @@
 """"""
 
 import os
+import shutil
 import warnings
 
 from pathlib import Path
@@ -140,6 +141,7 @@ def run_feeder_extraction(
     if save:
         export_dir = cfg["feeder_extraction"].get("export")
         export_path = data_dir / export_dir / str(grid_id)
+        shutil.rmtree(export_path, ignore_errors=True)
         os.makedirs(export_path, exist_ok=True)
 
         feeders, buses_with_feeders = extract_feeders_parallel(
