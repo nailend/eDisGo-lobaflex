@@ -52,7 +52,6 @@ def task__set_dataset_version():
         return {"version": version}
 
     return {
-        # "basename":'calc1',
         "actions": [
             (version,),
         ],
@@ -86,6 +85,48 @@ def version_uptodate(task):
         if task_results["version"] >= dataset_results["version"]
         else False
     )
+
+
+def task__get_version():
+    """Private task which print version of task and dataset. Task name needs
+    to be pass via parameter -t."""
+
+    def get_version(task):
+        dep_manager = doit.Globals.dep_manager
+        dataset_results = dep_manager.get_result("_set_dataset_version")
+        if dataset_results is None:
+            raise ValueError("Run '_doit _set_dataset_version -v %' first!")
+        print(f"Dateset version: {dataset_results['version']}")
+
+        if task != "_set_dataset_version":
+            task_results = dep_manager.get_result(task)
+            if task_results is None:
+                raise ValueError(f"{task} was not executed yet.")
+            print(f"Task {task} version: {task_results['version']}")
+
+            return (
+                True
+                if task_results["version"] >= dataset_results["version"]
+                else False
+            )
+        else:
+            return True
+
+    return {
+        "actions": [
+            (get_version,),
+        ],
+        "params": [
+            {
+                "name": "task",
+                "short": "t",
+                "long": "task",
+                "type": str,
+                "default": "_set_dataset_version",
+                "help": "Name of task to get version from",
+            },
+        ],
+    }
 
 
 def load_integration_task(mvgd):
