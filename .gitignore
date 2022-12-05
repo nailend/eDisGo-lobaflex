@@ -23,8 +23,12 @@ results/*
 data/*
 # exclude logs
 logs/*
+
 # exclude doit files
-src/doit/*
+# exclude db files in pydoit
+/src/lobaflex/pydoit/
+
+# exclude hidden-files in config and source
 config/.*
 src/.*
 # exclude locally built docs
@@ -43,6 +47,9 @@ eDisGo.egg-info/
 # exclude check scripts
 /examples/compare_graphs.py
 /examples/compare_pypsa_network.py
+
+
+
 
 # exclude .json files in opf
 /edisgo/opf/edisgo_scenario_data/*.json

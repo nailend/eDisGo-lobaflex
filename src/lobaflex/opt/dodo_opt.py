@@ -1,17 +1,15 @@
 import os
 
-from doit.reporter import ConsoleReporter, JsonReporter
-from doit.tools import check_timestamp_unchanged, result_dep
-
-# from model_solving import run_optimization
-from dispatch_optimization import run_dispatch_optimization
-from logger import logger
-from tools import TelegramReporter, dump_yaml, get_config, get_csv_in_subdirs, get_dir
-
-src_dir = get_dir(key="src")
-logs_dir = get_dir(key="logs")
-data_dir = get_dir(key="data")
-config_dir = get_dir(key="config")
+from lobaflex import config_dir, data_dir
+from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
+from lobaflex.tools.logger import logger
+from lobaflex.tools.pydoit import (
+    task__get_version,
+    task__set_dataset_version,
+    task__split_model_config_in_subconfig,
+    version_uptodate,
+)
+from lobaflex.tools.tools import TelegramReporter, get_config
 
 # TODO
 #   4. alternative uptodate function: version,
@@ -19,13 +17,6 @@ config_dir = get_dir(key="config")
 #   7. callback telegram bot
 #   8. watch param
 #   9. Check connection to db, maybe at beginning and raise warning
-
-
-def task_split_model_config_in_subconfig():
-    """This task is always executed to update the split model configs"""
-    config_dir = get_dir(key="config")
-    cfg = get_config(path=config_dir / "model_config.yaml")
-    dump_yaml(yaml_file=cfg, save_to=config_dir, split=True)
 
 
 def optimization(mvgd, feeder):
@@ -45,6 +36,8 @@ def optimization(mvgd, feeder):
             )
         ],
         # "task_dep": [f"grids:{mvgd}_feeder_extraction"],
+        "getargs": {"version": ("_set_dataset_version", "version")},
+        "uptodate": [version_uptodate],
         "verbosity": 2,
     }
 
@@ -64,7 +57,8 @@ def task_opt():
                 for feeder_id in os.listdir(feeder_path)
                 if os.path.isdir(feeder_path / feeder_id)
             ]
-        except FileNotFoundError:
+        except FileNotFoundError as e:
+            logger.info(f"No Files found for MVGD: {mvgd}")
             continue
         for feeder in sorted(feeder_ids):
             yield optimization(mvgd=mvgd, feeder=feeder)
@@ -86,7 +80,7 @@ def task_opt_group():
                 for feeder_id in sorted(os.listdir(feeder_path))
                 if os.path.isdir(feeder_path / feeder_id)
             ]
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             continue
         yield {
             "actions": None,

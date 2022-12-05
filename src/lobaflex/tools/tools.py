@@ -14,15 +14,8 @@ import yaml
 
 from doit.exceptions import BaseFail
 
-from logger import logger
-
-
-def get_dir(key):
-    """Get directories parallel to src level"""
-    src_dir = Path(".").absolute()
-    repo_dir = src_dir.parent
-    key_dir = repo_dir / key
-    return key_dir
+from lobaflex import config_dir, logs_dir
+from lobaflex.tools.logger import logger
 
 
 def get_csv_in_subdirs(path):
@@ -35,12 +28,18 @@ def get_csv_in_subdirs(path):
     return list_files
 
 
-def get_config(path=f".{get_dir(key='config')}/model_config.yaml"):
+def get_config(path):
     """
     Returns the config.
     """
     with open(path, encoding="utf8") as f:
         return yaml.safe_load(f)
+
+
+def split_model_config_in_subconfig():
+    """This body is always executed to keep the respective configs uptodate"""
+    cfg = get_config(path=config_dir / "model_config.yaml")
+    dump_yaml(yaml_file=cfg, save_to=config_dir, split=True)
 
 
 def setup_logfile(path):
@@ -87,7 +86,6 @@ def setup_logger(name=None, loglevel=logging.DEBUG):
     -------
     instance of logger
     """
-    logs_dir = get_dir(key="logs")
     os.makedirs(logs_dir, exist_ok=True)
 
     logger = logging.getLogger(name)  # use filename as name in log
@@ -241,7 +239,7 @@ def dump_yaml(yaml_file, save_to, split=False, **kwargs):
 
 
 def telegram_bot_sendtext(text):
-    config_dir = get_dir(key="config")
+    """"""
     cfg_telegram = get_config(path=config_dir / ".telegram.yaml")
     token = cfg_telegram.get("token")
     chat_id = cfg_telegram.get("chat_id")

@@ -1,6 +1,7 @@
 """"""
 import logging
 import os
+
 from copy import deepcopy
 from pathlib import Path
 
@@ -10,10 +11,10 @@ import pandas as pd
 
 from edisgo.edisgo import import_edisgo_from_files
 from edisgo.tools.tools import convert_impedances_to_mv
-from loguru import logger
 
 # import eDisGo_lobaflex as loba
 from feeder_extraction import get_flexible_loads
+from loguru import logger
 from tools import get_config, get_dir
 
 # from edisgo.tools import logger
@@ -25,6 +26,7 @@ results_dir = get_dir(key="results")
 
 
 # logger = logging.getLogger(__name__)
+
 
 def export_results(results, path):
     """
@@ -91,7 +93,11 @@ def run_optimization(
             feeder_id = f"{int(feeder_id):02}"
             import_dir = cfg_g["feeder_extraction"].get("export")
             import_path = (
-                data_dir / import_dir / str(grid_id) / "feeder" / str(feeder_id)
+                data_dir
+                / import_dir
+                / str(grid_id)
+                / "feeder"
+                / str(feeder_id)
             )
             logger.info(f"Import Feeder from file: {import_path}")
 
@@ -117,7 +123,10 @@ def run_optimization(
     if not feeder_id:
         dnm_path = import_path / f"downstream_node_matrix_{grid_id}.csv"
     else:
-        dnm_path = import_path / f"downstream_node_matrix_{grid_id}_{import_path.name}.csv"
+        dnm_path = (
+            import_path
+            / f"downstream_node_matrix_{grid_id}_{import_path.name}.csv"
+        )
     downstream_nodes_matrix = pd.read_csv(os.path.join(dnm_path), index_col=0)
     downstream_nodes_matrix = downstream_nodes_matrix.astype(np.uint8)
 
@@ -204,15 +213,12 @@ def run_optimization(
             #     collected_results[name] = pd.concat(
             #         [collected_results[name], results[name]], axis=1)
 
-
         else:
             logger.debug("Last iteration?")
-
 
         # charging_hp.loc[timesteps] = results["charging_hp_el"]
         # charging_tes.loc[timesteps] = results["charging_tes"]
         # energy_level.loc[timesteps] = results["energy_tes"]
-
 
     export_path = (
         results_dir
@@ -279,5 +285,8 @@ def run_optimization(
 if __name__ == "__main__":
 
     from dodo import task_split_model_config_in_subconfig
+
     task_split_model_config_in_subconfig()
-    run_optimization(grid_id=1056, feeder_id=1, edisgo_obj=False, save=False, doit=False)
+    run_optimization(
+        grid_id=1056, feeder_id=1, edisgo_obj=False, save=False, doit=False
+    )

@@ -1,18 +1,15 @@
 """"""
 
 import os
+import shutil
 import warnings
-
-from pathlib import Path
 
 from edisgo.edisgo import import_edisgo_from_files
 from edisgo.tools.complexity_reduction import extract_feeders_nx
 
-from logger import logger
-from tools import get_config, get_dir, timeit, write_metadata
-
-config_dir = get_dir(key="config")
-data_dir = get_dir(key="data")
+from lobaflex import config_dir, data_dir
+from lobaflex.tools.logger import logger
+from lobaflex.tools.tools import get_config, timeit, write_metadata
 
 
 def get_flexible_loads(
@@ -34,16 +31,16 @@ def get_flexible_loads(
     Other Parameters
     ------------------
     electromobility_sectors : None or set(str)
-        Specifies which electromobility sectores are flexibile. By default this
+        Specifies which electromobility sectores are flexible. By default this
         is set to None, in which case all sectors are taken.
 
     """
-    emob_sectors_flex = kwargs.get(
-        "electromobility_sectors", ["public", "home", "work"]
-    )
-    emob_sectors_fix = [
-        i for i in ["public", "home", "work"] if i not in emob_sectors_flex
-    ]
+    emob_sectors_flex = kwargs.get("electromobility_sectors", ["home", "work"])
+
+    emob_sectors = edisgo_obj.topology.loads_df.loc[
+        edisgo_obj.topology.loads_df["type"] == "charging_point", "sector"
+    ].unique()
+    emob_sectors_fix = [i for i in emob_sectors if i not in emob_sectors_flex]
 
     types = list()
     if heat_pump:
@@ -110,7 +107,9 @@ def extract_feeders_parallel(
 
 
 @timeit
-def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
+def run_feeder_extraction(
+    grid_id, edisgo_obj=False, save=False, doit=False, version=None
+):
 
     logger.info(f"Extracting feeders of {grid_id}.")
 
@@ -138,6 +137,7 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
     if save:
         export_dir = cfg["feeder_extraction"].get("export")
         export_path = data_dir / export_dir / str(grid_id)
+        shutil.rmtree(export_path, ignore_errors=True)
         os.makedirs(export_path, exist_ok=True)
 
         feeders, buses_with_feeders = extract_feeders_parallel(
@@ -164,18 +164,18 @@ def run_feeder_extraction(grid_id, edisgo_obj=False, save=False, doit=False):
             edisgo_obj=edisgo_obj,
             export_path=False,
             only_flex_ev=only_flex_ev,
-            flexible_loads=cfg_flexible_loads,
+            cfg_flexible_loads=cfg_flexible_loads,
         )
 
     if doit:
-        return True
+        return {"version": version}
     else:
         return feeders, buses_with_feeders
 
 
 if __name__ == "__main__":
 
-    from dodo import task_split_model_config_in_subconfig
+    from dodo import task__split_model_config_in_subconfig
 
-    task_split_model_config_in_subconfig()
-    run_feeder_extraction(grid_id=177, save=True)
+    task__split_model_config_in_subconfig()
+    run_feeder_extraction(grid_id=1056, save=True)

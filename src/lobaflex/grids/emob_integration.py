@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from pathlib import Path
 
@@ -6,19 +7,19 @@ import pandas as pd
 
 from edisgo.edisgo import import_edisgo_from_files
 
-from logger import logger
-from tools import get_config, get_dir, timeit, write_metadata
-
-# import pandas as pd
-
-logs_dir = get_dir(key="logs")
-data_dir = get_dir(key="data")
-config_dir = get_dir(key="config")
+from lobaflex import config_dir, data_dir
+from lobaflex.tools.logger import logger
+from lobaflex.tools.tools import get_config, timeit, write_metadata
 
 
 @timeit
 def run_emob_integration(
-    grid_id, edisgo_obj=False, save=False, to_freq="1h", doit=False
+    grid_id,
+    edisgo_obj=False,
+    save=False,
+    to_freq="1h",
+    doit=False,
+    version=None,
 ):
 
     logger.info(f"Start emob integration for {grid_id}.")
@@ -50,19 +51,28 @@ def run_emob_integration(
         tracbev_directory=data_dir / "tracbev_results" / str(grid_id),
     )
 
-    edisgo_obj.apply_charging_strategy()
+    edisgo_obj.apply_charging_strategy(strategy="dumb")
 
     logger.info("Calculate flexibility bands")
     flex_bands = edisgo_obj.electromobility.get_flexibility_bands(
         edisgo_obj, ["home", "work"]
     )
-    # TODO Resampling flex bands not working yet @birgit
+
+    # TODO workaround different year flex bands / timeseries
+    for name, df in edisgo_obj.electromobility.flexibility_bands.items():
+        if df.index.shape[0] == edisgo_obj.timeseries.timeindex.shape[0]:
+            df.index = edisgo_obj.timeseries.timeindex
+            edisgo_obj.electromobility.flexibility_bands.update({name: df})
+        else:
+            raise ValueError("Length of flex bands and ts are not the same")
+
     logger.info(f"Resample timeseries to {to_freq}.")
     edisgo_obj.resample_timeseries(method="ffill", freq=to_freq)
 
     if save:
         export_dir = cfg["emob_integration"].get("export")
         export_path = data_dir / export_dir / str(grid_id)
+        shutil.rmtree(export_path, ignore_errors=True)
         os.makedirs(export_path, exist_ok=True)
         edisgo_obj.save(
             export_path,
@@ -83,7 +93,7 @@ def run_emob_integration(
         # logger.info(f"Flexibility bands exported to: {export_path}")
 
     if doit:
-        return True
+        return {"version": version}
     else:
         return edisgo_obj, flex_bands
 

@@ -18,7 +18,6 @@ from edisgo.tools.complexity_reduction import (
     extract_feeders_nx,
     remove_1m_lines_from_edisgo,
 )
-
 from tools import get_config, get_dir, timeit
 
 config_dir = get_dir(key="config")
