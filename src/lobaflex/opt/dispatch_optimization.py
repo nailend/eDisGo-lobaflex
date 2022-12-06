@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 
 from datetime import datetime
 
@@ -69,6 +70,8 @@ def rolling_horizon_optimization(
     feeder_id = f"{int(feeder_id):02}"
 
     result_path = results_dir / run / str(grid_id) / feeder_id
+    # TODO maybe add if condition/parameter
+    shutil.rmtree(result_path, ignore_errors=True)
     os.makedirs(result_path, exist_ok=True)
 
     # Check existing results and load values
@@ -259,7 +262,7 @@ def rolling_horizon_optimization(
                         f"_{iteration}.csv"
                     )
                     res.astype(np.float16).to_csv(filename)
-            logger.info(f"Saved results for week {iteration}.")
+            logger.info(f"Saved results for iteration {iteration}.")
 
     # except Exception as e:
     #     print('Something went wrong with feeder {} of grid {}'.format(
