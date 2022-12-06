@@ -138,13 +138,14 @@ def run_dnm_generation(
                     / grid_dir.name
                     / f"downstream_node_matrix_{grid_id}_{grid_dir.name}.csv"
                 )
-                os.makedirs(export_path_dnm.parent, exist_ok=True)
 
             else:
                 export_path_dnm = (
                     export_path / f"downstream_node_matrix_{grid_id}.csv"
                 )
-                downstream_node_matrix.to_csv(export_path_dnm)
+
+            os.makedirs(export_path_dnm.parent, exist_ok=True)
+            downstream_node_matrix.to_csv(export_path_dnm)
     # if save:
     #     write_metadata(
     #         export_path,
