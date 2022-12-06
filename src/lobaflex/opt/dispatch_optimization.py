@@ -1,9 +1,8 @@
 import logging
 import os
+import shutil
 
 from datetime import datetime
-from pathlib import Path
-from time import perf_counter
 
 import edisgo.opf.lopf as lopf
 import numpy as np
@@ -11,23 +10,12 @@ import pandas as pd
 
 from DEV_optimisation import load_values_from_previous_failed_run
 from edisgo.edisgo import import_edisgo_from_files
-
-# from edisgo.opf.lopf import (
-#     optimize,
-#     prepare_time_invariant_parameters,
-#     setup_model,
-#     update_model,
-# )
 from edisgo.tools.tools import convert_impedances_to_mv
-from loguru import logger
 
-# import eDisGo_lobaflex as loba
-from feeder_extraction import get_flexible_loads
-from tools import dump_yaml, get_config, get_dir
-
-config_dir = get_dir(key="config")
-data_dir = get_dir(key="data")
-results_dir = get_dir(key="results")
+from lobaflex import config_dir, data_dir, results_dir
+from lobaflex.grids.feeder_extraction import get_flexible_loads
+from lobaflex.tools.logger import logger
+from lobaflex.tools.tools import dump_yaml, get_config
 
 
 def get_dnm(mvgd, feeder):
@@ -82,6 +70,8 @@ def rolling_horizon_optimization(
     feeder_id = f"{int(feeder_id):02}"
 
     result_path = results_dir / run / str(grid_id) / feeder_id
+    # TODO maybe add if condition/parameter
+    shutil.rmtree(result_path, ignore_errors=True)
     os.makedirs(result_path, exist_ok=True)
 
     # Check existing results and load values
@@ -272,7 +262,7 @@ def rolling_horizon_optimization(
                         f"_{iteration}.csv"
                     )
                     res.astype(np.float16).to_csv(filename)
-            logger.info(f"Saved results for week {iteration}.")
+            logger.info(f"Saved results for iteration {iteration}.")
 
     # except Exception as e:
     #     print('Something went wrong with feeder {} of grid {}'.format(
@@ -345,11 +335,23 @@ def run_dispatch_optimization(
 
 if __name__ == "__main__":
 
-    from dodo import task_split_model_config_in_subconfig
+    import sys
 
-    task_split_model_config_in_subconfig()
+    from lobaflex.tools.tools import split_model_config_in_subconfig
+
+    # logger_lopf = logging.getLogger("edisgo.opf.lopf")
+    # logger_lopf.handlers.clear()
+    # console_handler = logging.StreamHandler(stream=sys.stdout)
+    # console_handler.setLevel(logging.INFO)
+    # stream_formatter = logging.Formatter("%(name)s - %(levelname)s: %(message)s")
+    # console_handler.setFormatter(stream_formatter)
+    # logger_lopf.addHandler(console_handler)
+    # logger_lopf.setLevel(logging.INFO)
+    # logger_lopf.propagate = False
+
+    split_model_config_in_subconfig()
     run_dispatch_optimization(
-        grid_id=1056, feeder_id=2, edisgo_obj=False, save=True, doit=False
+        grid_id=1056, feeder_id=1, edisgo_obj=False, save=True, doit=False
     )
 
     # lopf.combine_results_for_grid

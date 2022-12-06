@@ -2,13 +2,14 @@ import numpy as np
 import pandas as pd
 import saio
 
-from loguru import logger
 from sqlalchemy import func
 from sqlalchemy.types import Integer
 
-import egon_db as db
+import lobaflex.grids.egon_db as db
 
-from tools import timeit
+from lobaflex import config_dir, data_dir
+from lobaflex.tools.logger import logger
+from lobaflex.tools.tools import timeit
 
 engine = db.engine()
 saio.register_schema("demand", engine=engine)

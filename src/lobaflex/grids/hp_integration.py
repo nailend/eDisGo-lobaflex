@@ -8,23 +8,18 @@ import pandas as pd
 
 from edisgo.edisgo import import_edisgo_from_files
 
-import egon_db as db
-
-from db_data import (
+from lobaflex import config_dir, data_dir
+from lobaflex.grids.db_data import (
     calc_residential_heat_profiles_per_mvgd,
     determine_minimum_hp_capacity_per_building,
     get_cop,
     identify_similar_mvgd,
 )
-from logger import logger
-from tools import get_config, get_dir, timeit, write_metadata
+from lobaflex.grids.egon_db import engine
+from lobaflex.tools.logger import logger
+from lobaflex.tools.tools import get_config, timeit, write_metadata
 
-logs_dir = get_dir(key="logs")
-data_dir = get_dir(key="data")
-config_dir = get_dir(key="config")
-
-
-engine = db.engine()
+# engine = db.engine()
 
 
 def get_hp_penetration():
@@ -246,4 +241,7 @@ def run_hp_integration(
 
 if __name__ == "__main__":
 
+    from lobaflex.tools.tools import split_model_config_in_subconfig
+
+    split_model_config_in_subconfig()
     edisgo_obj = run_hp_integration(grid_id=176)

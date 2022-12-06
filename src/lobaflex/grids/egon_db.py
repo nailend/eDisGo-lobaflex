@@ -14,9 +14,8 @@ import yaml
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from tools import get_dir
-
-cfg_dir = get_dir(key="config")
+from lobaflex import config_dir
+from lobaflex.tools.logger import logger
 
 
 def paths(pid=None):
@@ -37,9 +36,9 @@ def paths(pid=None):
     insert = f".pid-{pid}" if pid is not None else ""
     filename = f"egon-data{insert}.configuration.yaml"
     if pid == "*":
-        return [p.absolute() for p in Path(cfg_dir).glob(filename)]
+        return [p.absolute() for p in Path(config_dir).glob(filename)]
     else:
-        return [(Path(cfg_dir) / filename).absolute()]
+        return [(Path(config_dir) / filename).absolute()]
 
 
 def config_settings() -> dict[str, dict[str, str]]:

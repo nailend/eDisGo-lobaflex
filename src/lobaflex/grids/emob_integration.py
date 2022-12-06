@@ -7,14 +7,9 @@ import pandas as pd
 
 from edisgo.edisgo import import_edisgo_from_files
 
-from logger import logger
-from tools import get_config, get_dir, timeit, write_metadata
-
-# import pandas as pd
-
-logs_dir = get_dir(key="logs")
-data_dir = get_dir(key="data")
-config_dir = get_dir(key="config")
+from lobaflex import config_dir, data_dir
+from lobaflex.tools.logger import logger
+from lobaflex.tools.tools import get_config, timeit, write_metadata
 
 
 @timeit

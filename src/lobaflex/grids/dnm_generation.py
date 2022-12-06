@@ -2,19 +2,15 @@
 import os
 import warnings
 
-from pathlib import Path
-
 import networkx as nx
 import pandas as pd
 
 from edisgo.edisgo import import_edisgo_from_files
 from edisgo.network.topology import Topology
 
-from logger import logger
-from tools import get_config, get_dir, timeit, write_metadata
-
-config_dir = get_dir(key="config")
-data_dir = get_dir(key="data")
+from lobaflex import config_dir, data_dir
+from lobaflex.tools.logger import logger
+from lobaflex.tools.tools import get_config, timeit, write_metadata
 
 
 def get_downstream_nodes_matrix_iterative(grid):
@@ -142,13 +138,14 @@ def run_dnm_generation(
                     / grid_dir.name
                     / f"downstream_node_matrix_{grid_id}_{grid_dir.name}.csv"
                 )
-                os.makedirs(export_path_dnm.parent, exist_ok=True)
 
             else:
                 export_path_dnm = (
                     export_path / f"downstream_node_matrix_{grid_id}.csv"
                 )
-                downstream_node_matrix.to_csv(export_path_dnm)
+
+            os.makedirs(export_path_dnm.parent, exist_ok=True)
+            downstream_node_matrix.to_csv(export_path_dnm)
     # if save:
     #     write_metadata(
     #         export_path,
@@ -164,4 +161,4 @@ if __name__ == "__main__":
     from dodo import task_split_model_config_in_subconfig
 
     task_split_model_config_in_subconfig()
-    run_dnm_generation(grid_id=1056, feeder=False, save=True)
+    run_dnm_generation(grid_id=1056, feeder=1, save=True)

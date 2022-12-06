@@ -4,16 +4,12 @@ import os
 import shutil
 import warnings
 
-from pathlib import Path
-
 from edisgo.edisgo import import_edisgo_from_files
 from edisgo.tools.complexity_reduction import extract_feeders_nx
 
-from logger import logger
-from tools import get_config, get_dir, timeit, write_metadata
-
-config_dir = get_dir(key="config")
-data_dir = get_dir(key="data")
+from lobaflex import config_dir, data_dir
+from lobaflex.tools.logger import logger
+from lobaflex.tools.tools import get_config, timeit, write_metadata
 
 
 def get_flexible_loads(
@@ -179,7 +175,7 @@ def run_feeder_extraction(
 
 if __name__ == "__main__":
 
-    from dodo import task_split_model_config_in_subconfig
+    from dodo import task__split_model_config_in_subconfig
 
-    task_split_model_config_in_subconfig()
-    run_feeder_extraction(grid_id=177, save=True)
+    task__split_model_config_in_subconfig()
+    run_feeder_extraction(grid_id=1056, save=True)
