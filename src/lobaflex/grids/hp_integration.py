@@ -2,8 +2,6 @@
 import os
 import shutil
 
-from pathlib import Path
-
 import pandas as pd
 
 from edisgo.edisgo import import_edisgo_from_files
@@ -15,7 +13,8 @@ from lobaflex.grids.db_data import (
     get_cop,
     identify_similar_mvgd,
 )
-from lobaflex.grids.egon_db import engine
+
+# from lobaflex.grids.egon_db import engine
 from lobaflex.tools.logger import logger
 from lobaflex.tools.tools import get_config, timeit, write_metadata
 
@@ -207,8 +206,11 @@ def run_hp_integration(
     # Add heatpumps fron egon-data-db
     # TODO add durchdringung
     # hp_penetration = get_hp_penetration()
+    logger.info("Add heat pumps to eDisGo")
     edisgo_obj = create_heatpumps_from_db(edisgo_obj)
-    logger.info("Added heat pumps to eDisGo")
+
+    logger.info("Apply heat pump operating strategy")
+    edisgo_obj.apply_heat_pump_operating_strategy()
 
     if save:
         export_dir = cfg["hp_integration"].get("export")

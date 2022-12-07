@@ -80,3 +80,18 @@ def task__get_version():
             },
         ],
     }
+
+
+def task__get_dataset_version():
+    """This tasks gets the version number of the dataset"""
+
+    def get_dataset_version():
+        dep_manager = doit.Globals.dep_manager
+        dataset_results = dep_manager.get_result("_set_dataset_version")
+        if dataset_results is None:
+            raise ValueError("Run '_doit _set_dataset_version -v %' first!")
+        return {"version": dataset_results["version"]}
+
+    return {
+        "actions": [get_dataset_version],
+    }
