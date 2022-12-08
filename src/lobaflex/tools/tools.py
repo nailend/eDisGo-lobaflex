@@ -279,8 +279,9 @@ class TelegramReporter(object):
             + "\n"
             + "-" * 28
         )
-        # pipeline = [f"- {i}\n" for i in tasks.keys()]
-        # self.telegram(text=f"Pipeline:\n {pipeline}")
+        pipeline = [f"- {i}\n" for i in tasks.get(selected_tasks[0]).task_dep]
+        pipeline = str().join(pipeline)
+        self.telegram(text=f"Pipeline:\n {pipeline}")
 
     def get_status(self, task):
         """called when task is selected (check if up-to-date)"""
@@ -292,7 +293,7 @@ class TelegramReporter(object):
         # ignore private/hidden tasks (tasks that start with an underscore)
         if task.actions and (task.name[0] != "_"):
             self.write(".  %s\n" % task.title())
-            self.telegram(text=f"Task {task.title()} is executed.")
+            # self.telegram(text=f"Task {task.title()} is executed.")
 
     def add_failure(self, task, fail: BaseFail):
         """called when execution finishes with a failure"""
@@ -300,17 +301,17 @@ class TelegramReporter(object):
         if fail.report:
             self.failures.append(result)
             self._write_failure(result)
-            self.telegram(text=f"Task: {task.title()} failed.")
+            self.telegram(text=f"Failed: {task.title()}")
 
     def add_success(self, task):
         """called when execution finishes successfully"""
-        self.telegram(text=f"Task: {task.title()} successful.")
+        self.telegram(text=f"Success: {task.title()}")
 
     def skip_uptodate(self, task):
         """skipped up-to-date task"""
         if task.name[0] != "_":
             self.write("-- %s\n" % task.title())
-            self.telegram(text=f"Skip Task: {task.title()}.")
+            self.telegram(text=f"Skip: {task.title()}.")
 
     def skip_ignore(self, task):
         """skipped ignored task"""
