@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import shutil
 
 from datetime import datetime
@@ -81,12 +82,8 @@ def tie_end_to_start_hp(result_dict, iteration, cfg_o):
     # iteration as starting value (overlapping hours are neglected)
     else:
         charging_start = {
-            "hp": result_dict["charging_hp_el"].iloc[
-                -overlap_iterations
-            ],
-            "tes": result_dict["charging_tes"].iloc[
-                -overlap_iterations
-            ],
+            "hp": result_dict["charging_hp_el"].iloc[-overlap_iterations],
+            "tes": result_dict["charging_tes"].iloc[-overlap_iterations],
         }
         start_values_hp["charging_start_hp"] = charging_start
 
@@ -97,6 +94,38 @@ def tie_end_to_start_hp(result_dict, iteration, cfg_o):
 
     return start_values_hp
 
+
+def export_results(result_dict, result_path, interval, filename):
+    """
+
+    Parameters
+    ----------
+    result_dict :
+    result_path :
+    interval :
+    filename :
+
+    Returns
+    -------
+
+    """
+
+    iteration = re.search(r"iteration_(\d+)", filename).group(1)
+    for res_name, res in result_dict.items():
+        try:
+            res = res.loc[interval]
+            # TODO properly handle exception
+        except Exception as e:
+            logger.info("No results for this timesteps.")
+            continue
+        if "slack" in res_name:
+            res = res[res > 1e-6]
+            res = res.dropna(how="all")
+            res = res.dropna(how="all")
+        if not res.empty:
+            file_path = result_path / filename.replace("$res_name$", res_name)
+            res.astype(np.float16).to_csv(file_path)
+            logger.info(f"Saved results for iteration {iteration}.")
 
 
 def tie_end_to_start_emob(result_dict, iteration, cfg_o):
@@ -128,10 +157,12 @@ def tie_end_to_start_emob(result_dict, iteration, cfg_o):
     else:
 
         start_values_emob["charging_start_ev"] = result_dict[
-            "x_charge_ev"].iloc[-overlap_iterations]
+            "x_charge_ev"
+        ].iloc[-overlap_iterations]
 
         start_values_emob["energy_level_start_ev"] = result_dict[
-            "energy_level_cp"].iloc[-overlap_iterations]
+            "energy_level_cp"
+        ].iloc[-overlap_iterations]
 
     return start_values_emob
 
@@ -303,37 +334,28 @@ def rolling_horizon_optimization(
         )
         # TODO workaround if hps not exist
         try:
-            start_values_hp = tie_end_to_start_hp(result_dict, iteration, cfg_o)
+            start_values_hp = tie_end_to_start_hp(
+                result_dict, iteration, cfg_o
+            )
         except TypeError:
             pass
 
         try:
-            start_values_emob = tie_end_to_start_emob(result_dict,
-                                                       iteration, cfg_o)
+            start_values_emob = tie_end_to_start_emob(
+                result_dict, iteration, cfg_o
+            )
         except TypeError:
             pass
 
         logger.info(f"Finished optimisation for week {iteration}.")
 
         if save:
-            for res_name, res in result_dict.items():
-                try:
-                    res = res.loc[edisgo_obj.timeseries.timeindex]
-                    # TODO properly handle exception
-                except Exception:
-                    pass
-                if "slack" in res_name:
-                    res = res[res > 1e-6]
-                    res = res.dropna(how="all")
-                    res = res.dropna(how="all")
-                if not res.empty:
-                    filename = (
-                        result_path / f"{res_name}_{grid_id}-"
-                        f"{feeder_id}_iteration"
-                        f"_{iteration}.csv"
-                    )
-                    res.astype(np.float16).to_csv(filename)
-            logger.info(f"Saved results for iteration {iteration}.")
+
+            filename = (
+                f"$res_name$_{grid_id}-{feeder_id}_iteration"
+                f"_{iteration}.csv"
+            )
+            export_results(result_dict, result_path, interval, filename)
 
     # except Exception as e:
     #     print('Something went wrong with feeder {} of grid {}'.format(
