@@ -54,6 +54,88 @@ def get_dnm(mvgd, feeder):
     return downstream_nodes_matrix
 
 
+def tie_end_to_start_hp(result_dict, iteration, cfg_o):
+    """
+
+    Parameters
+    ----------
+    result_dict :
+    iteration :
+    cfg_o :
+
+    Returns
+    -------
+
+    """
+    start_values_hp = dict()
+
+    iterations_per_era = cfg_o["iterations_per_era"]
+    overlap_iterations = cfg_o["overlap_iterations"]
+
+    # if iteration is the last one of era
+    if iteration % iterations_per_era == iterations_per_era - 1:
+        start_values_hp["charging_start"] = None
+        start_values_hp["energy_level_start"] = None
+
+    # if iteration is not the last one of era use results from last
+    # iteration as starting value (overlapping hours are neglected)
+    else:
+        charging_start = {
+            "hp": result_dict["charging_hp_el"].iloc[
+                -overlap_iterations
+            ],
+            "tes": result_dict["charging_tes"].iloc[
+                -overlap_iterations
+            ],
+        }
+        start_values_hp["charging_start_hp"] = charging_start
+
+        energy_level_start = result_dict["energy_tes"].iloc[
+            -overlap_iterations
+        ]
+        start_values_hp["energy_level_start_tes"] = energy_level_start
+
+    return start_values_hp
+
+
+
+def tie_end_to_start_emob(result_dict, iteration, cfg_o):
+    """
+
+    Parameters
+    ----------
+    result_dict :
+    iteration :
+    cfg_o :
+
+    Returns
+    -------
+
+    """
+
+    start_values_emob = dict()
+
+    iterations_per_era = cfg_o["iterations_per_era"]
+    overlap_iterations = cfg_o["overlap_iterations"]
+
+    # if iteration is the last one of era
+    if iteration % iterations_per_era == iterations_per_era - 1:
+        start_values_emob["charging_start_ev"] = None
+        start_values_emob["energy_level_start_ev"] = None
+
+    # if iteration is not the last one of era use results from last
+    # iteration as starting value (overlapping hours are neglected)
+    else:
+
+        start_values_emob["charging_start_ev"] = result_dict[
+            "x_charge_ev"].iloc[-overlap_iterations]
+
+        start_values_emob["energy_level_start_ev"] = result_dict[
+            "energy_level_cp"].iloc[-overlap_iterations]
+
+    return start_values_emob
+
+
 def rolling_horizon_optimization(
     edisgo_obj,
     grid_id,
@@ -134,10 +216,12 @@ def rolling_horizon_optimization(
         flexible_loads=flexible_loads,
     )
 
-    energy_level = {}
-    charging_hp = {}
-    charging_tes = {}
-    kwargs = {}
+    # energy_level = {}
+    # charging_hp = {}
+    # charging_tes = {}
+    # kwargs = {}
+    start_values_hp = {}
+    start_values_emob = {}
 
     # TODO adhoc workaround
     # interval = edisgo_obj.timeseries.timeindex[:50]
@@ -189,11 +273,13 @@ def rolling_horizon_optimization(
                 # optimize_bess=cfg_o["opt_bess"],
                 # optimize_emob=cfg_o["opt_emob"],
                 # optimize_hp=cfg_o["opt_hp"],
-                charging_start_hp=charging_start,
-                energy_level_start_tes=energy_level_start,
-                energy_level_end_tes=energy_level_end,
+                # charging_start_hp=charging_start,
+                # energy_level_start_tes=energy_level_start,
+                # energy_level_end_tes=energy_level_end,
                 flexible_loads=flexible_loads,
-                **kwargs,
+                **start_values_hp,
+                **start_values_emob,
+                # **kwargs,
             )
         except NameError:
             model = lopf.setup_model(
@@ -207,7 +293,7 @@ def rolling_horizon_optimization(
                 energy_level_start_tes=energy_level_start,
                 energy_level_end_tes=energy_level_end,
                 flexible_loads=flexible_loads,
-                **kwargs,
+                # **kwargs,
             )
 
         logger.info(f"Set up model for iteration {iteration}.")
@@ -216,32 +302,16 @@ def rolling_horizon_optimization(
             model, cfg_o["solver"], lp_filename=lp_filename
         )
         # TODO workaround if hps not exist
-        charging_hp[iteration] = result_dict["charging_hp_el"]
-        charging_tes[iteration] = result_dict["charging_tes"]
-        energy_level[iteration] = result_dict["energy_tes"]
+        try:
+            start_values_hp = tie_end_to_start_hp(result_dict, iteration, cfg_o)
+        except TypeError:
+            pass
 
-        # if iteration is not the last one of era use results from last
-        # iteration as starting value (overlapping hours are neglected)
-        if (
-            iteration % cfg_o["iterations_per_era"]
-            != cfg_o["iterations_per_era"] - 1
-        ):
-            charging_start = {
-                "hp": charging_hp[iteration].iloc[
-                    -cfg_o["overlap_iterations"]
-                ],
-                "tes": charging_tes[iteration].iloc[
-                    -cfg_o["overlap_iterations"]
-                ],
-            }
-            energy_level_start = energy_level[iteration].iloc[
-                -cfg_o["overlap_iterations"]
-            ]
-        # if iteration is the last one of era
-        #
-        else:
-            charging_start = None
-            energy_level_start = None
+        try:
+            start_values_emob = tie_end_to_start_emob(result_dict,
+                                                       iteration, cfg_o)
+        except TypeError:
+            pass
 
         logger.info(f"Finished optimisation for week {iteration}.")
 
@@ -249,6 +319,7 @@ def rolling_horizon_optimization(
             for res_name, res in result_dict.items():
                 try:
                     res = res.loc[edisgo_obj.timeseries.timeindex]
+                    # TODO properly handle exception
                 except Exception:
                     pass
                 if "slack" in res_name:
