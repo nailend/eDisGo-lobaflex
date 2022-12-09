@@ -406,12 +406,6 @@ def run_dispatch_optimization(
             import_electromobility=True,
         )
 
-        # TODO workaround different year flex bands / timeseries
-        for name, df in edisgo_obj.electromobility.flexibility_bands.items():
-            if df.index.shape[0] == edisgo_obj.timeseries.timeindex.shape[0]:
-                df.index = edisgo_obj.timeseries.timeindex
-                edisgo_obj.electromobility.flexibility_bands.update({name: df})
-
         rolling_horizon_optimization(
             edisgo_obj,
             grid_id,
