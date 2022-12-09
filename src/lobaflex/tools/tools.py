@@ -243,7 +243,6 @@ def telegram_bot_sendtext(text):
     cfg_telegram = get_config(path=config_dir / ".telegram.yaml")
     token = cfg_telegram.get("token")
     chat_id = cfg_telegram.get("chat_id")
-
     params = {"chat_id": chat_id, "text": text}
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     message = requests.post(url, params=params)
@@ -263,6 +262,7 @@ class TelegramReporter(object):
         self.failure_verbosity = options.get("failure_verbosity", 0)
         self.outstream = outstream
         self.telegram = telegram_bot_sendtext
+        self.start_time = {}
 
     def write(self, text):
         self.outstream.write(text)
@@ -279,8 +279,12 @@ class TelegramReporter(object):
             + "\n"
             + "-" * 28
         )
-        pipeline = [f"- {i}\n" for i in tasks.get(selected_tasks[0]).task_dep]
-        pipeline = str().join(pipeline)
+        pipeline = str()
+        for group in selected_tasks:
+            # pipeline = pipeline.join([f"**{group}**\n"])
+            pipeline = pipeline.join(
+                [f"- {i}\n" for i in tasks.get(group).task_dep]
+            )
         self.telegram(text=f"Pipeline:\n {pipeline}")
 
     def get_status(self, task):
@@ -293,6 +297,7 @@ class TelegramReporter(object):
         # ignore private/hidden tasks (tasks that start with an underscore)
         if task.actions and (task.name[0] != "_"):
             self.write(".  %s\n" % task.title())
+            self.start_time[task.name] = time.perf_counter()
             # self.telegram(text=f"Task {task.title()} is executed.")
 
     def add_failure(self, task, fail: BaseFail):
@@ -305,7 +310,12 @@ class TelegramReporter(object):
 
     def add_success(self, task):
         """called when execution finishes successfully"""
-        self.telegram(text=f"Success: {task.title()}")
+
+        if task.actions and (task.name[0] != "_"):
+            exec_time = time.perf_counter() - self.start_time[task.name]
+            exec_time = time.gmtime(exec_time)
+            exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
+            self.telegram(text=f"Success: {task.title()}\n in {exec_time}")
 
     def skip_uptodate(self, task):
         """skipped up-to-date task"""
