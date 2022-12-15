@@ -337,14 +337,14 @@ def rolling_horizon_optimization(
             start_values_hp = tie_end_to_start_hp(
                 result_dict, iteration, cfg_o
             )
-        except TypeError:
+        except KeyError:
             pass
 
         try:
             start_values_emob = tie_end_to_start_emob(
                 result_dict, iteration, cfg_o
             )
-        except TypeError:
+        except KeyError:
             pass
 
         logger.info(f"Finished optimisation for week {iteration}.")
@@ -355,8 +355,11 @@ def rolling_horizon_optimization(
                 f"$res_name$_{grid_id}-{feeder_id}_iteration"
                 f"_{iteration}.csv"
             )
-            export_results(result_dict, result_path, interval, filename)
-
+            try:
+                export_results(result_dict, result_path, interval, filename)
+            except Exception:
+                logger.info("Result error couldnt be exported. Skip to next "
+                            "iteration.")
     # except Exception as e:
     #     print('Something went wrong with feeder {} of grid {}'.format(
     #         feeder_id, grid_id))

@@ -1,18 +1,21 @@
 from load_integration import run_load_integration
 
-from lobaflex import config_dir, data_dir
+from lobaflex import config_dir
 from lobaflex.grids.dnm_generation import run_dnm_generation
 from lobaflex.grids.emob_integration import run_emob_integration
 from lobaflex.grids.feeder_extraction import run_feeder_extraction
 from lobaflex.grids.hp_integration import run_hp_integration
 from lobaflex.tools.logger import logger
-from lobaflex.tools.pydoit import (
-    task__get_version,
-    task__set_dataset_version,
-    task__split_model_config_in_subconfig,
-    version_uptodate,
-)
+
+# the following task are used by pydoit task generator
+# fmt: off
+from lobaflex.tools.pydoit import task__get_dataset_version  # noqa: F401
+from lobaflex.tools.pydoit import task__set_dataset_version  # noqa: F401
+from lobaflex.tools.pydoit import task__split_model_config_in_subconfig  # noqa: F401
+from lobaflex.tools.pydoit import version_uptodate
 from lobaflex.tools.tools import TelegramReporter, get_config
+
+# fmt: on
 
 # TODO
 #   4. alternative uptodate function: version,
@@ -51,7 +54,7 @@ def load_integration_task(mvgd):
         ],
         "uptodate": [version_uptodate],
         # take current version number of dataset
-        "getargs": {"version": ("_set_dataset_version", "version")},
+        "getargs": {"version": ("_get_dataset_version", "version")},
         "verbosity": 2,
     }
 
@@ -77,7 +80,8 @@ def emob_integration_task(mvgd):
         ],
         "task_dep": [f"grids:{mvgd}_load_integration"],
         # take current version number of dataset
-        "getargs": {"version": ("_set_dataset_version", "version")},
+        # "getargs": {"version": ("_set_dataset_version", "version")},
+        "getargs": {"version": ("_get_dataset_version", "version")},
         "uptodate": [version_uptodate],
         "verbosity": 2,
     }
@@ -101,7 +105,8 @@ def hp_integration_task(mvgd):
         ],
         "task_dep": [f"grids:{mvgd}_emob_integration"],
         # take current version number of dataset
-        "getargs": {"version": ("_set_dataset_version", "version")},
+        # "getargs": {"version": ("_set_dataset_version", "version")},
+        "getargs": {"version": ("_get_dataset_version", "version")},
         "uptodate": [version_uptodate],
         "verbosity": 2,
     }
@@ -125,7 +130,8 @@ def feeder_extraction_task(mvgd):
         ],
         "task_dep": [f"grids:{mvgd}_hp_integration"],
         # take current version number of dataset
-        "getargs": {"version": ("_set_dataset_version", "version")},
+        # "getargs": {"version": ("_set_dataset_version", "version")},
+        "getargs": {"version": ("_get_dataset_version", "version")},
         "uptodate": [version_uptodate],
         "verbosity": 2,
     }
@@ -150,7 +156,8 @@ def dnm_generation_task(mvgd):
         ],
         "task_dep": [f"grids:{mvgd}_feeder_extraction"],
         # take current version number of dataset
-        "getargs": {"version": ("_set_dataset_version", "version")},
+        # "getargs": {"version": ("_set_dataset_version", "version")},
+        "getargs": {"version": ("_get_dataset_version", "version")},
         "uptodate": [version_uptodate],
         "verbosity": 2,
     }
