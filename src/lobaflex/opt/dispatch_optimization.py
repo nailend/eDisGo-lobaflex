@@ -96,14 +96,14 @@ def tie_end_to_start_hp(result_dict, iteration, cfg_o):
     return start_values_hp
 
 
-def export_results(result_dict, result_path, interval, filename):
+def export_results(result_dict, result_path, timesteps, filename):
     """
 
     Parameters
     ----------
     result_dict :
     result_path :
-    interval :
+    timesteps :
     filename :
 
     Returns
@@ -114,7 +114,7 @@ def export_results(result_dict, result_path, interval, filename):
     iteration = re.search(r"iteration_(\d+)", filename).group(1)
     for res_name, res in result_dict.items():
         try:
-            res = res.loc[interval]
+            res = res.loc[timesteps]
             # TODO properly handle exception
         except Exception as e:
             logger.info("No results for this timesteps.")
@@ -355,7 +355,11 @@ def rolling_horizon_optimization(
                 f"_{iteration}.csv"
             )
             try:
-                export_results(result_dict, result_path, interval, filename)
+                export_results(result_dict=result_dict,
+                               result_path=result_path,
+                               interval=timesteps.iloc[cfg_o[
+                                   "timesteps_per_iteration"]],
+                               filename=filename)
             except Exception:
                 logger.info("Result error couldnt be exported. Skip to next "
                             "iteration.")
