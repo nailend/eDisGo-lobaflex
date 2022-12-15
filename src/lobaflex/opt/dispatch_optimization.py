@@ -12,6 +12,7 @@ import pandas as pd
 from DEV_optimisation import load_values_from_previous_failed_run
 from edisgo.edisgo import import_edisgo_from_files
 from edisgo.tools.tools import convert_impedances_to_mv
+from edisgo.tools.tools import assign_voltage_level_to_component
 
 from lobaflex import config_dir, data_dir, results_dir
 from lobaflex.grids.feeder_extraction import get_flexible_loads
@@ -247,6 +248,20 @@ def rolling_horizon_optimization(
         flexible_loads=flexible_loads,
     )
 
+    # get v_min, v_max per bus
+
+    v_minmax = pd.DataFrame(data=fixed_parameters[
+        "grid_object"].buses_df.index, columns=["bus"])
+    v_minmax = assign_voltage_level_to_component(
+        v_minmax,
+        fixed_parameters["grid_object"].buses_df
+    )
+    v_minmax.loc[v_minmax["voltage_level"] == "mv", "v_min"] = 0.985
+    v_minmax.loc[v_minmax["voltage_level"] == "mv", "v_max"] = 1.05
+    v_minmax.loc[v_minmax["voltage_level"] == "lv", "v_min"] = 0.9
+    v_minmax.loc[v_minmax["voltage_level"] == "lv", "v_max"] = 1.1
+    v_minmax = v_minmax.set_index("bus")
+
     # energy_level = {}
     # charging_hp = {}
     # charging_tes = {}
@@ -324,6 +339,8 @@ def rolling_horizon_optimization(
                 energy_level_start_tes=energy_level_start,
                 energy_level_end_tes=energy_level_end,
                 flexible_loads=flexible_loads,
+                v_min=v_minmax["v_min"],
+                v_max=v_minmax["v_max"],
                 # **kwargs,
             )
 
