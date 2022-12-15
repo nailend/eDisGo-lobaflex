@@ -262,29 +262,17 @@ def rolling_horizon_optimization(
     v_minmax.loc[v_minmax["voltage_level"] == "lv", "v_max"] = 1.1
     v_minmax = v_minmax.set_index("bus")
 
-    # energy_level = {}
-    # charging_hp = {}
-    # charging_tes = {}
-    # kwargs = {}
+
     start_values_hp = {}
     start_values_emob = {}
 
     # TODO adhoc workaround
     # interval = edisgo_obj.timeseries.timeindex[:50]
     interval = edisgo_obj.timeseries.timeindex[: cfg_o["total_timesteps"]]
-    # window = timesteps_per_iteration # besserer Name?
-    # intervals = timesteps / (timesteps_per_iteration - overlap_iterations)
-    # for i in range(intervals)
-    # timeindex.shift(periods = timesteps_per_iteration - overlap_iterations,
-    #                     freq = "h")
-    # iterations_per_era = 24*7 / timesteps_per_iteration - overlap_iterations
-
-    # number of iterations is derived from number of total timesteps /
-    # timesteps per iteration
 
     for iteration in range(
         start_iter, int(len(interval) / cfg_o["timesteps_per_iteration"])
-    ):  # edisgo_obj.timeseries.timeindex.week.unique()
+    ):
 
         logging.info(f"Starting optimisation for iteration {iteration}.")
 
@@ -316,11 +304,6 @@ def rolling_horizon_optimization(
                 timesteps=timesteps,
                 fixed_parameters=fixed_parameters,
                 objective=cfg_o["objective"],
-                # optimize_bess=cfg_o["opt_bess"],
-                # optimize_emob=cfg_o["opt_emob"],
-                # optimize_hp=cfg_o["opt_hp"],
-                # charging_start_hp=charging_start,
-                # energy_level_start_tes=energy_level_start,
                 # energy_level_end_tes=energy_level_end,
                 flexible_loads=flexible_loads,
                 **start_values_hp,
@@ -332,9 +315,6 @@ def rolling_horizon_optimization(
                 fixed_parameters=fixed_parameters,
                 timesteps=timesteps,
                 objective=cfg_o["objective"],
-                # optimize_bess=cfg_o["opt_bess"],
-                # optimize_emob=cfg_o["opt_emob"],
-                # optimize_hp=cfg_o["opt_hp"],
                 charging_start_hp=charging_start,
                 energy_level_start_tes=energy_level_start,
                 energy_level_end_tes=energy_level_end,
@@ -399,7 +379,6 @@ def run_dispatch_optimization(
 ):
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
-    # mvgds = cfg_g["model"].get("mvgd")
     feeder_id = f"{int(feeder_id):02}"
 
     if not edisgo_obj:
