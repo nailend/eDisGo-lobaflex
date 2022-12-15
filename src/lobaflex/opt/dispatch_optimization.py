@@ -276,28 +276,31 @@ def rolling_horizon_optimization(
 
         logging.info(f"Starting optimisation for iteration {iteration}.")
 
-        # if last iteration of era
-        # overlap is added to window
+        # Defines windows of iteration with timesteps
+        # if last iteration of era, no overlap is added but energy_level
+        # at the end needs to be reached
         if (
             iteration % cfg_o["iterations_per_era"]
-            != cfg_o["iterations_per_era"] - 1
+            == cfg_o["iterations_per_era"] - 1
         ):
             timesteps = edisgo_obj.timeseries.timeindex[
-                iteration
-                * cfg_o["timesteps_per_iteration"] : (iteration + 1)
-                * cfg_o["timesteps_per_iteration"]
-                + cfg_o["overlap_iterations"]
-            ]
-            energy_level_end = None
-        else:
-            # Defines windows of iteration with timesteps
-            #  24h
-            timesteps = edisgo_obj.timeseries.timeindex[
-                iteration
-                * cfg_o["timesteps_per_iteration"] : (iteration + 1)
-                * cfg_o["timesteps_per_iteration"]
-            ]
+                        iteration
+                        * cfg_o["timesteps_per_iteration"]: (iteration + 1)
+                        * cfg_o["timesteps_per_iteration"]
+                        ]
             energy_level_end = True
+
+        # in all other iterations overlap is added to the timeframe
+        else:
+            timesteps = edisgo_obj.timeseries.timeindex[
+                        iteration
+                        * cfg_o["timesteps_per_iteration"]: (iteration + 1)
+                        * cfg_o["timesteps_per_iteration"]
+                        + cfg_o["overlap_iterations"]
+                        ]
+            energy_level_end = None
+
+        logger.info(f"Set up model for iteration {iteration}.")
         try:
             model = lopf.update_model(
                 model=model,
@@ -324,7 +327,6 @@ def rolling_horizon_optimization(
                 # **kwargs,
             )
 
-        logger.info(f"Set up model for iteration {iteration}.")
         lp_filename = result_path / f"lp_file_iteration_{iteration}.lp"
         result_dict = lopf.optimize(
             model, cfg_o["solver"], lp_filename=lp_filename
