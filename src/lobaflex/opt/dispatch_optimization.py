@@ -357,7 +357,7 @@ def rolling_horizon_optimization(
             try:
                 export_results(result_dict=result_dict,
                                result_path=result_path,
-                               interval=timesteps.iloc[cfg_o[
+                               timesteps=timesteps[:cfg_o[
                                    "timesteps_per_iteration"]],
                                filename=filename)
             except Exception:
