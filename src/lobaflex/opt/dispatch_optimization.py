@@ -117,7 +117,7 @@ def export_results(result_dict, result_path, timesteps, filename):
             res = res.loc[timesteps]
             # TODO properly handle exception
         except Exception as e:
-            logger.info("No results for this timesteps.")
+            logger.info(f"No results for {res_name}.")
             continue
         if "slack" in res_name:
             res = res[res > 1e-6]
@@ -126,7 +126,7 @@ def export_results(result_dict, result_path, timesteps, filename):
         if not res.empty:
             file_path = result_path / filename.replace("$res_name$", res_name)
             res.astype(np.float16).to_csv(file_path)
-            logger.info(f"Saved results for iteration {iteration}.")
+            logger.info(f"Saved results for {res_name}.")
 
 
 def tie_end_to_start_emob(result_dict, iteration, cfg_o):
