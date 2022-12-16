@@ -11,8 +11,10 @@ import pandas as pd
 
 from DEV_optimisation import load_values_from_previous_failed_run
 from edisgo.edisgo import import_edisgo_from_files
-from edisgo.tools.tools import convert_impedances_to_mv
-from edisgo.tools.tools import assign_voltage_level_to_component
+from edisgo.tools.tools import (
+    assign_voltage_level_to_component,
+    convert_impedances_to_mv,
+)
 
 from lobaflex import config_dir, data_dir, results_dir
 from lobaflex.grids.feeder_extraction import get_flexible_loads
@@ -250,18 +252,17 @@ def rolling_horizon_optimization(
 
     # get v_min, v_max per bus
 
-    v_minmax = pd.DataFrame(data=fixed_parameters[
-        "grid_object"].buses_df.index, columns=["bus"])
+    v_minmax = pd.DataFrame(
+        data=fixed_parameters["grid_object"].buses_df.index, columns=["bus"]
+    )
     v_minmax = assign_voltage_level_to_component(
-        v_minmax,
-        fixed_parameters["grid_object"].buses_df
+        v_minmax, fixed_parameters["grid_object"].buses_df
     )
     v_minmax.loc[v_minmax["voltage_level"] == "mv", "v_min"] = 0.985
     v_minmax.loc[v_minmax["voltage_level"] == "mv", "v_max"] = 1.05
     v_minmax.loc[v_minmax["voltage_level"] == "lv", "v_min"] = 0.9
     v_minmax.loc[v_minmax["voltage_level"] == "lv", "v_max"] = 1.1
     v_minmax = v_minmax.set_index("bus")
-
 
     start_values_hp = {}
     start_values_emob = {}
@@ -284,20 +285,20 @@ def rolling_horizon_optimization(
             == cfg_o["iterations_per_era"] - 1
         ):
             timesteps = edisgo_obj.timeseries.timeindex[
-                        iteration
-                        * cfg_o["timesteps_per_iteration"]: (iteration + 1)
-                        * cfg_o["timesteps_per_iteration"]
-                        ]
+                iteration
+                * cfg_o["timesteps_per_iteration"] : (iteration + 1)
+                * cfg_o["timesteps_per_iteration"]
+            ]
             energy_level_end = True
 
         # in all other iterations overlap is added to the timeframe
         else:
             timesteps = edisgo_obj.timeseries.timeindex[
-                        iteration
-                        * cfg_o["timesteps_per_iteration"]: (iteration + 1)
-                        * cfg_o["timesteps_per_iteration"]
-                        + cfg_o["overlap_iterations"]
-                        ]
+                iteration
+                * cfg_o["timesteps_per_iteration"] : (iteration + 1)
+                * cfg_o["timesteps_per_iteration"]
+                + cfg_o["overlap_iterations"]
+            ]
             energy_level_end = None
 
         logger.info(f"Set up model for iteration {iteration}.")
@@ -355,14 +356,19 @@ def rolling_horizon_optimization(
                 f"_{iteration}.csv"
             )
             try:
-                export_results(result_dict=result_dict,
-                               result_path=result_path,
-                               timesteps=timesteps[:cfg_o[
-                                   "timesteps_per_iteration"]],
-                               filename=filename)
+                export_results(
+                    result_dict=result_dict,
+                    result_path=result_path,
+                    timesteps=timesteps[: cfg_o["timesteps_per_iteration"]],
+                    filename=filename,
+                )
             except Exception:
-                logger.info("Result error couldnt be exported. Skip to next "
-                            "iteration.")
+                logger.info(
+                    "Result error couldnt be exported. Skip to next "
+                    "iteration."
+                )
+                raise ValueError("Results not valid")
+
     # except Exception as e:
     #     print('Something went wrong with feeder {} of grid {}'.format(
     #         feeder_id, grid_id))
