@@ -336,14 +336,14 @@ def rolling_horizon_optimization(
             start_values_hp = tie_end_to_start_hp(
                 result_dict, iteration, cfg_o
             )
-        except KeyError:
+        except Exception:
             pass
 
         try:
             start_values_emob = tie_end_to_start_emob(
                 result_dict, iteration, cfg_o
             )
-        except KeyError:
+        except Exception:
             pass
 
         logger.info(f"Finished optimisation for week {iteration}.")
