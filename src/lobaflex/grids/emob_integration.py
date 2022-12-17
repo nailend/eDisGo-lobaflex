@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 
@@ -8,8 +9,9 @@ import pandas as pd
 from edisgo.edisgo import import_edisgo_from_files
 
 from lobaflex import config_dir, data_dir
-from lobaflex.tools.logger import logger
 from lobaflex.tools.tools import get_config, timeit, write_metadata
+
+logger = logging.getLogger(__name__)
 
 
 @timeit
@@ -99,5 +101,11 @@ def run_emob_integration(
 
 
 if __name__ == "__main__":
+
+    from dodo import task_split_model_config_in_subconfig
+
+    logger = logging.getLogger("lobaflex.__main__")
+
+    task_split_model_config_in_subconfig()
 
     edisgo_obj, flex_bands = run_emob_integration(grid_id=176)

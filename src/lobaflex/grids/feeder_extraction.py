@@ -1,5 +1,6 @@
 """"""
 
+import logging
 import os
 import shutil
 import warnings
@@ -8,8 +9,9 @@ from edisgo.edisgo import import_edisgo_from_files
 from edisgo.tools.complexity_reduction import extract_feeders_nx
 
 from lobaflex import config_dir, data_dir
-from lobaflex.tools.logger import logger
 from lobaflex.tools.tools import get_config, timeit, write_metadata
+
+logger = logging.getLogger("lobaflex.grids." + __name__)
 
 
 def get_flexible_loads(
@@ -178,4 +180,7 @@ if __name__ == "__main__":
     from dodo import task__split_model_config_in_subconfig
 
     task__split_model_config_in_subconfig()
+
+    logger = logging.getLogger("lobaflex.__main__")
+
     run_feeder_extraction(grid_id=1056, save=True)

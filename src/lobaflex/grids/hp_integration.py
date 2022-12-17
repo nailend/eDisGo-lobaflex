@@ -1,4 +1,5 @@
 """"""
+import logging
 import os
 import shutil
 
@@ -13,12 +14,9 @@ from lobaflex.grids.db_data import (
     get_cop,
     identify_similar_mvgd,
 )
-
-# from lobaflex.grids.egon_db import engine
-from lobaflex.tools.logger import logger
 from lobaflex.tools.tools import get_config, timeit, write_metadata
 
-# engine = db.engine()
+logger = logging.getLogger("lobaflex.grids." + __name__)
 
 
 def get_hp_penetration():
@@ -246,4 +244,7 @@ if __name__ == "__main__":
     from lobaflex.tools.tools import split_model_config_in_subconfig
 
     split_model_config_in_subconfig()
+
+    logger = logging.getLogger("lobaflex.__main__")
+
     edisgo_obj = run_hp_integration(grid_id=176)

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 
 from contextlib import contextmanager
@@ -15,7 +16,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from lobaflex import config_dir
-from lobaflex.tools.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 def paths(pid=None):

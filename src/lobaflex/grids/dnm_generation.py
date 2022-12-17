@@ -1,4 +1,5 @@
 """"""
+import logging
 import os
 import warnings
 
@@ -9,8 +10,9 @@ from edisgo.edisgo import import_edisgo_from_files
 from edisgo.network.topology import Topology
 
 from lobaflex import config_dir, data_dir
-from lobaflex.tools.logger import logger
 from lobaflex.tools.tools import get_config, timeit, write_metadata
+
+logger = logging.getLogger("lobaflex.grids." + __name__)
 
 
 def get_downstream_nodes_matrix_iterative(grid):
@@ -158,7 +160,11 @@ def run_dnm_generation(
 
 
 if __name__ == "__main__":
+
     from dodo import task_split_model_config_in_subconfig
 
+    logger = logging.getLogger("lobaflex.__main__")
+
     task_split_model_config_in_subconfig()
+
     run_dnm_generation(grid_id=1056, feeder=1, save=True)

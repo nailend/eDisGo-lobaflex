@@ -16,10 +16,14 @@ from edisgo.tools.tools import (
     convert_impedances_to_mv,
 )
 
-from lobaflex import config_dir, data_dir, results_dir
+from lobaflex import config_dir, data_dir, logs_dir, results_dir
 from lobaflex.grids.feeder_extraction import get_flexible_loads
-from lobaflex.tools.logger import logger
+from lobaflex.tools.logger import setup_logging
+
+# from lobaflex.tools.logger import logger
 from lobaflex.tools.tools import dump_yaml, get_config
+
+logger = logging.getLogger(__name__)
 
 
 def get_dnm(mvgd, feeder):
@@ -113,7 +117,7 @@ def export_results(result_dict, result_path, timesteps, filename):
 
     """
 
-    iteration = re.search(r"iteration_(\d+)", filename).group(1)
+    # iteration = re.search(r"iteration_(\d+)", filename).group(1)
     for res_name, res in result_dict.items():
         try:
             res = res.loc[timesteps]
@@ -184,6 +188,10 @@ def rolling_horizon_optimization(
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     # mvgds = cfg_g["model"].get("mvgd")
     feeder_id = f"{int(feeder_id):02}"
+
+    # logfile
+    date = datetime.now().isoformat()[:10]
+    logfile = logs_dir / f"{date}_gurobi.log"
 
     result_path = results_dir / run / str(grid_id) / feeder_id
     # TODO maybe add if condition/parameter
@@ -325,6 +333,7 @@ def rolling_horizon_optimization(
                 flexible_loads=flexible_loads,
                 v_min=v_minmax["v_min"],
                 v_max=v_minmax["v_max"],
+                logfile=logfile,  # doesnt work
                 # **kwargs,
             )
 
@@ -364,8 +373,7 @@ def rolling_horizon_optimization(
                 )
             except Exception:
                 logger.info(
-                    "Result error couldnt be exported. Skip to next "
-                    "iteration."
+                    "Optimization Error. Result's couldn't be exported."
                 )
                 raise ValueError("Results not valid")
 
@@ -387,11 +395,20 @@ def rolling_horizon_optimization(
 
 
 def run_dispatch_optimization(
-    grid_id, feeder_id=False, edisgo_obj=False, save=False, doit=False
+    grid_id,
+    feeder_id=False,
+    edisgo_obj=False,
+    save=False,
+    doit=False,
+    version=None,
 ):
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     feeder_id = f"{int(feeder_id):02}"
+
+    date = datetime.now().isoformat()[:10]
+    logfile = logs_dir / f"opt_{cfg_o['run']}_{grid_id}-{feeder_id}_{date}.log"
+    setup_logging(file_name=logfile)
 
     if not edisgo_obj:
         if not feeder_id:
@@ -428,28 +445,24 @@ def run_dispatch_optimization(
         )
 
     if doit:
-        return True
+        return {"version": version}
 
 
 if __name__ == "__main__":
 
-    import sys
-
     from lobaflex.tools.tools import split_model_config_in_subconfig
 
-    # logger_lopf = logging.getLogger("edisgo.opf.lopf")
-    # logger_lopf.handlers.clear()
-    # console_handler = logging.StreamHandler(stream=sys.stdout)
-    # console_handler.setLevel(logging.INFO)
-    # stream_formatter = logging.Formatter("%(name)s - %(levelname)s: %(message)s")
-    # console_handler.setFormatter(stream_formatter)
-    # logger_lopf.addHandler(console_handler)
-    # logger_lopf.setLevel(logging.INFO)
-    # logger_lopf.propagate = False
-
     split_model_config_in_subconfig()
+
+    logger = logging.getLogger("lobaflex.__main__")
+
     run_dispatch_optimization(
-        grid_id=1056, feeder_id=1, edisgo_obj=False, save=True, doit=False
+        # grid_id=1056, feeder_id=1, edisgo_obj=False, save=True, doit=False
+        grid_id=2534,
+        feeder_id=8,
+        edisgo_obj=False,
+        save=True,
+        doit=False,
     )
 
     # lopf.combine_results_for_grid

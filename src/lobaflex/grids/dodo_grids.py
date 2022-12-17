@@ -1,11 +1,12 @@
+import logging
+
 from load_integration import run_load_integration
 
-from lobaflex import config_dir
+from lobaflex import config_dir, logs_dir
 from lobaflex.grids.dnm_generation import run_dnm_generation
 from lobaflex.grids.emob_integration import run_emob_integration
 from lobaflex.grids.feeder_extraction import run_feeder_extraction
 from lobaflex.grids.hp_integration import run_hp_integration
-from lobaflex.tools.logger import logger
 
 # the following task are used by pydoit task generator
 # fmt: off
@@ -14,6 +15,8 @@ from lobaflex.tools.pydoit import task__set_dataset_version  # noqa: F401
 from lobaflex.tools.pydoit import task__split_model_config_in_subconfig  # noqa: F401
 from lobaflex.tools.pydoit import version_uptodate
 from lobaflex.tools.tools import TelegramReporter, get_config
+
+logger = logging.getLogger("lobaflex.grids."+__name__)
 
 # fmt: on
 
@@ -276,6 +279,9 @@ def task_grids_group():
 
 
 if __name__ == "__main__":
+
+    logger = logging.getLogger("lobaflex.__main__")
+
     import doit
 
     doit.run(globals())

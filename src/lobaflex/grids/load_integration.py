@@ -1,14 +1,19 @@
+import logging
 import os
 import shutil
+
+from datetime import datetime
 
 import pandas as pd
 
 from edisgo.edisgo import EDisGo
 from edisgo.io.ding0_import import remove_1m_end_lines
 
-from lobaflex import config_dir, data_dir
-from lobaflex.tools.logger import logger
+from lobaflex import config_dir, data_dir, logs_dir
+from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.tools import get_config, timeit, write_metadata
+
+logger = logging.getLogger("lobaflex.grids." + __name__)
 
 
 @timeit
@@ -16,8 +21,13 @@ def run_load_integration(
     grid_id, edisgo_obj=False, save=False, doit=False, version=None
 ):
 
-    logger.info(f"Start load integration for {grid_id}.")
     cfg = get_config(path=config_dir / ".grids.yaml")
+
+    date = datetime.now().isoformat()[:10]
+    logfile = logs_dir / f"grids_{grid_id}_{date}.log"
+    setup_logging(file_name=logfile)
+
+    logger.info(f"Start load integration for {grid_id}.")
 
     if not edisgo_obj:
 
@@ -80,5 +90,7 @@ if __name__ == "__main__":
     from dodo import task_split_model_config_in_subconfig
 
     task_split_model_config_in_subconfig()
+
+    logger = logging.getLogger("lobaflex.__main__")
 
     edisgo_obj = run_load_integration(grid_id=1056)

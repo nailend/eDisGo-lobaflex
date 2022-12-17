@@ -1,19 +1,46 @@
-import os
+import logging
 
-from datetime import date
+from edisgo.tools.logger import setup_logger
 
-from loguru import logger
 
-from lobaflex import logs_dir
+def setup_logging(file_name):
+    """
+    Modify and setup edisgo logger
 
-os.makedirs(logs_dir, exist_ok=True)
-# logger.remove()
-logfile = logs_dir / f"{date.isoformat(date.today())}.log"
-logger.add(
-    sink=logfile,
-    format="{time}|{level}|{file}:{line}:{function} - {message}",
-    colorize=True,
-    level="TRACE",
-    backtrace=True,
-    diagnose=True,
-)
+    Parameters
+    ----------
+    file_name :
+
+    Returns
+    -------
+
+    """
+
+    stream_formatter = logging.Formatter(
+        "{levelname:<8s} | {name:>40s}: Line {lineno:<6d} - "
+        "{funcName:>40s}(): {message:s}",
+        style="{",
+    )
+
+    file_formatter = logging.Formatter(
+        "{levelname:<8s} - {asctime} | {name:>30s}: Line {lineno:<6d}"
+        " - {funcName:>40s}(): {message:s}",
+        style="{",
+    )
+
+    setup_logger(
+        loggers=[
+            {"name": "edisgo", "file_level": "info", "stream_level": "info"},
+            {"name": "lobaflex", "file_level": "info", "stream_level": "info"},
+            {
+                "name": "pyomo.core",
+                "file_level": "info",
+                "stream_level": "info",
+            },
+            {"name": "pypsa", "file_level": "info", "stream_level": "info"},
+        ],
+        file_formatter=file_formatter,
+        stream_formatter=stream_formatter,
+        reset_loggers=True,
+        file_name=file_name,
+    )

@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pandas as pd
 import saio
@@ -8,8 +10,9 @@ from sqlalchemy.types import Integer
 import lobaflex.grids.egon_db as db
 
 from lobaflex import config_dir, data_dir
-from lobaflex.tools.logger import logger
 from lobaflex.tools.tools import timeit
+
+logger = logging.getLogger(__name__)
 
 engine = db.engine()
 saio.register_schema("demand", engine=engine)

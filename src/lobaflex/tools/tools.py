@@ -15,7 +15,11 @@ import yaml
 from doit.exceptions import BaseFail
 
 from lobaflex import config_dir, logs_dir
-from lobaflex.tools.logger import logger
+
+# from lobaflex.tools.logger import logger
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_csv_in_subdirs(path):
