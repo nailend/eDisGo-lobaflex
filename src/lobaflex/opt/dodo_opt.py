@@ -6,7 +6,7 @@ from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
 from lobaflex.tools.pydoit import (
     opt_uptodate,
     task__get_opt_version,
-    task__set_dataset_opt,
+    task__set_opt_version,
     task__split_model_config_in_subconfig,
 )
 from lobaflex.tools.tools import TelegramReporter, get_config

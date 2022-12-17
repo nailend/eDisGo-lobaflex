@@ -11,7 +11,7 @@ from lobaflex.grids.hp_integration import run_hp_integration
 # the following task are used by pydoit task generator
 # fmt: off
 from lobaflex.tools.pydoit import task__get_grids_version  # noqa: F401
-from lobaflex.tools.pydoit import task__set_dataset_grids  # noqa: F401
+from lobaflex.tools.pydoit import task__set_grids_version  # noqa: F401
 from lobaflex.tools.pydoit import task__split_model_config_in_subconfig  # noqa: F401
 from lobaflex.tools.pydoit import grids_uptodate
 from lobaflex.tools.tools import TelegramReporter, get_config

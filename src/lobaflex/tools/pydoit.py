@@ -9,7 +9,7 @@ def task__split_model_config_in_subconfig():
     split_model_config_in_subconfig()
 
 
-def task__set_dataset_grids():
+def task__set_grids_version():
     """This tasks sets the version number of the dataset"""
 
     def version():
@@ -23,7 +23,7 @@ def task__set_dataset_grids():
     }
 
 
-def task__set_dataset_opt():
+def task__set_opt_version():
     """This tasks sets the version number of the dataset"""
 
     def version():
@@ -118,9 +118,9 @@ def task__get_opt_version():
 
     def get_dataset_version():
         dep_manager = doit.Globals.dep_manager
-        dataset_results = dep_manager.get_result("_set_dataset_opt")
+        dataset_results = dep_manager.get_result("_set_opt_version")
         if dataset_results is None:
-            raise ValueError("Run '_doit _set_dataset_opt' first!")
+            raise ValueError("Run '_doit _set_opt_version' first!")
         return {"version": dataset_results["version"]}
 
     return {
@@ -133,9 +133,9 @@ def task__get_grids_version():
 
     def get_dataset_version():
         dep_manager = doit.Globals.dep_manager
-        dataset_results = dep_manager.get_result("_set_dataset_grids")
+        dataset_results = dep_manager.get_result("_set_grids_version")
         if dataset_results is None:
-            raise ValueError("Run '_doit _set_dataset_grids' first!")
+            raise ValueError("Run '_doit _set_grids_version' first!")
         return {"version": dataset_results["version"]}
 
     return {
