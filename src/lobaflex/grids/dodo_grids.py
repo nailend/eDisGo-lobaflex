@@ -2,7 +2,7 @@ import logging
 
 from load_integration import run_load_integration
 
-from lobaflex import config_dir, logs_dir
+from lobaflex import config_dir
 from lobaflex.grids.dnm_generation import run_dnm_generation
 from lobaflex.grids.emob_integration import run_emob_integration
 from lobaflex.grids.feeder_extraction import run_feeder_extraction

@@ -1,8 +1,8 @@
+import logging
 import os
 
 from lobaflex import config_dir, data_dir
 from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
-from lobaflex.tools.logger import logger
 from lobaflex.tools.pydoit import (
     task__get_version,
     task__set_dataset_version,
@@ -11,6 +11,7 @@ from lobaflex.tools.pydoit import (
 )
 from lobaflex.tools.tools import TelegramReporter, get_config
 
+logger = logging.getLogger("lobaflex.opt." + __name__)
 # TODO
 #   4. alternative uptodate function: version,
 #   6. clean
