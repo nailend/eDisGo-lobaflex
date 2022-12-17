@@ -9,7 +9,7 @@ def task__split_model_config_in_subconfig():
     split_model_config_in_subconfig()
 
 
-def task__set_dataset_version():
+def task__set_dataset_grids():
     """This tasks sets the version number of the dataset"""
 
     def version():
@@ -23,13 +23,44 @@ def task__set_dataset_version():
     }
 
 
-def version_uptodate(task):
+def task__set_dataset_opt():
+    """This tasks sets the version number of the dataset"""
+
+    def version():
+        cfg = get_config(path=config_dir / ".opt.yaml")
+        version = cfg["version"]
+        print(f"Grids dataset version set to: {version}")
+        return {"version": version}
+
+    return {
+        "actions": [version],
+    }
+
+
+def opt_uptodate(task):
     """This function compares the version number of each task with the
     dataset version. If it's smaller, the task is not uptodate"""
     dep_manager = doit.Globals.dep_manager
-    dataset_results = dep_manager.get_result("_set_dataset_version")
+    dataset_results = dep_manager.get_result("_set_dataset_opt")
     if dataset_results is None:
-        raise ValueError("Run 'doit _set_dataset_version -v %int' first!")
+        raise ValueError("Run 'doit _set_dataset_opt' first!")
+    task_results = dep_manager.get_result(task.name)
+    if task_results is None:
+        task_results = {"version": -1}
+    return (
+        True
+        if task_results["version"] >= dataset_results["version"]
+        else False
+    )
+
+
+def grids_uptodate(task):
+    """This function compares the version number of each task with the
+    dataset version. If it's smaller, the task is not uptodate"""
+    dep_manager = doit.Globals.dep_manager
+    dataset_results = dep_manager.get_result("_set_dataset_grids")
+    if dataset_results is None:
+        raise ValueError("Run 'doit _set_dataset_grids' first!")
     task_results = dep_manager.get_result(task.name)
     if task_results is None:
         task_results = {"version": -1}
@@ -82,14 +113,29 @@ def task__get_version():
     }
 
 
-def task__get_dataset_version():
+def task__get_opt_version():
     """This tasks gets the version number of the dataset"""
 
     def get_dataset_version():
         dep_manager = doit.Globals.dep_manager
-        dataset_results = dep_manager.get_result("_set_dataset_version")
+        dataset_results = dep_manager.get_result("_set_dataset_opt")
         if dataset_results is None:
-            raise ValueError("Run '_doit _set_dataset_version -v %' first!")
+            raise ValueError("Run '_doit _set_dataset_opt' first!")
+        return {"version": dataset_results["version"]}
+
+    return {
+        "actions": [get_dataset_version],
+    }
+
+
+def task__get_grids_version():
+    """This tasks gets the version number of the dataset"""
+
+    def get_dataset_version():
+        dep_manager = doit.Globals.dep_manager
+        dataset_results = dep_manager.get_result("_set_dataset_grids")
+        if dataset_results is None:
+            raise ValueError("Run '_doit _set_dataset_grids' first!")
         return {"version": dataset_results["version"]}
 
     return {

@@ -4,10 +4,10 @@ import os
 from lobaflex import config_dir, data_dir
 from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
 from lobaflex.tools.pydoit import (
-    task__get_version,
-    task__set_dataset_version,
+    opt_uptodate,
+    task__get_opt_version,
+    task__set_dataset_opt,
     task__split_model_config_in_subconfig,
-    version_uptodate,
 )
 from lobaflex.tools.tools import TelegramReporter, get_config
 
@@ -37,8 +37,8 @@ def optimization(mvgd, feeder):
             )
         ],
         # "task_dep": [f"grids:{mvgd}_feeder_extraction"],
-        "getargs": {"version": ("_set_dataset_version", "version")},
-        "uptodate": [version_uptodate],
+        "getargs": {"version": ("_get_opt_version", "version")},
+        "uptodate": [opt_uptodate],
         "verbosity": 2,
     }
 
