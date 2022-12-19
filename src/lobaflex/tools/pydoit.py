@@ -41,9 +41,9 @@ def opt_uptodate(task):
     """This function compares the version number of each task with the
     dataset version. If it's smaller, the task is not uptodate"""
     dep_manager = doit.Globals.dep_manager
-    dataset_results = dep_manager.get_result("_set_dataset_opt")
+    dataset_results = dep_manager.get_result("_get_opt_version")
     if dataset_results is None:
-        raise ValueError("Run 'doit _set_dataset_opt' first!")
+        raise ValueError("Run 'doit _set_opt_version' first!")
     task_results = dep_manager.get_result(task.name)
     if task_results is None:
         task_results = {"version": -1}
@@ -58,9 +58,9 @@ def grids_uptodate(task):
     """This function compares the version number of each task with the
     dataset version. If it's smaller, the task is not uptodate"""
     dep_manager = doit.Globals.dep_manager
-    dataset_results = dep_manager.get_result("_set_dataset_grids")
+    dataset_results = dep_manager.get_result("_get_grids_version")
     if dataset_results is None:
-        raise ValueError("Run 'doit _set_dataset_grids' first!")
+        raise ValueError("Run 'doit _set_grids_version' first!")
     task_results = dep_manager.get_result(task.name)
     if task_results is None:
         task_results = {"version": -1}
