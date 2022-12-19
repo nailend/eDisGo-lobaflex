@@ -267,6 +267,7 @@ class TelegramReporter(object):
         self.outstream = outstream
         self.telegram = telegram_bot_sendtext
         self.start_time = {}
+        self.status = {}
 
     def write(self, text):
         self.outstream.write(text)
@@ -284,11 +285,16 @@ class TelegramReporter(object):
             + "-" * 28
         )
         pipeline = str()
+        # [task for task in tasks.get(group) for group in selected_tasks]
         for group in selected_tasks:
-            # pipeline = pipeline.join([f"**{group}**\n"])
-            pipeline = pipeline.join(
-                [f"- {i}\n" for i in tasks.get(group).task_dep]
-            )
+            self.status[group] = None
+            pipeline += pipeline.join([f"- {group}\n"])
+            for task in tasks.get(group).task_dep:
+                self.status[task] = None
+                pipeline += pipeline.join(
+                    [f"- {task}\n"]
+                )
+        self.start_time["total"] = time.perf_counter()
         self.telegram(text=f"Pipeline:\n {pipeline}")
 
     def get_status(self, task):
@@ -307,10 +313,14 @@ class TelegramReporter(object):
     def add_failure(self, task, fail: BaseFail):
         """called when execution finishes with a failure"""
         result = {"task": task, "exception": fail}
+        exec_time = time.perf_counter() - self.start_time[task.name]
+        exec_time = time.gmtime(exec_time)
+        exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
         if fail.report:
             self.failures.append(result)
             self._write_failure(result)
-            self.telegram(text=f"Failed: {task.title()}")
+            self.telegram(text=f"Failed: {task.title()} after {exec_time}")
+        self.status[task] = False
 
     def add_success(self, task):
         """called when execution finishes successfully"""
@@ -320,6 +330,7 @@ class TelegramReporter(object):
             exec_time = time.gmtime(exec_time)
             exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
             self.telegram(text=f"Success: {task.title()}\n in {exec_time}")
+            self.status[task] = True
 
     def skip_uptodate(self, task):
         """skipped up-to-date task"""
@@ -383,11 +394,20 @@ class TelegramReporter(object):
             self.write("\n".join(self.runtime_errors))
             self.write("\n")
 
+        exec_time = time.perf_counter() - self.start_time["total"]
+        exec_time = time.gmtime(exec_time)
+        exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
         current_time = datetime.now().strftime("%A %d-%m-%Y, %H:%M:%S")
         self.telegram(
-            text="Pipeline finished! \n"
-            + "#" * 28
-            + "\n"
-            + current_time
+            text=f"Pipeline finished after {exec_time}. \n"
+            + "#" * 28 + "\n" + current_time
             # + "\n" + "#" * 28
         )
+
+        success = len([key for key, value in self.status.items() if value])
+        failed = len([key for key, value in self.status.items() if not value])
+        statistic = "Statistic:\n"
+        statistic += f"Total of {success+failed} tasks.\n"
+        statistic += f"{success} succeeded.\n"
+        statistic += f"{failed} failed.\n"
+        self.telegram(text=statistic)
