@@ -165,7 +165,7 @@ def dnm_generation_task(mvgd):
 def task_grids():
     """Sets up all tasks for Grid generation"""
     cfg = get_config(path=config_dir / ".grids.yaml")
-    mvgds = sorted(cfg.get("mvgds"))
+    mvgds = cfg.get("mvgds")
     logger.info(f"{len(mvgds)} MVGD's in the pipeline")
 
     for mvgd in mvgds:
