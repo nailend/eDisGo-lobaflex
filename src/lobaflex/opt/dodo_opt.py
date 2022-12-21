@@ -19,6 +19,11 @@ logger = logging.getLogger("lobaflex.opt." + __name__)
 #   8. watch param
 #   9. Check connection to db, maybe at beginning and raise warning
 
+DOIT_CONFIG = {
+    "default_tasks": ["opt"],
+    "reporter": TelegramReporter,
+}
+
 
 def optimization(mvgd, feeder):
 
