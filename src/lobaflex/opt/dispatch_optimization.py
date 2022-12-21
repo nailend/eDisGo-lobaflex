@@ -1,7 +1,7 @@
 import logging
 import os
-import re
 import shutil
+import warnings
 
 from datetime import datetime
 
@@ -15,7 +15,6 @@ from edisgo.tools.tools import (
     assign_voltage_level_to_component,
     convert_impedances_to_mv,
 )
-
 from lobaflex import config_dir, data_dir, logs_dir, results_dir
 from lobaflex.grids.feeder_extraction import get_flexible_loads
 from lobaflex.tools.logger import setup_logging
@@ -407,6 +406,8 @@ def run_dispatch_optimization(
     doit=False,
     version=None,
 ):
+
+    warnings.simplefilter(action="ignore", category=FutureWarning)
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     feeder_id = f"{int(feeder_id):02}"
