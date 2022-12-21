@@ -9,6 +9,7 @@ import pandas as pd
 
 from edisgo.edisgo import EDisGo
 from edisgo.tools.spatial_complexity_reduction import remove_short_lines
+from edisgo.io.ding0_import import remove_1m_end_lines
 
 from lobaflex import config_dir, data_dir, logs_dir
 from lobaflex.tools.logger import setup_logging
@@ -40,6 +41,8 @@ def run_load_integration(
         logger.info(f"Import Grid: {grid_id} from {ding0_grid}")
         edisgo_obj = EDisGo(ding0_grid=ding0_grid)
 
+        logger.info("Remove 1m end lines.")
+        edisgo_obj = remove_1m_end_lines(edisgo_obj)
         logger.info("Remove Lines <= 1 Meter")
         edisgo_obj = remove_short_lines(edisgo_obj, length=1)
 
