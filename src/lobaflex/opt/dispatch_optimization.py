@@ -434,6 +434,9 @@ def run_dispatch_optimization(
             import_electromobility=True,
         )
 
+        logger.info("Check integrity.")
+        edisgo_obj.check_integrity()
+
         rolling_horizon_optimization(
             edisgo_obj,
             grid_id,
