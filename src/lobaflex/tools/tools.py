@@ -268,6 +268,7 @@ class TelegramReporter(object):
         self.telegram = telegram_bot_sendtext
         self.start_time = {}
         self.status = {}
+        self.run = set()
 
     def write(self, text):
         self.outstream.write(text)
@@ -326,6 +327,7 @@ class TelegramReporter(object):
         """called when execution finishes successfully"""
 
         self.status[task.name] = True
+        self.run.update({task.result.get("run")})
         if task.actions and (task.name[0] != "_"):
             exec_time = time.perf_counter() - self.start_time[task.name]
             exec_time = time.gmtime(exec_time)
@@ -410,10 +412,11 @@ class TelegramReporter(object):
         statistic += f"{success} succeeded.\n"
         statistic += f"{failed} failed.\n"
 
-        # Don't send if
+        # Don't send if any task with _set included
+        # this should only happen if _set is executed individually
         if "_set" not in str().join(self.status.keys()):
             self.telegram(
-                text=f"Pipeline finished after {exec_time}. \n"
+                text=f"Run: {self.run.pop()} finished after {exec_time}. \n"
                 + "#" * 28
                 + "\n"
                 + current_time

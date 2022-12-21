@@ -178,10 +178,10 @@ def rolling_horizon_optimization(
     edisgo_obj,
     grid_id,
     feeder_id,
-    run=datetime.now().isoformat(),
     load_results=False,
     iteration=0,
     save=False,
+    run=datetime.now().isoformat(),
 ):
 
     # cfg_g = get_config(path=config_dir / ".grids.yaml")
@@ -437,18 +437,21 @@ def run_dispatch_optimization(
         logger.info("Check integrity.")
         edisgo_obj.check_integrity()
 
+        # get run id for export path
+        run_id = cfg_o.get("run", f"no_id_{datetime.now().isoformat()}")
+
         rolling_horizon_optimization(
             edisgo_obj,
             grid_id,
             feeder_id,
-            run=cfg_o["run"],
             load_results=cfg_o["load_results"],
             iteration=0,
             save=save,
+            run=run_id,
         )
 
     if doit:
-        return {"version": version}
+        return {"version": version, "run": run_id}
 
 
 if __name__ == "__main__":

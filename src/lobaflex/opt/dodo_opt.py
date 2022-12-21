@@ -98,12 +98,6 @@ def task_opt_group():
         }
 
 
-DOIT_CONFIG = {
-    "default_tasks": ["opt"],
-    "reporter": TelegramReporter,
-}
-
-
 if __name__ == "__main__":
     import doit
 
