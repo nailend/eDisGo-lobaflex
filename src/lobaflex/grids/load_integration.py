@@ -1,6 +1,7 @@
 import logging
 import os
 import shutil
+import warnings
 
 from datetime import datetime
 
@@ -20,6 +21,8 @@ logger = logging.getLogger("lobaflex.grids." + __name__)
 def run_load_integration(
     grid_id, edisgo_obj=False, save=False, doit=False, version=None
 ):
+
+    warnings.simplefilter(action="ignore", category=FutureWarning)
 
     cfg = get_config(path=config_dir / ".grids.yaml")
 
@@ -55,6 +58,7 @@ def run_load_integration(
 
     logger.info("Import timeseries for 2011.")
     timeindex = pd.date_range("1/1/2011", periods=8760, freq="H")
+
     edisgo_obj.set_timeindex(timeindex)
     edisgo_obj.set_time_series_active_power_predefined(
         fluctuating_generators_ts="oedb",
