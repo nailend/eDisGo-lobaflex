@@ -182,6 +182,7 @@ def rolling_horizon_optimization(
     iteration=0,
     save=False,
     run=datetime.now().isoformat(),
+    save_lp_file=False,
 ):
 
     # cfg_g = get_config(path=config_dir / ".grids.yaml")
@@ -337,7 +338,10 @@ def rolling_horizon_optimization(
                 # **kwargs,
             )
 
-        lp_filename = result_path / f"lp_file_iteration_{iteration}.lp"
+        if save_lp_file:
+            lp_filename = result_path / f"lp_file_iteration_{iteration}.lp"
+        else:
+            lp_filename = False
         result_dict = lopf.optimize(
             model, cfg_o["solver"], lp_filename=lp_filename
         )
@@ -399,6 +403,7 @@ def run_dispatch_optimization(
     feeder_id=False,
     edisgo_obj=False,
     save=False,
+    save_lp_file=False,
     doit=False,
     version=None,
 ):
@@ -448,6 +453,7 @@ def run_dispatch_optimization(
             iteration=0,
             save=save,
             run=run_id,
+            save_lp_file=cfg_o.get("save_lp_files", False),
         )
 
     if doit:
@@ -469,6 +475,7 @@ if __name__ == "__main__":
         edisgo_obj=False,
         save=True,
         doit=False,
+        save_lp_file=False,
     )
 
     # lopf.combine_results_for_grid
