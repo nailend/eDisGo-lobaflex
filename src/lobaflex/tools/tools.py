@@ -404,34 +404,36 @@ class TelegramReporter(object):
             self.write("\n".join(self.runtime_errors))
             self.write("\n")
 
-        exec_time = time.perf_counter() - self.start_time["total"]
-        exec_time = time.gmtime(exec_time)
-        exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
-        current_time = datetime.now().strftime("%A %d-%m-%Y, %H:%M:%S")
+        # Don't send if any task with _set included
+        # this should only happen if _set is executed individually
+        if "_version" not in str().join(self.status.keys()):
 
-        # Count task but do not include _get_*_version and _set_*_version
-        success = len(
-            [
+            exec_time = time.perf_counter() - self.start_time["total"]
+            exec_time = time.gmtime(exec_time)
+            exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
+            current_time = datetime.now().strftime("%A %d-%m-%Y, %H:%M:%S")
+
+            # Count task but do not include _get_*_version and _set_*_version
+            success = [
                 key
                 for key, value in self.status.items()
                 if value and "_version" not in key
             ]
-        )
-        failed = len(
-            [
+
+            failed = [
                 key
                 for key, value in self.status.items()
                 if not value and "_version" not in key
             ]
-        )
-        statistic = "Statistic:\n"
-        statistic += f"Total of {success+failed} tasks.\n"
-        statistic += f"{success} succeeded.\n"
-        statistic += f"{failed} failed.\n"
+            statistic = "Statistic:\n"
+            statistic += f"Total of {len(success) + len(failed)} tasks.\n"
+            statistic += f"{len(success)} succeeded.\n"
+            statistic += f"{len(failed)} failed.\n"
 
-        # Don't send if any task with _set included
-        # this should only happen if _set is executed individually
-        if "_version" not in str().join(self.status.keys()):
+            summary = "Summary:\n"
+            summary.join([f"+{i}\n" for i in success])
+            summary.join([f"-{i}\n" for i in failed])
+
             self.telegram(
                 text=f"Run: {self.run.pop()} finished after {exec_time}. \n"
                 + "#" * 28
@@ -439,3 +441,4 @@ class TelegramReporter(object):
                 + current_time
             )
             self.telegram(text=statistic)
+            self.telegram(text=summary)
