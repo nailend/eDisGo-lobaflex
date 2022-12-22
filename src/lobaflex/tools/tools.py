@@ -331,8 +331,8 @@ class TelegramReporter(object):
         """called when execution finishes successfully"""
 
         self.status[task.name] = True
-        self.run.update({task.result.get("run")})
         if task.actions and (task.name[0] != "_"):
+            self.run.update({task.result.get("run")})
             exec_time = time.perf_counter() - self.start_time[task.name]
             exec_time = time.gmtime(exec_time)
             exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
