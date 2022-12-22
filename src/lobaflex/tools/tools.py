@@ -319,9 +319,9 @@ class TelegramReporter(object):
                 exec_time = time.perf_counter() - self.start_time[task.name]
                 exec_time = time.gmtime(exec_time)
                 exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
-                self.telegram(text=f"Failed: {task.title()} after {exec_time}")
-            except Exception:
-                self.telegram(text=task.name)
+                self.telegram(text=f"Failed: {task.name} after {exec_time}")
+            except KeyError:
+                self.telegram(text=f"Unmet dependency: {task.name}")
             self.failures.append(result)
             self._write_failure(result)
 
@@ -410,10 +410,20 @@ class TelegramReporter(object):
         current_time = datetime.now().strftime("%A %d-%m-%Y, %H:%M:%S")
 
         # Count task but do not include _get_*_version and _set_*_version
-        success = len([key for key, value in self.status.items() if value and
-                       "_version" not in key])
-        failed = len([key for key, value in self.status.items() if not value and
-                       "_version" not in key])
+        success = len(
+            [
+                key
+                for key, value in self.status.items()
+                if value and "_version" not in key
+            ]
+        )
+        failed = len(
+            [
+                key
+                for key, value in self.status.items()
+                if not value and "_version" not in key
+            ]
+        )
         statistic = "Statistic:\n"
         statistic += f"Total of {success+failed} tasks.\n"
         statistic += f"{success} succeeded.\n"
