@@ -422,3 +422,5 @@ class TelegramReporter(object):
                 + current_time
             )
             self.telegram(text=statistic)
+            self.telegram(text=str().join([f" - {i}" for i in
+                                           self.status.keys()]))
