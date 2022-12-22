@@ -405,8 +405,11 @@ class TelegramReporter(object):
         exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
         current_time = datetime.now().strftime("%A %d-%m-%Y, %H:%M:%S")
 
-        success = len([key for key, value in self.status.items() if value])
-        failed = len([key for key, value in self.status.items() if not value])
+        # Count task but do not include _get_*_version and _set_*_version
+        success = len([key for key, value in self.status.items() if value and
+                       "_version" not in key])
+        failed = len([key for key, value in self.status.items() if not value and
+                       "_version" not in key])
         statistic = "Statistic:\n"
         statistic += f"Total of {success+failed} tasks.\n"
         statistic += f"{success} succeeded.\n"
@@ -414,7 +417,7 @@ class TelegramReporter(object):
 
         # Don't send if any task with _set included
         # this should only happen if _set is executed individually
-        if "_set" not in str().join(self.status.keys()):
+        if "_version" not in str().join(self.status.keys()):
             self.telegram(
                 text=f"Run: {self.run.pop()} finished after {exec_time}. \n"
                 + "#" * 28
@@ -422,5 +425,3 @@ class TelegramReporter(object):
                 + current_time
             )
             self.telegram(text=statistic)
-            self.telegram(text=str().join([f" - {i}" for i in
-                                           self.status.keys()]))
