@@ -314,10 +314,10 @@ class TelegramReporter(object):
     def add_failure(self, task, fail: BaseFail):
         """called when execution finishes with a failure"""
         result = {"task": task, "exception": fail}
-        exec_time = time.perf_counter() - self.start_time[task.name]
-        exec_time = time.gmtime(exec_time)
-        exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
         if fail.report:
+            exec_time = time.perf_counter() - self.start_time[task.name]
+            exec_time = time.gmtime(exec_time)
+            exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
             self.failures.append(result)
             self._write_failure(result)
             self.telegram(text=f"Failed: {task.title()} after {exec_time}")
