@@ -332,7 +332,10 @@ class TelegramReporter(object):
 
         self.status[task.name] = True
         if task.actions and (task.name[0] != "_"):
-            self.run.update({task.result.get("run")})
+            try:
+                self.run.update({task.result.get("run")})
+            except AttributeError:
+                self.telegram(text=task.name)
             exec_time = time.perf_counter() - self.start_time[task.name]
             exec_time = time.gmtime(exec_time)
             exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
@@ -434,8 +437,13 @@ class TelegramReporter(object):
             summary.join([f"+{i}\n" for i in success])
             summary.join([f"-{i}\n" for i in failed])
 
+            try:
+                run_id = self.run.pop()
+            except KeyError:
+                run_id = "empty"
+
             self.telegram(
-                text=f"Run: {self.run.pop()} finished after {exec_time}. \n"
+                text=f"Run: {run_id} finished after {exec_time}. \n"
                 + "#" * 28
                 + "\n"
                 + current_time
