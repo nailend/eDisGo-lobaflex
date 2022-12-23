@@ -434,8 +434,8 @@ class TelegramReporter(object):
             statistic += f"{len(failed)} failed.\n"
 
             summary = "Summary:\n"
-            summary.join([f"+{i}\n" for i in success])
-            summary.join([f"-{i}\n" for i in failed])
+            summary = summary.join([f"+{i}\n" for i in success])
+            summary = summary.join([f"-{i}\n" for i in failed])
 
             try:
                 run_id = self.run.pop()
