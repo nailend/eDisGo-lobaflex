@@ -316,7 +316,7 @@ def rolling_horizon_optimization(
                 timesteps=timesteps,
                 fixed_parameters=fixed_parameters,
                 objective=cfg_o["objective"],
-                # energy_level_end_tes=energy_level_end,
+                energy_level_end_tes=energy_level_end,
                 flexible_loads=flexible_loads,
                 **start_values_hp,
                 **start_values_emob,
@@ -327,13 +327,10 @@ def rolling_horizon_optimization(
                 fixed_parameters=fixed_parameters,
                 timesteps=timesteps,
                 objective=cfg_o["objective"],
-                charging_start_hp=charging_start,
-                energy_level_start_tes=energy_level_start,
-                energy_level_end_tes=energy_level_end,
-                flexible_loads=flexible_loads,
                 v_min=v_minmax["v_min"],
                 v_max=v_minmax["v_max"],
-                logfile=logfile,  # doesnt work
+                flexible_loads=flexible_loads,
+                logfile=logfile, # doesnt work
                 # **kwargs,
             )
 
@@ -359,7 +356,7 @@ def rolling_horizon_optimization(
         except Exception:
             pass
 
-        logger.info(f"Finished optimisation for week {iteration}.")
+        logger.info(f"Finished optimisation for iteration {iteration}.")
 
         if save:
 
@@ -411,6 +408,11 @@ def run_dispatch_optimization(
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     feeder_id = f"{int(feeder_id):02}"
+    # get run id for export path
+    run_id = cfg_o.get("run", f"no_id_{datetime.now().isoformat()}")
+
+    logger.info(f"Run optimization for grid: {grid_id}, feeder: {feeder_id}"
+                f" with run id: {run_id}")
 
     date = datetime.now().isoformat()[:10]
     logfile = logs_dir / f"opt_{cfg_o['run']}_{grid_id}-{feeder_id}_{date}.log"
@@ -440,22 +442,20 @@ def run_dispatch_optimization(
             import_electromobility=True,
         )
 
-        logger.info("Check integrity.")
-        edisgo_obj.check_integrity()
+    logger.info("Check integrity.")
+    edisgo_obj.check_integrity()
 
-        # get run id for export path
-        run_id = cfg_o.get("run", f"no_id_{datetime.now().isoformat()}")
+    logger.info("Run Powerflow for first timestep")
+    edisgo_obj.analyze(timesteps=edisgo_obj.timeseries.timeindex[0])
 
-        rolling_horizon_optimization(
-            edisgo_obj,
-            grid_id,
-            feeder_id,
-            load_results=cfg_o["load_results"],
-            iteration=0,
-            save=save,
-            run=run_id,
-            save_lp_file=cfg_o.get("save_lp_files", False),
-        )
+    rolling_horizon_optimization(
+        edisgo_obj,
+        grid_id,
+        feeder_id,
+        save=save,
+        run=run_id,
+        save_lp_file=cfg_o.get("save_lp_files", False),
+    )
 
     if doit:
         return {"version": version, "run": run_id}
