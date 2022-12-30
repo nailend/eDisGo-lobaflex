@@ -3,6 +3,7 @@ import os
 
 from lobaflex import config_dir, data_dir
 from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
+from lobaflex.opt.result_concatination import save_concatinated_results
 from lobaflex.tools.pydoit import (
     opt_uptodate,
     task__get_opt_version,
@@ -20,7 +21,7 @@ logger = logging.getLogger("lobaflex.opt." + __name__)
 #   9. Check connection to db, maybe at beginning and raise warning
 
 DOIT_CONFIG = {
-    "default_tasks": ["opt"],
+    "default_tasks": ["opt", "concat_results"],
     "reporter": TelegramReporter,
 }
 
@@ -68,6 +69,26 @@ def task_opt():
             continue
         for feeder in sorted(feeder_ids):
             yield optimization(mvgd=mvgd, feeder=feeder)
+
+
+def task_concat_results():
+
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    yield {
+        "name": cfg_o['run'],
+        "actions": [
+            (
+                save_concatinated_results,
+                [],
+                {
+                    "doit": True,
+                },
+            )
+        ],
+        # "task_dep": [f"grids:{mvgd}_feeder_extraction"],
+        "getargs": {"version": ("_get_opt_version", "version")},
+        "uptodate": [opt_uptodate],
+    }
 
 
 def task_opt_group():
