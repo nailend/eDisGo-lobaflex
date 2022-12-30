@@ -70,7 +70,6 @@ def create_dir_or_variant(path):
         logger.info(f"Created directory: {path}")
 
 
-
 def log_memory_usage():
     """Get memory usage and write to log
 
@@ -322,8 +321,7 @@ class TelegramReporter(object):
 
         # Don't send if any task with _set included
         # this should only happen if _set is executed individually
-        if "_version" not in str().join(self.status.keys()):
-
+        if "_set_*_version" not in str().join(self.status.keys()):
             exec_time = time.perf_counter() - self.start_time["total"]
             exec_time = time.gmtime(exec_time)
             exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
