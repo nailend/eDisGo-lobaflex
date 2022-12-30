@@ -411,12 +411,12 @@ def run_dispatch_optimization(
     # get run id for export path
     run_id = cfg_o.get("run", f"no_id_{datetime.now().isoformat()}")
 
-    logger.info(f"Run optimization for grid: {grid_id}, feeder: {feeder_id}"
-                f" with run id: {run_id}")
-
     date = datetime.now().isoformat()[:10]
     logfile = logs_dir / f"opt_{cfg_o['run']}_{grid_id}-{feeder_id}_{date}.log"
     setup_logging(file_name=logfile)
+
+    logger.info(f"Run optimization for grid: {grid_id}, feeder: {feeder_id}"
+                f" with run id: {run_id}")
 
     if not edisgo_obj:
         if not feeder_id:
