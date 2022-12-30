@@ -1,3 +1,4 @@
+import functools
 import os
 import re
 
@@ -23,7 +24,7 @@ def concat_results(run_id, grids=None, parameters=None, fillna=None):
     # identify file by filename pattern:
     pattern = r"\d+/\d+/(.*)_(\d+)-(\d+)_iteration_(\d+).csv"
     mapping = pd.DataFrame(
-        {re.search(pattern, string=i).groups() for i in list_of_files},
+        [re.search(pattern, string=i).groups() for i in list_of_files],
         columns=["parameter", "grid", "feeder", "iteration"],
     )
     mapping = mapping.sort_values(
@@ -42,31 +43,36 @@ def concat_results(run_id, grids=None, parameters=None, fillna=None):
     collected_results = {}
     for group, grid_param in mapping.groupby(["grid", "parameter"]):
 
-        df_feeder = pd.DataFrame()
+        df_grid_parameter = pd.DataFrame()
 
         for (grid, parameter, feeder), grid_param_feeder in grid_param.groupby(
             ["grid", "parameter", "feeder"]
         ):
 
-            # concat all iterations
             df_all_iterations = pd.concat(
-                map(pd.read_csv, list_of_files[grid_param_feeder.index]),
-                axis=1,
+                map(
+                    functools.partial(
+                        pd.read_csv, index_col=0, parse_dates=True
+                    ),
+                    list_of_files[grid_param_feeder.index],
+                ),
+                axis=0,
             )
+
             # concat all feeder
             df_grid_parameter = pd.concat(
-                [df_feeder, df_all_iterations], axis=0
+                [df_grid_parameter, df_all_iterations], axis=1
             )
 
         if df_grid_parameter.isna().any().any():
             logger.warning(f"There are NaN values in {grid}/{parameter}")
 
-        if fillna is not None:
-            df_grid_parameter = df_grid_parameter.fillna(**fillna)
-            logger.warning(
-                f"Nan Values replace in {grid}/{parameter}"
-                f" by {fillna.get('value', 'not specified')}"
-            )
+            if fillna is not None:
+                df_grid_parameter = df_grid_parameter.fillna(**fillna)
+                logger.warning(
+                    f"Nan Values replace in {grid}/{parameter}"
+                    f" by {fillna.get('value', 'not specified')}"
+                )
 
         collected_results.update({group: df_grid_parameter})
 
@@ -96,7 +102,7 @@ def save_concatinated_results(doit=False, version=None):
         path = results_dir / cfg_o["run"] / grid / "concated"
         os.makedirs(path, exist_ok=True)
         filename = path / f"{grid}_{parameter}.csv"
-        df.to_csv(filename)
+        df.to_csv(filename, index=True)
         logger.info(f"Concated results saved to {filename}.")
 
     if doit:
