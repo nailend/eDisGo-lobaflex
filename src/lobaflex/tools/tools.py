@@ -16,16 +16,12 @@ from doit.exceptions import BaseFail
 
 from lobaflex import config_dir, logs_dir
 
-# from lobaflex.tools.logger import logger
-
-
 logger = logging.getLogger(__name__)
 
 
-def get_csv_in_subdirs(path):
-    """Creates a list of all csv files in its subdirectories"""
+def get_files_in_subdirs(path, pattern):
+    """Creates a list of all files with pattern in its subdirectories"""
     list_files = []
-    pattern = "*.csv"
     for dir, _, _ in os.walk(path):
         list_files.extend(glob(os.path.join(dir, pattern)))
 
