@@ -107,7 +107,7 @@ def task_concat_results():
                         )
                     ],
                     # "task_dep": [f"grids:{mvgd}_feeder_extraction"],
-                    "task_dep": [f"{mvgd}/{int(feeder):02}_optimization" for
+                    "task_dep": [f"opt:{mvgd}/{int(feeder):02}_optimization" for
                                  feeder in feeder_ids],
                     "getargs": {"version": ("_get_opt_version", "version")},
                     "uptodate": [opt_uptodate],
