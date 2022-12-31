@@ -79,7 +79,7 @@ def concat_results(run_id, grids=None, parameters=None, fillna=None):
     return collected_results
 
 
-def save_concatinated_results(doit=False, version=None):
+def save_concatinated_results(grids=None, doit=False, version=None):
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
 
@@ -94,6 +94,7 @@ def save_concatinated_results(doit=False, version=None):
 
     results = concat_results(
         run_id=cfg_o["run"],
+        grids=grids,
         parameters=selected_parameters,
         fillna={"value": 0},
     )
