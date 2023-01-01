@@ -3,7 +3,7 @@ import os
 import re
 
 from datetime import datetime
-
+import shutil
 import pandas as pd
 
 from lobaflex import config_dir, logs_dir, results_dir
@@ -87,7 +87,7 @@ def save_concatinated_results(grids=None, doit=False, version=None):
     logfile = logs_dir / f"opt_concat_results_{cfg_o['run']}_{date}.log"
     setup_logging(file_name=logfile)
 
-    logger.info("Start concating files")
+    logger.info("Start concatenating files")
     # selected_parameters = ["charging_hp_el", "charging_tes", "energy_tes",
     #                        "x_charge_ev", "energy_level_cp"]
     selected_parameters = None
@@ -100,11 +100,15 @@ def save_concatinated_results(grids=None, doit=False, version=None):
     )
 
     for (grid, parameter), df in results.items():
-        path = results_dir / cfg_o["run"] / grid / "concated"
+        path = results_dir / cfg_o["run"] / grid
+
+        logger.info(f"Remove individual files.")
+        shutil.rmtree(path, ignore_errors=True)
+
         os.makedirs(path, exist_ok=True)
         filename = path / f"{grid}_{parameter}.csv"
         df.to_csv(filename, index=True)
-        logger.info(f"Concated results saved to {filename}.")
+        logger.info(f"Save concatenated results to {filename}.")
 
     if doit:
         return {"version": version, "run": f"concat_{cfg_o['run']}"}
