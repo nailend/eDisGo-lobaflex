@@ -8,7 +8,10 @@ from datetime import datetime
 import pandas as pd
 
 from edisgo.edisgo import EDisGo
-from edisgo.tools.spatial_complexity_reduction import remove_short_lines
+from edisgo.tools.spatial_complexity_reduction import (
+    remove_short_lines,
+    remove_one_meter_lines,
+)
 from edisgo.io.ding0_import import remove_1m_end_lines
 
 from lobaflex import config_dir, data_dir, logs_dir
@@ -42,8 +45,11 @@ def run_load_integration(
         edisgo_obj = EDisGo(ding0_grid=ding0_grid)
 
         logger.info("Remove 1m end lines.")
-        edisgo_obj = remove_1m_end_lines(edisgo_obj)
+        # edisgo_obj = remove_1m_end_lines(edisgo_obj)
+        # end lines
+        edisgo_obj = remove_one_meter_lines(edisgo_obj)
         logger.info("Remove Lines <= 1 Meter")
+        # inside lines
         edisgo_obj = remove_short_lines(edisgo_obj, length=1)
 
     logger.info("Set worst-case analysis time series.")
