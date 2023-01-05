@@ -190,7 +190,7 @@ def rolling_horizon_optimization(
     feeder_id = f"{int(feeder_id):02}"
 
     # logfile
-    date = datetime.now().isoformat()[:10]
+    date = datetime.now().date().isoformat()
     logfile = logs_dir / f"{date}_gurobi.log"
 
     result_path = results_dir / run / str(grid_id) / feeder_id
@@ -411,7 +411,7 @@ def run_dispatch_optimization(
     # get run id for export path
     run_id = cfg_o.get("run", f"no_id_{datetime.now().isoformat()}")
 
-    date = datetime.now().isoformat()[:10]
+    date = datetime.now().date().isoformat()
     logfile = logs_dir / f"opt_{cfg_o['run']}_{grid_id}-{feeder_id}_{date}.log"
     setup_logging(file_name=logfile)
 

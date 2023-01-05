@@ -242,9 +242,15 @@ def run_hp_integration(
 if __name__ == "__main__":
 
     from lobaflex.tools.tools import split_model_config_in_subconfig
-
+    from datetime import datetime
+    from lobaflex import logs_dir
+    from lobaflex.tools.logger import setup_logging
     split_model_config_in_subconfig()
 
     logger = logging.getLogger("lobaflex.__main__")
+    date = datetime.now().date().isoformat()
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    logfile = logs_dir / f"hp_integration_{date}_local.log"
+    setup_logging(file_name=logfile)
 
-    edisgo_obj = run_hp_integration(grid_id=176)
+    edisgo_obj = run_hp_integration(grid_id=1056)

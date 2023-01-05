@@ -14,7 +14,7 @@ from lobaflex.tools.tools import TelegramReporter, get_config
 from lobaflex.tools.logger import setup_logging
 
 logger = logging.getLogger("lobaflex.opt." + __name__)
-date = datetime.now().isoformat()[:10]
+date = datetime.now().date().isoformat()
 cfg_o = get_config(path=config_dir / ".opt.yaml")
 logfile = logs_dir / f"opt_dodo_{date}.log"
 setup_logging(file_name=logfile)

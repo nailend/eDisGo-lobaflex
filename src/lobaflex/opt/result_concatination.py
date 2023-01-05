@@ -83,7 +83,7 @@ def save_concatinated_results(grids=None, doit=False, version=None):
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
 
-    date = datetime.now().isoformat()[:10]
+    date = datetime.now().date().isoformat()
     logfile = logs_dir / f"opt_concat_results_{cfg_o['run']}_{date}.log"
     setup_logging(file_name=logfile)
 

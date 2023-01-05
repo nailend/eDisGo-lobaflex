@@ -162,9 +162,19 @@ def run_dnm_generation(
 if __name__ == "__main__":
 
     from lobaflex.tools.tools import split_model_config_in_subconfig
-
+    from datetime import datetime
+    from lobaflex import logs_dir
+    from lobaflex.tools.logger import setup_logging
     split_model_config_in_subconfig()
 
     logger = logging.getLogger("lobaflex.__main__")
+    date = datetime.now().date().isoformat()
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    logfile = logs_dir / f"dnm_generation{date}_local.log"
+    setup_logging(file_name=logfile)
 
-    run_dnm_generation(grid_id=1056, feeder=1, save=True)
+    run_dnm_generation(
+        # grid_id=1056,
+        grid_id="5_bus_testgrid",
+        feeder=1,
+        save=True)

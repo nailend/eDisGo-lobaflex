@@ -30,7 +30,7 @@ def run_load_integration(
 
     cfg = get_config(path=config_dir / ".grids.yaml")
 
-    date = datetime.now().isoformat()[:10]
+    date = datetime.now().date().isoformat()
     logfile = logs_dir / f"grids_{grid_id}_{date}.log"
     setup_logging(file_name=logfile)
 
@@ -101,9 +101,15 @@ def run_load_integration(
 if __name__ == "__main__":
 
     from lobaflex.tools.tools import split_model_config_in_subconfig
-
+    from datetime import datetime
+    from lobaflex import logs_dir
+    from lobaflex.tools.logger import setup_logging
     split_model_config_in_subconfig()
 
     logger = logging.getLogger("lobaflex.__main__")
+    date = datetime.now().date().isoformat()
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    logfile = logs_dir / f"load_integration_{date}_local.log"
+    setup_logging(file_name=logfile)
 
-    edisgo_obj = run_load_integration(grid_id=1056)
+    edisgo_obj = run_load_integration(grid_id=2534)

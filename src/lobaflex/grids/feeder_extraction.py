@@ -178,9 +178,15 @@ def run_feeder_extraction(
 if __name__ == "__main__":
 
     from lobaflex.tools.tools import split_model_config_in_subconfig
-
+    from datetime import datetime
+    from lobaflex import logs_dir
+    from lobaflex.tools.logger import setup_logging
     split_model_config_in_subconfig()
 
     logger = logging.getLogger("lobaflex.__main__")
+    date = datetime.now().date().isoformat()
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    logfile = logs_dir / f"feeder_extraction_{date}_local.log"
+    setup_logging(file_name=logfile)
 
-    run_feeder_extraction(grid_id=1056, save=True)
+    run_feeder_extraction(grid_id=2534, save=True)
