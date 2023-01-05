@@ -45,10 +45,10 @@ def run_load_integration(
         edisgo_obj = EDisGo(ding0_grid=ding0_grid)
 
         logger.info("Remove 1m end lines.")
-        # edisgo_obj = remove_1m_end_lines(edisgo_obj)
+        edisgo_obj = remove_1m_end_lines(edisgo_obj)
         # end lines
-        edisgo_obj = remove_one_meter_lines(edisgo_obj)
-        logger.info("Remove Lines <= 1 Meter")
+        # edisgo_obj = remove_one_meter_lines(edisgo_obj)
+        logger.info("Remove Lines < 1 Meter inside the graph.")
         # inside lines
         edisgo_obj = remove_short_lines(edisgo_obj, length=1)
 
