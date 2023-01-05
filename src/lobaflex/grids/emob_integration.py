@@ -37,7 +37,7 @@ def run_emob_integration(
             import_path,
             import_topology=True,
             import_timeseries=True,
-            import_electromobility=True,
+            # import_electromobility=True,
         )
 
     # resample time series to have a temporal resolution of 15 minutes, which is the same
