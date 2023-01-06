@@ -415,7 +415,11 @@ def run_dispatch_optimization(
     edisgo_obj.check_integrity()
 
     logger.info("Run Powerflow for first timestep")
-    edisgo_obj.analyze(timesteps=edisgo_obj.timeseries.timeindex[0])
+    try:
+        edisgo_obj.analyze(timesteps=edisgo_obj.timeseries.timeindex[0])
+    except IndexError as e:
+        logger.warnning("Powerflow not successfull.")
+        logger.warning(e)
 
     rolling_horizon_optimization(
         edisgo_obj,
