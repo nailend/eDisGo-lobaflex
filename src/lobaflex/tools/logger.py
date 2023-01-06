@@ -32,11 +32,7 @@ def setup_logging(file_name):
         loggers=[
             {"name": "edisgo", "file_level": "info", "stream_level": "info"},
             {"name": "lobaflex", "file_level": "info", "stream_level": "info"},
-            {
-                "name": "pyomo.core",
-                "file_level": "info",
-                "stream_level": "info",
-            },
+            {"name": "pyomo.core", "file_level": "info", "stream_level": "info"},  # noqa: F401
             {"name": "pypsa", "file_level": "info", "stream_level": "info"},
         ],
         file_formatter=file_formatter,

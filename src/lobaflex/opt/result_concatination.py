@@ -1,9 +1,10 @@
 import functools
 import os
 import re
+import shutil
 
 from datetime import datetime
-import shutil
+
 import pandas as pd
 
 from lobaflex import config_dir, logs_dir, results_dir
