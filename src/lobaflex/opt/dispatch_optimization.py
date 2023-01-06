@@ -9,17 +9,15 @@ import edisgo.opf.lopf as lopf
 import numpy as np
 import pandas as pd
 
-from DEV_optimisation import load_values_from_previous_failed_run
 from edisgo.edisgo import import_edisgo_from_files
 from edisgo.tools.tools import (
     assign_voltage_level_to_component,
     convert_impedances_to_mv,
 )
+
 from lobaflex import config_dir, data_dir, logs_dir, results_dir
 from lobaflex.grids.feeder_extraction import get_flexible_loads
 from lobaflex.tools.logger import setup_logging
-
-# from lobaflex.tools.logger import logger
 from lobaflex.tools.tools import dump_yaml, get_config
 
 logger = logging.getLogger(__name__)
@@ -61,46 +59,6 @@ def get_dnm(mvgd, feeder):
     return downstream_nodes_matrix
 
 
-def tie_end_to_start_hp(result_dict, iteration, cfg_o):
-    """
-
-    Parameters
-    ----------
-    result_dict :
-    iteration :
-    cfg_o :
-
-    Returns
-    -------
-
-    """
-    start_values_hp = dict()
-
-    iterations_per_era = cfg_o["iterations_per_era"]
-    overlap_iterations = cfg_o["overlap_iterations"]
-
-    # if iteration is the last one of era
-    if iteration % iterations_per_era == iterations_per_era - 1:
-        start_values_hp["charging_start"] = None
-        start_values_hp["energy_level_start"] = None
-
-    # if iteration is not the last one of era use results from last
-    # iteration as starting value (overlapping hours are neglected)
-    else:
-        charging_start = {
-            "hp": result_dict["charging_hp_el"].iloc[-overlap_iterations],
-            "tes": result_dict["charging_tes"].iloc[-overlap_iterations],
-        }
-        start_values_hp["charging_start_hp"] = charging_start
-
-        energy_level_start = result_dict["energy_tes"].iloc[
-            -overlap_iterations
-        ]
-        start_values_hp["energy_level_start_tes"] = energy_level_start
-
-    return start_values_hp
-
-
 def export_results(result_dict, result_path, timesteps, filename):
     """
 
@@ -134,8 +92,11 @@ def export_results(result_dict, result_path, timesteps, filename):
             logger.info(f"Saved results for {res_name}.")
 
 
-def tie_end_to_start_emob(result_dict, iteration, cfg_o):
+def close_iteration_windows(result_dict, iteration, cfg_o):
     """
+    End values of the iteration results are extracted to be used as
+    starting values for the next iteration. End values is the last timestep
+    minus the overlap.
 
     Parameters
     ----------
@@ -148,29 +109,67 @@ def tie_end_to_start_emob(result_dict, iteration, cfg_o):
 
     """
 
-    start_values_emob = dict()
-
     iterations_per_era = cfg_o["iterations_per_era"]
     overlap_iterations = cfg_o["overlap_iterations"]
 
+    start_values = {
+        "energy_level_starts": {
+            "ev": None,
+            "tes": None,
+        },
+        "charging_starts": {
+            "ev": None,
+            "tes": None,
+            "hp": None,
+        }
+    }
+
     # if iteration is the last one of era
     if iteration % iterations_per_era == iterations_per_era - 1:
-        start_values_emob["charging_start_ev"] = None
-        start_values_emob["energy_level_start_ev"] = None
+        start_values = start_values.update(
+            {
+                "energy_level_starts": {
+                    "ev": None,
+                    "tes": None,
+                },
+                "charging_starts": {
+                    "ev": None,
+                    "tes": None,
+                    "hp": None,
+                }
+            }
+        )
 
     # if iteration is not the last one of era use results from last
     # iteration as starting value (overlapping hours are neglected)
+
     else:
+        if cfg_o["opt_emob"]:
 
-        start_values_emob["charging_start_ev"] = result_dict[
-            "x_charge_ev"
-        ].iloc[-overlap_iterations]
+            start_values["charging_starts"].update({
+                "ev": result_dict["x_charge_ev"].iloc[-overlap_iterations]
+            })
 
-        start_values_emob["energy_level_start_ev"] = result_dict[
-            "energy_level_cp"
-        ].iloc[-overlap_iterations]
+            start_values["energy_level_starts"].update({
+                "ev": result_dict["energy_level_cp"].iloc[-overlap_iterations]
+            })
 
-    return start_values_emob
+        else:
+            logging.info("No start values for electromobility")
+
+        if cfg_o["opt_hp"]:
+
+            start_values["charging_starts"].update({
+                "hp": result_dict["charging_hp_el"].iloc[-overlap_iterations],
+                "tes": result_dict["charging_tes"].iloc[-overlap_iterations],
+            })
+
+            start_values["energy_level_starts"].update({
+                "tes": result_dict["energy_tes"].iloc[-overlap_iterations]
+            })
+        else:
+            logging.info("No start values for heat pumps")
+    return start_values
 
 
 def rolling_horizon_optimization(
@@ -297,6 +296,7 @@ def rolling_horizon_optimization(
                 * cfg_o["timesteps_per_iteration"] : (iteration + 1)
                 * cfg_o["timesteps_per_iteration"]
             ]
+            # Fixes end energy level to specific percentage (50%)
             energy_level_end = True
 
         # in all other iterations overlap is added to the timeframe
