@@ -14,6 +14,7 @@ opt:
   objective: 'minimize_loading'
   rolling_horizon: True
   load_results: False
+  start_datetime: "2011-01-01 00:00:00"
   total_timesteps: 168
   timesteps_per_iteration: 24 # number of timesteps which are optimized in one
 #  bulk
@@ -21,9 +22,6 @@ opt:
 #  is added to the iteration for optimization but results are dropped
   iterations_per_era: 7 # an era defines a closed timeframe for optimization
 #  in the last iteration of an era, the overlapping time steps are invented
-logger:
-  log_file: 'log.txt'
-  log_to_file: True
 grids:
   version: 0
   mvgds: [2534, 176, 177, 1056, 1690, 1811]
