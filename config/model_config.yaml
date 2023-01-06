@@ -1,12 +1,13 @@
 opt:
   version: 1
-  run: "emob_debug"
-  save_lp_files: False
+  run_id: "emob_hp_no_end_lines_n_lines_less_1m"
   import_dir: "load_n_gen_n_emob_n_hp_grids_extracted"
   mvgds: [2534, 176, 177, 1056, 1690, 1811]
 #  mvgds: [2534]
   feeder: False
   solver: 'gurobi'
+  save_lp_files: False
+  save_log_files: False
   opt_bess: False
   opt_hp: True
   opt_emob: True
