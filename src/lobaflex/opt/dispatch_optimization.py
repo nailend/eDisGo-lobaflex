@@ -121,7 +121,7 @@ def close_iteration_windows(result_dict, iteration, cfg_o):
             "ev": None,
             "tes": None,
             "hp": None,
-        }
+        },
     }
 
     # if iteration is the last one of era
@@ -136,7 +136,7 @@ def close_iteration_windows(result_dict, iteration, cfg_o):
                     "ev": None,
                     "tes": None,
                     "hp": None,
-                }
+                },
             }
         )
 
@@ -146,27 +146,37 @@ def close_iteration_windows(result_dict, iteration, cfg_o):
     else:
         if cfg_o["opt_emob"]:
 
-            start_values["charging_starts"].update({
-                "ev": result_dict["x_charge_ev"].iloc[-overlap_iterations]
-            })
+            start_values["charging_starts"].update(
+                {"ev": result_dict["x_charge_ev"].iloc[-overlap_iterations]}
+            )
 
-            start_values["energy_level_starts"].update({
-                "ev": result_dict["energy_level_cp"].iloc[-overlap_iterations]
-            })
+            start_values["energy_level_starts"].update(
+                {
+                    "ev": result_dict["energy_level_cp"].iloc[
+                        -overlap_iterations
+                    ]
+                }
+            )
 
         else:
             logging.info("No start values for electromobility")
 
         if cfg_o["opt_hp"]:
 
-            start_values["charging_starts"].update({
-                "hp": result_dict["charging_hp_el"].iloc[-overlap_iterations],
-                "tes": result_dict["charging_tes"].iloc[-overlap_iterations],
-            })
+            start_values["charging_starts"].update(
+                {
+                    "hp": result_dict["charging_hp_el"].iloc[
+                        -overlap_iterations
+                    ],
+                    "tes": result_dict["charging_tes"].iloc[
+                        -overlap_iterations
+                    ],
+                }
+            )
 
-            start_values["energy_level_starts"].update({
-                "tes": result_dict["energy_tes"].iloc[-overlap_iterations]
-            })
+            start_values["energy_level_starts"].update(
+                {"tes": result_dict["energy_tes"].iloc[-overlap_iterations]}
+            )
         else:
             logging.info("No start values for heat pumps")
     return start_values
@@ -176,8 +186,6 @@ def rolling_horizon_optimization(
     edisgo_obj,
     grid_id,
     feeder_id,
-    load_results=False,
-    iteration=0,
     save=False,
     run=datetime.now().isoformat(),
     save_lp_file=False,
@@ -188,42 +196,10 @@ def rolling_horizon_optimization(
     # mvgds = cfg_g["model"].get("mvgd")
     feeder_id = f"{int(feeder_id):02}"
 
-    # logfile
-    date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"{date}_gurobi.log"
-
     result_path = results_dir / run / str(grid_id) / feeder_id
     # TODO maybe add if condition/parameter
     shutil.rmtree(result_path, ignore_errors=True)
     os.makedirs(result_path, exist_ok=True)
-
-    # Check existing results and load values
-    if (len(os.listdir(result_path)) > 239) and load_results:
-        logging.info(
-            "Feeder {} of grid {} already solved.".format(feeder_id, grid_id)
-        )
-        return
-    elif (len(os.listdir(result_path)) > 1) and load_results:
-        # iterations_finished = int((len(os.listdir(result_path)) - 1) / 17)
-        logging.info("Reload former results")
-        (
-            charging_start,
-            energy_level_start,
-            start_iter,
-        ) = load_values_from_previous_failed_run(
-            feeder_id=feeder_id,
-            grid_id=grid_id,
-            iteration=iteration,
-            iterations_per_era=cfg_o["iterations_per_era"],
-            overlap_interations=cfg_o["overlap_iterations"],
-            result_dir=result_path,
-        )
-
-    else:
-        logger.info("Start from scratch.")
-        charging_start = None
-        energy_level_start = None
-        start_iter = 0
 
     # Dump opt configs to results
     dump_yaml(yaml_file=cfg_o, save_to=result_path)
@@ -258,9 +234,10 @@ def rolling_horizon_optimization(
     )
 
     # get v_min, v_max per bus
-
     v_minmax = pd.DataFrame(
-        data=fixed_parameters["grid_object"].buses_df.index, columns=["bus"]
+        data=fixed_parameters["grid_object"].buses_df.index.rename("bus"),
+        # columns=[
+        #     "bus"]
     )
     v_minmax = assign_voltage_level_to_component(
         v_minmax, fixed_parameters["grid_object"].buses_df
@@ -271,15 +248,20 @@ def rolling_horizon_optimization(
     v_minmax.loc[v_minmax["voltage_level"] == "lv", "v_max"] = 1.1
     v_minmax = v_minmax.set_index("bus")
 
-    start_values_hp = {}
-    start_values_emob = {}
-
-    # TODO adhoc workaround
-    # interval = edisgo_obj.timeseries.timeindex[:50]
-    interval = edisgo_obj.timeseries.timeindex[: cfg_o["total_timesteps"]]
+    # Define optimization timeframe
+    if cfg_o["start_datetime"] is not None:
+        start_index = edisgo_obj.timeseries.timeindex.slice_indexer(
+            cfg_o["start_datetime"]
+        ).start
+        timeframe = edisgo_obj.timeseries.timeindex[
+            start_index : start_index + cfg_o["total_timesteps"]
+        ]
+    else:
+        logger.info("No start_datetime given. Start with first timestep")
+        timeframe = edisgo_obj.timeseries.timeindex[: cfg_o["total_timesteps"]]
 
     for iteration in range(
-        start_iter, int(len(interval) / cfg_o["timesteps_per_iteration"])
+        0, int(len(timeframe) / cfg_o["timesteps_per_iteration"])
     ):
 
         logging.info(f"Starting optimisation for iteration {iteration}.")
@@ -309,20 +291,8 @@ def rolling_horizon_optimization(
             ]
             energy_level_end = None
 
-        logger.info(f"Set up model for iteration {iteration}.")
-        try:
-            model = lopf.update_model(
-                model=model,
-                timesteps=timesteps,
-                fixed_parameters=fixed_parameters,
-                objective=cfg_o["objective"],
-                energy_level_end_tes=energy_level_end,
-                flexible_loads=flexible_loads,
-                **start_values_hp,
-                **start_values_emob,
-                # **kwargs,
-            )
-        except NameError:
+        if iteration == 0:
+            logger.info(f"Set up model for first iteration {iteration}.")
             model = lopf.setup_model(
                 fixed_parameters=fixed_parameters,
                 timesteps=timesteps,
@@ -330,7 +300,20 @@ def rolling_horizon_optimization(
                 v_min=v_minmax["v_min"],
                 v_max=v_minmax["v_max"],
                 flexible_loads=flexible_loads,
-                logfile=logfile, # doesnt work
+                charging_starts={"ev": 0, "hp": 0, "tes": 0},
+                load_factor_rings=0.5
+                # **kwargs,
+            )
+        else:
+            logger.info(f"Update model for iteration {iteration}.")
+            model = lopf.update_model(
+                model=model,
+                timesteps=timesteps,
+                fixed_parameters=fixed_parameters,
+                objective=cfg_o["objective"],
+                energy_level_end_tes=energy_level_end,
+                flexible_loads=flexible_loads,
+                **start_values,
                 # **kwargs,
             )
 
@@ -338,28 +321,29 @@ def rolling_horizon_optimization(
             lp_filename = result_path / f"lp_file_iteration_{iteration}.lp"
         else:
             lp_filename = False
+
+        # logfile
+        date = datetime.now().date().isoformat()
+        logfile = logs_dir / f"gurobi_{date}_iteration_{iteration}.log"
+
         result_dict = lopf.optimize(
-            model, cfg_o["solver"], lp_filename=lp_filename
+            model, cfg_o["solver"], lp_filename=lp_filename, logfile=logfile
         )
-        # TODO workaround if hps not exist
-        try:
-            start_values_hp = tie_end_to_start_hp(
-                result_dict, iteration, cfg_o
-            )
-        except Exception:
-            pass
 
         try:
-            start_values_emob = tie_end_to_start_emob(
+            start_values = close_iteration_windows(
                 result_dict, iteration, cfg_o
             )
-        except Exception:
+        except Exception as e:
+            logger.warning(
+                f"No starting values extracted for iteration" f" {iteration}"
+            )
+            logger.warning(e)
             pass
 
         logger.info(f"Finished optimisation for iteration {iteration}.")
 
         if save:
-
             filename = (
                 f"$res_name$_{grid_id}-{feeder_id}_iteration"
                 f"_{iteration}.csv"
@@ -377,29 +361,12 @@ def rolling_horizon_optimization(
                 )
                 raise ValueError("Results not valid")
 
-    # except Exception as e:
-    #     print('Something went wrong with feeder {} of grid {}'.format(
-    #         feeder_id, grid_id))
-    #     print(e)
-    #     if 'iteration' in locals():
-    #         if iteration >= 1:
-    #             charging_start = charging_hp[iteration-1].iloc[-overlap_iterations]
-    #             charging_start.to_csv(
-    #                 result_path +'/charging_start_{}_{}_{}.csv'.format(
-    #                 grid_id, feeder_id, iteration))
-    #             energy_level_start = energy_level[iteration-1].iloc[
-    #                 -overlap_iterations]
-    #             energy_level_start.to_csv(
-    #                 result_path +'/energy_level_start_{}_{}_{}.csv'.format(
-    #                     grid_id, feeder_id, iteration))
-
 
 def run_dispatch_optimization(
     grid_id,
     feeder_id=False,
     edisgo_obj=False,
     save=False,
-    save_lp_file=False,
     doit=False,
     version=None,
 ):
@@ -415,8 +382,10 @@ def run_dispatch_optimization(
     logfile = logs_dir / f"opt_{cfg_o['run']}_{grid_id}-{feeder_id}_{date}.log"
     setup_logging(file_name=logfile)
 
-    logger.info(f"Run optimization for grid: {grid_id}, feeder: {feeder_id}"
-                f" with run id: {run_id}")
+    logger.info(
+        f"Run optimization for grid: {grid_id}, feeder: {feeder_id}"
+        f" with run id: {run_id}"
+    )
 
     if not edisgo_obj:
         if not feeder_id:
@@ -463,20 +432,30 @@ def run_dispatch_optimization(
 
 if __name__ == "__main__":
 
+    from datetime import datetime
+
+    from lobaflex import logs_dir
+    from lobaflex.tools.logger import setup_logging
     from lobaflex.tools.tools import split_model_config_in_subconfig
 
     split_model_config_in_subconfig()
 
     logger = logging.getLogger("lobaflex.__main__")
+    date = datetime.now().date().isoformat()
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    logfile = logs_dir / f"dispatch_optimization_{date}_local.log"
+    setup_logging(file_name=logfile)
 
     run_dispatch_optimization(
         # grid_id=1056, feeder_id=1, edisgo_obj=False, save=True, doit=False
-        grid_id=2534,
-        feeder_id=8,
+        # grid_id=2534,
+        # grid_id=1056,
+        grid_id="5_bus_testgrid",
+        # feeder_id=8,
+        feeder_id=1,
         edisgo_obj=False,
         save=True,
         doit=False,
-        save_lp_file=False,
     )
 
     # lopf.combine_results_for_grid
