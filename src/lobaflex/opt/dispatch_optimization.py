@@ -248,6 +248,10 @@ def rolling_horizon_optimization(
     v_minmax.loc[v_minmax["voltage_level"] == "lv", "v_max"] = 1.1
     v_minmax = v_minmax.set_index("bus")
 
+    # neccesarry to fix unboundlocalerror
+    start_values = {"energy_level_starts": None,
+                    "charging_starts": None}
+
     # Define optimization timeframe
     if cfg_o["start_datetime"] is not None:
         start_index = edisgo_obj.timeseries.timeindex.slice_indexer(
