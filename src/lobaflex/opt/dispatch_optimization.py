@@ -187,7 +187,7 @@ def rolling_horizon_optimization(
     grid_id,
     feeder_id,
     save=False,
-    run=datetime.now().isoformat(),
+    run_id=datetime.now().isoformat(),
     save_lp_file=False,
 ):
 
@@ -196,7 +196,7 @@ def rolling_horizon_optimization(
     # mvgds = cfg_g["model"].get("mvgd")
     feeder_id = f"{int(feeder_id):02}"
 
-    result_path = results_dir / run / str(grid_id) / feeder_id
+    result_path = results_dir / run_id / str(grid_id) / feeder_id
     # TODO maybe add if condition/parameter
     shutil.rmtree(result_path, ignore_errors=True)
     os.makedirs(result_path, exist_ok=True)
@@ -317,21 +317,21 @@ def rolling_horizon_optimization(
                 # **kwargs,
             )
 
-        if save_lp_file:
-            lp_filename = result_path / f"lp_file_iteration_{iteration}.lp"
-        else:
-            lp_filename = False
+        # lpfile
+        lp_filename = result_path / f"lp_file_iteration_{iteration}.lp"
+        lp_filename = lp_filename if cfg_o["save_lp_files"] else None
 
         # logfile
         date = datetime.now().date().isoformat()
         logfile = logs_dir / f"gurobi_{date}_iteration_{iteration}.log"
+        logfile = logfile if cfg_o["save_log_files"] else None
 
         result_dict = lopf.optimize(
             model,
             cfg_o["solver"],
             tee=False,
             lp_filename=lp_filename,
-            # logfile=logfile
+            logfile=logfile
         )
 
         try:
@@ -380,10 +380,11 @@ def run_dispatch_optimization(
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     feeder_id = f"{int(feeder_id):02}"
     # get run id for export path
-    run_id = cfg_o.get("run", f"no_id_{datetime.now().isoformat()}")
+    run_id = cfg_o.get("run_id", f"no_id_{datetime.now().isoformat()}")
 
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"opt_{cfg_o['run']}_{grid_id}-{feeder_id}_{date}.log"
+    logfile = logs_dir / f"opt_{cfg_o['run_id']}_{grid_id}-{feeder_id}" \
+                         f"_{date}.log"
     setup_logging(file_name=logfile)
 
     logger.info(
@@ -430,12 +431,12 @@ def run_dispatch_optimization(
         grid_id,
         feeder_id,
         save=save,
-        run=run_id,
+        run_id=run_id,
         save_lp_file=cfg_o.get("save_lp_files", False),
     )
 
     if doit:
-        return {"version": version, "run": run_id}
+        return {"version": version, "run_id": run_id}
 
 
 if __name__ == "__main__":

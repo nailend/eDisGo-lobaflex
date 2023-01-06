@@ -31,7 +31,8 @@ DOIT_CONFIG = {
     "reporter": TelegramReporter,
 }
 
-logger.info(f"Run: {cfg_o['run']} - Version:{cfg_o['version']}")
+logger.info(f"Run: {cfg_o.get('run_id', None)} - Version:"
+            f"{cfg_o.get('version', None)}")
 
 
 
@@ -96,7 +97,7 @@ def task_concat_results():
                     if os.path.isdir(feeder_path / feeder_id)
                 ]
                 yield {
-                    "name": f"{mvgd}_{cfg_o['run']}",
+                    "name": f"{mvgd}_{cfg_o['run_id']}",
                     "actions": [
                         (
                             save_concatinated_results,

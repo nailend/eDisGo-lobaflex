@@ -27,10 +27,17 @@ def task__set_opt_version():
     """This tasks sets the version number of the dataset"""
 
     def version():
-        cfg = get_config(path=config_dir / ".opt.yaml")
-        version = cfg["version"]
-        print(f"Grids dataset version set to: {version}")
-        return {"version": version}
+        cfg_o = get_config(path=config_dir / ".opt.yaml")
+        version = cfg_o["version"]
+        run_id = cfg_o["run_id"]
+
+        dep_manager = doit.Globals.dep_manager
+        former_run_id = dep_manager.get_result("_set_opt_version")
+
+        if former_run_id == run_id:
+            raise ValueError("Change 'run_id' in config.")
+        print(f"Grids dataset version set to: {version} for run: {run_id}")
+        return {"version": version, "run_id": run_id}
 
     return {
         "actions": [version],
@@ -39,7 +46,7 @@ def task__set_opt_version():
 
 def opt_uptodate(task):
     """This function compares the version number of each task with the
-    dataset version. If it's smaller, the task is not uptodate"""
+    dataset version. If it's not equal the task is not uptodate."""
     dep_manager = doit.Globals.dep_manager
     dataset_results = dep_manager.get_result("_set_opt_version")
     if dataset_results is None:
@@ -49,7 +56,7 @@ def opt_uptodate(task):
         task_results = {"version": -1}
     return (
         True
-        if task_results["version"] >= dataset_results["version"]
+        if task_results["version"] == dataset_results["version"]
         else False
     )
 

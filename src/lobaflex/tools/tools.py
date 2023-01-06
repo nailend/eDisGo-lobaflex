@@ -255,7 +255,13 @@ class TelegramReporter(object):
         if "_set" in task.name:
             group = task.name.split("_")[2]
             version = task.result["version"]
-            self.telegram(text=f"Version of {group} set to {version}.")
+            run_id = task.result.get("run_id", None)
+            if run_id is None:
+                message = f"Version of {group} set to {version}."
+            else:
+                message = f"Version of {group} set to {version} for run " \
+                          f"{run_id}."
+            self.telegram(text=message)
 
     def skip_uptodate(self, task):
         """skipped up-to-date task"""
