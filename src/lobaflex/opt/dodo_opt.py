@@ -97,7 +97,7 @@ def task_concat_results():
                     if os.path.isdir(feeder_path / feeder_id)
                 ]
                 yield {
-                    "name": f"{mvgd}_{cfg_o['run_id']}",
+                    "name": f"{mvgd}",
                     "actions": [
                         (
                             save_concatinated_results,
@@ -108,6 +108,7 @@ def task_concat_results():
                             },
                         )
                     ],
+                    "doc": "per mvgd",
                     "task_dep": [
                         f"opt:{mvgd}/{int(feeder):02}_optimization"
                         for feeder in feeder_ids
