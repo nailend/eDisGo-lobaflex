@@ -1,9 +1,12 @@
 import logging
 import os
+
 from datetime import datetime
+
 from lobaflex import config_dir, data_dir, logs_dir
 from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
 from lobaflex.opt.result_concatination import save_concatinated_results
+from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.pydoit import (
     opt_uptodate,
     task__get_opt_version,
@@ -11,7 +14,6 @@ from lobaflex.tools.pydoit import (
     task__split_model_config_in_subconfig,
 )
 from lobaflex.tools.tools import TelegramReporter, get_config
-from lobaflex.tools.logger import setup_logging
 
 logger = logging.getLogger("lobaflex.opt." + __name__)
 date = datetime.now().date().isoformat()
@@ -94,7 +96,6 @@ def task_concat_results():
                     if os.path.isdir(feeder_path / feeder_id)
                 ]
                 yield {
-                    # "basename": f"concat_result_{mvgd}",
                     "name": f"{mvgd}_{cfg_o['run']}",
                     "actions": [
                         (
@@ -106,15 +107,17 @@ def task_concat_results():
                             },
                         )
                     ],
-                    # "task_dep": [f"grids:{mvgd}_feeder_extraction"],
-                    "task_dep": [f"opt:{mvgd}/{int(feeder):02}_optimization" for
-                                 feeder in feeder_ids],
+                    "task_dep": [
+                        f"opt:{mvgd}/{int(feeder):02}_optimization"
+                        for feeder in feeder_ids
+                    ],
                     "getargs": {"version": ("_get_opt_version", "version")},
                     "uptodate": [opt_uptodate],
                 }
             except FileNotFoundError as e:
-                logger.info(f"No Files found for concat dependency of"
-                            f" MVGD: {mvgd}")
+                logger.info(
+                    f"No Files found for concat dependency of" f" MVGD: {mvgd}"
+                )
                 continue
 
 
