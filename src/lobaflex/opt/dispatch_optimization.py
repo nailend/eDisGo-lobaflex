@@ -327,7 +327,10 @@ def rolling_horizon_optimization(
         logfile = logs_dir / f"gurobi_{date}_iteration_{iteration}.log"
 
         result_dict = lopf.optimize(
-            model, cfg_o["solver"], lp_filename=lp_filename, logfile=logfile
+            model,
+            cfg_o["solver"],
+            lp_filename=lp_filename,
+            # logfile=logfile
         )
 
         try:
