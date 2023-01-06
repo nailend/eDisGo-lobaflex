@@ -329,6 +329,7 @@ def rolling_horizon_optimization(
         result_dict = lopf.optimize(
             model,
             cfg_o["solver"],
+            tee=False,
             lp_filename=lp_filename,
             # logfile=logfile
         )
