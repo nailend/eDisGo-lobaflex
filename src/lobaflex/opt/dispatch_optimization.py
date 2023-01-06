@@ -418,7 +418,7 @@ def run_dispatch_optimization(
     try:
         edisgo_obj.analyze(timesteps=edisgo_obj.timeseries.timeindex[0])
     except IndexError as e:
-        logger.warnning("Powerflow not successfull.")
+        logger.warning("Powerflow not successfull.")
         logger.warning(e)
 
     rolling_horizon_optimization(
