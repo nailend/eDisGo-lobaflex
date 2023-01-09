@@ -1,7 +1,8 @@
 import logging
 
 from edisgo.tools.logger import setup_logger
-
+from lobaflex.tools.tools import get_config
+from lobaflex import config_dir
 
 def setup_logging(file_name):
     """
@@ -28,13 +29,19 @@ def setup_logging(file_name):
         style="{",
     )
 
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    file_level = cfg_o.get("log_to_files", "warning")
+    stream_level = cfg_o.get("log_to_stream", "info")
+
+    loggers = [
+        {"name": "edisgo", "file_level": file_level, "stream_level": stream_level},  # noqa: F401
+        {"name": "lobaflex", "file_level": file_level, "stream_level": stream_level},  # noqa: F401
+        {"name": "pyomo.core", "file_level": file_level, "stream_level": stream_level},  # noqa: F401
+        {"name": "pypsa", "file_level": file_level, "stream_level": stream_level},  # noqa: F401
+    ]
+
     setup_logger(
-        loggers=[
-            {"name": "edisgo", "file_level": "info", "stream_level": "info"},
-            {"name": "lobaflex", "file_level": "info", "stream_level": "info"},
-            {"name": "pyomo.core", "file_level": "info", "stream_level": "info"},  # noqa: F401
-            {"name": "pypsa", "file_level": "info", "stream_level": "info"},
-        ],
+        loggers=loggers,
         file_formatter=file_formatter,
         stream_formatter=stream_formatter,
         reset_loggers=True,

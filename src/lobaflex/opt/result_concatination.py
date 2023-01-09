@@ -85,7 +85,7 @@ def save_concatinated_results(grids=None, doit=False, version=None):
     cfg_o = get_config(path=config_dir / ".opt.yaml")
 
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"opt_concat_results_{cfg_o['run']}_{date}.log"
+    logfile = logs_dir / f"opt_concat_results_{cfg_o['run_id']}_{date}.log"
     setup_logging(file_name=logfile)
 
     logger.info("Start concatenating files")
@@ -94,14 +94,14 @@ def save_concatinated_results(grids=None, doit=False, version=None):
     selected_parameters = None
 
     results = concat_results(
-        run_id=cfg_o["run"],
+        run_id=cfg_o["run_id"],
         grids=grids,
         parameters=selected_parameters,
         fillna={"value": 0},
     )
 
     for (grid, parameter), df in results.items():
-        path = results_dir / cfg_o["run"] / grid
+        path = results_dir / cfg_o["run_id"] / grid
 
         logger.info(f"Remove individual files.")
         shutil.rmtree(path, ignore_errors=True)
@@ -112,4 +112,4 @@ def save_concatinated_results(grids=None, doit=False, version=None):
         logger.info(f"Save concatenated results to {filename}.")
 
     if doit:
-        return {"version": version, "run": f"concat_{cfg_o['run']}"}
+        return {"version": version, "run_id": f"concat_{cfg_o['run_id']}"}
