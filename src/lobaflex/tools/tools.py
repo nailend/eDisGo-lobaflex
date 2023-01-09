@@ -208,7 +208,7 @@ class TelegramReporter(object):
                 + "\n"
                 + "-" * 28
             )
-            self.telegram(text=f"Pipeline:\n {pipeline}")
+            self.telegram(text=f"Pipeline:\n{pipeline}")
 
     def get_status(self, task):
         """called when task is selected (check if up-to-date)"""
