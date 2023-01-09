@@ -92,7 +92,9 @@ def export_results(result_dict, result_path, timesteps, filename):
             logger.info(f"Saved results for {res_name}.")
 
 
-def close_iteration_windows(result_dict, iteration, cfg_o):
+def update_start_values(
+    result_dict, fixed_parameters, iteration, start_values
+):
     """
     End values of the iteration results are extracted to be used as
     starting values for the next iteration. End values is the last timestep
@@ -111,18 +113,6 @@ def close_iteration_windows(result_dict, iteration, cfg_o):
 
     iterations_per_era = cfg_o["iterations_per_era"]
     overlap_iterations = cfg_o["overlap_iterations"]
-
-    start_values = {
-        "energy_level_starts": {
-            "ev": None,
-            "tes": None,
-        },
-        "charging_starts": {
-            "ev": None,
-            "tes": None,
-            "hp": None,
-        },
-    }
 
     # if iteration is the last one of era
     if iteration % iterations_per_era == iterations_per_era - 1:
@@ -144,7 +134,7 @@ def close_iteration_windows(result_dict, iteration, cfg_o):
     # iteration as starting value (overlapping hours are neglected)
 
     else:
-        if cfg_o["opt_emob"]:
+        if fixed_parameters["optimize_emob"]:
 
             start_values["charging_starts"].update(
                 {"ev": result_dict["x_charge_ev"].iloc[-overlap_iterations]}
@@ -161,8 +151,7 @@ def close_iteration_windows(result_dict, iteration, cfg_o):
         else:
             logging.info("No start values for electromobility")
 
-        if cfg_o["opt_hp"]:
-
+        if fixed_parameters["optimize_hp"]:
             start_values["charging_starts"].update(
                 {
                     "hp": result_dict["charging_hp_el"].iloc[
@@ -188,7 +177,6 @@ def rolling_horizon_optimization(
     feeder_id,
     save=False,
     run_id=datetime.now().isoformat(),
-    save_lp_file=False,
 ):
 
     # cfg_g = get_config(path=config_dir / ".grids.yaml")
@@ -248,9 +236,24 @@ def rolling_horizon_optimization(
     v_minmax.loc[v_minmax["voltage_level"] == "lv", "v_max"] = 1.1
     v_minmax = v_minmax.set_index("bus")
 
-    # neccesarry to fix unboundlocalerror
-    start_values = {"energy_level_starts": None,
-                    "charging_starts": None}
+    # define start_values
+    start_values = {
+        "energy_level_starts": {
+            "ev": None,
+            "tes": None,
+        },
+        # "charging_starts": {
+        #     "ev": None,
+        #     "tes": None,
+        #     "hp": None,
+        # },
+        # TODO workaround to fix charging in first timestep
+        "charging_starts": {
+            "ev": 0,
+            "tes": 0,
+            "hp": 0,
+        },
+    }
 
     # Define optimization timeframe
     if cfg_o["start_datetime"] is not None:
@@ -263,6 +266,8 @@ def rolling_horizon_optimization(
     else:
         logger.info("No start_datetime given. Start with first timestep")
         timeframe = edisgo_obj.timeseries.timeindex[: cfg_o["total_timesteps"]]
+
+    # ####################### Rolling Horizon ############################
 
     for iteration in range(
         0, int(len(timeframe) / cfg_o["timesteps_per_iteration"])
@@ -304,7 +309,8 @@ def rolling_horizon_optimization(
                 v_min=v_minmax["v_min"],
                 v_max=v_minmax["v_max"],
                 flexible_loads=flexible_loads,
-                charging_starts={"ev": 0, "hp": 0, "tes": 0},
+                # charging_starts={"ev": 0, "hp": 0, "tes": 0},
+                **start_values,
                 load_factor_rings=0.5
                 # **kwargs,
             )
@@ -335,19 +341,8 @@ def rolling_horizon_optimization(
             cfg_o["solver"],
             tee=False,
             lp_filename=lp_filename,
-            logfile=logfile
+            logfile=logfile,
         )
-
-        try:
-            start_values = close_iteration_windows(
-                result_dict, iteration, cfg_o
-            )
-        except Exception as e:
-            logger.warning(
-                f"No starting values extracted for iteration" f" {iteration}"
-            )
-            logger.warning(e)
-            pass
 
         logger.info(f"Finished optimisation for iteration {iteration}.")
 
@@ -369,6 +364,11 @@ def rolling_horizon_optimization(
                 )
                 raise ValueError("Results not valid")
 
+        logger.info(f"Update start values for iteration {iteration+1}.")
+        start_values = update_start_values(
+            result_dict, fixed_parameters, iteration, start_values
+        )
+
 
 def run_dispatch_optimization(
     grid_id,
@@ -387,8 +387,10 @@ def run_dispatch_optimization(
     run_id = cfg_o.get("run_id", f"no_id_{datetime.now().isoformat()}")
 
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"opt_{cfg_o['run_id']}_{grid_id}-{feeder_id}" \
-                         f"_{date}.log"
+    logfile = (
+        logs_dir / f"opt_{cfg_o['run_id']}_{grid_id}-{feeder_id}"
+        f"_{date}.log"
+    )
     setup_logging(file_name=logfile)
 
     logger.info(
@@ -436,7 +438,6 @@ def run_dispatch_optimization(
         feeder_id,
         save=save,
         run_id=run_id,
-        save_lp_file=cfg_o.get("save_lp_files", False),
     )
 
     if doit:
@@ -445,10 +446,6 @@ def run_dispatch_optimization(
 
 if __name__ == "__main__":
 
-    from datetime import datetime
-
-    from lobaflex import logs_dir
-    from lobaflex.tools.logger import setup_logging
     from lobaflex.tools.tools import split_model_config_in_subconfig
 
     split_model_config_in_subconfig()
