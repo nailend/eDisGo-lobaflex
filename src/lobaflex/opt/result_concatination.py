@@ -1,7 +1,6 @@
 import functools
 import os
 import re
-import shutil
 
 from datetime import datetime
 
@@ -14,13 +13,7 @@ from lobaflex.tools.tools import get_config, get_files_in_subdirs
 logger = logging.getLogger("lobaflex.opt." + __name__)
 
 
-def concat_results(run_id, grids=None, parameters=None, fillna=None):
-    run_dir = results_dir / run_id
-
-    # get list of all iteration_*.csv
-    list_of_files = pd.Series(
-        get_files_in_subdirs(run_dir, pattern="*iteration_*.csv")
-    )
+def concat_results(list_of_files, grids=None, parameters=None, fillna=None):
 
     # identify file by filename pattern:
     pattern = r"\d+/\d+/(.*)_(\d+)-(\d+)_iteration_(\d+).csv"
@@ -34,7 +27,8 @@ def concat_results(run_id, grids=None, parameters=None, fillna=None):
 
     # select specific parameters or grids if given
     if grids is not None:
-        grids if isinstance(grids, list) else list(grids)
+        grids = grids if isinstance(grids, list) else list(grids)
+        grids = [str(i) for i in grids]
         mapping = mapping.loc[mapping.grid.isin(grids)]
     if parameters is not None:
         parameters if isinstance(parameters, list) else list(parameters)
@@ -80,7 +74,9 @@ def concat_results(run_id, grids=None, parameters=None, fillna=None):
     return collected_results
 
 
-def save_concatinated_results(grids=None, doit=False, version=None):
+def save_concatinated_results(
+    grids=None, remove=False, doit=False, version=None
+):
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
 
@@ -93,8 +89,15 @@ def save_concatinated_results(grids=None, doit=False, version=None):
     #                        "x_charge_ev", "energy_level_cp"]
     selected_parameters = None
 
+    run_dir = results_dir / cfg_o["run_id"]
+
+    # get list of all iteration_*.csv
+    list_of_files = pd.Series(
+        get_files_in_subdirs(run_dir, pattern="*iteration_*.csv")
+    )
+
     results = concat_results(
-        run_id=cfg_o["run_id"],
+        list_of_files=list_of_files,
         grids=grids,
         parameters=selected_parameters,
         fillna={"value": 0},
@@ -102,14 +105,39 @@ def save_concatinated_results(grids=None, doit=False, version=None):
 
     for (grid, parameter), df in results.items():
         path = results_dir / cfg_o["run_id"] / grid
-
-        logger.info(f"Remove individual files.")
-        shutil.rmtree(path, ignore_errors=True)
-
-        os.makedirs(path, exist_ok=True)
         filename = path / f"{grid}_{parameter}.csv"
         df.to_csv(filename, index=True)
         logger.info(f"Save concatenated results to {filename}.")
 
+    if remove:
+        for file in list_of_files:
+            os.remove(file)
+            logger.debug(f"Removed {file}.")
+        logger.info(f"Remove all individual files of {cfg_o['run_id']}")
+
     if doit:
         return {"version": version, "run_id": f"concat_{cfg_o['run_id']}"}
+
+
+if __name__ == "__main__":
+
+    from lobaflex.tools.tools import split_model_config_in_subconfig
+
+    split_model_config_in_subconfig()
+
+    logger = logging.getLogger("lobaflex.__main__")
+    date = datetime.now().date().isoformat()
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    logfile = logs_dir / f"result_concatination_{date}_local.log"
+    setup_logging(file_name=logfile)
+
+    save_concatinated_results(
+        # grid_id=1056, feeder_id=1, edisgo_obj=False, save=True, doit=False
+        # grid_id=2534,
+        # grid_id=1056,
+        grids=[1111],
+        # feeder_id=8,
+        doit=False,
+    )
+
+    # lopf.combine_results_for_grid
