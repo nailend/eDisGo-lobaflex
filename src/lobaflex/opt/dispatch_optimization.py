@@ -110,6 +110,7 @@ def update_start_values(
     -------
 
     """
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
 
     iterations_per_era = cfg_o["iterations_per_era"]
     overlap_iterations = cfg_o["overlap_iterations"]
