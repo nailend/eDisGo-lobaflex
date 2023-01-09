@@ -14,7 +14,7 @@ import yaml
 
 from doit.exceptions import BaseFail
 
-from lobaflex import config_dir, logs_dir
+from lobaflex import config_dir
 
 logger = logging.getLogger(__name__)
 
@@ -237,12 +237,12 @@ class TelegramReporter(object):
             self.failures.append(result)
             self._write_failure(result)
 
-        self.status[task.name] = False
+        self.status[task.name] = "fail"
 
     def add_success(self, task):
         """called when execution finishes successfully"""
 
-        self.status[task.name] = True
+        self.status[task.name] = "success"
         if task.actions and (task.name[0] != "_"):
             try:
                 self.run.update({task.result.get("run")})
@@ -259,14 +259,17 @@ class TelegramReporter(object):
             if run_id is None:
                 message = f"Version of {group} set to {version}."
             else:
-                message = f"Version of {group} set to {version} for run " \
-                          f"{run_id}."
+                message = (
+                    f"Version of {group} set to {version} for run "
+                    f"{run_id}."
+                )
             self.telegram(text=message)
 
     def skip_uptodate(self, task):
         """skipped up-to-date task"""
         if task.name[0] != "_":
             self.write("-- %s\n" % task.title())
+            self.status[task.name] = "uptodate"
             self.telegram(text=f"Skip: {task.title()}.")
 
     def skip_ignore(self, task):
@@ -327,7 +330,9 @@ class TelegramReporter(object):
 
         # Don't send if any task with _set included
         # this should only happen if _set is executed individually
-        if "_set_*_version" not in str().join(self.status.keys()):
+        # TODO doesnt work yet
+        if "_set_" not in str().join(self.status.keys()):
+        # if True:
             exec_time = time.perf_counter() - self.start_time["total"]
             exec_time = time.gmtime(exec_time)
             exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
@@ -337,22 +342,31 @@ class TelegramReporter(object):
             success = [
                 key
                 for key, value in self.status.items()
-                if value and "_version" not in key
+                if value == "success" and "_version" not in key
             ]
 
             failed = [
                 key
                 for key, value in self.status.items()
-                if not value and "_version" not in key
+                if value == "fail" and "_version" not in key
             ]
+
+            uptodate = [
+                key
+                for key, value in self.status.items()
+                if value == "uptodate" and "_version" not in key
+            ]
+
             statistic = "Statistic:\n"
-            statistic += f"Total of {len(success) + len(failed)} tasks.\n"
+            statistic += f"Total of {len(success) + len(failed) + len(uptodate)} tasks.\n"
+            statistic += f"{len(uptodate)} uptodate.\n"
             statistic += f"{len(success)} succeeded.\n"
             statistic += f"{len(failed)} failed.\n"
 
             summary = "Summary:\n"
-            summary += str().join([f"+{i}\n" for i in success])
-            summary += str().join([f"-{i}\n" for i in failed])
+            summary += str().join([f"-- {i}\n" for i in uptodate])
+            summary += str().join([f".. {i}\n" for i in success])
+            summary += str().join([f"!! {i}\n" for i in failed])
 
             try:
                 run_id = self.run.pop()
