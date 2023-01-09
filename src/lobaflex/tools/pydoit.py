@@ -19,6 +19,16 @@ def task__set_grids_version():
     def version():
         cfg = get_config(path=config_dir / ".grids.yaml")
         version = cfg["version"]
+        dep_manager = doit.Globals.dep_manager
+        results = dep_manager.get_result("_set_grids_version")
+        old_version = results.get("version", None)
+        if version < old_version:
+            logger.warning("New version number is lower then old version.")
+        elif version > old_version:
+            pass
+        elif version == old_version:
+            logger.warning("Version number didn't change.")
+
         print(f"Grids dataset version set to: {version}")
         return {"version": version}
 
@@ -49,7 +59,7 @@ def task__set_opt_version():
 
         elif version > old_version:
             pass
-        elif version is old_version:
+        elif version == old_version:
             logger.warning("Version number didn't change.")
             if run_id == old_run_id:
                 logger.warning("'run_id' didn't change.")
