@@ -1,7 +1,11 @@
+import logging
+
 import doit
 
 from lobaflex import config_dir
 from lobaflex.tools.tools import get_config, split_model_config_in_subconfig
+
+logger = logging.getLogger(__name__)
 
 
 def task__split_model_config_in_subconfig():
@@ -32,11 +36,30 @@ def task__set_opt_version():
         run_id = cfg_o["run_id"]
 
         dep_manager = doit.Globals.dep_manager
-        former_run_id = dep_manager.get_result("_set_opt_version")
+        results = dep_manager.get_result("_set_opt_version")
 
-        if former_run_id == run_id:
-            raise ValueError("Change 'run_id' in config.")
-        print(f"Grids dataset version set to: {version} for run: {run_id}")
+        old_version = results.get("version", None)
+        old_run_id = results.get("run_id", None)
+
+        if version < old_version:
+            logger.warning("New version number is lower then old version.")
+            if run_id == old_run_id:
+                logger.warning("'run_id' is the same.")
+                raise ValueError("Change 'run_id' in config.")
+
+        elif version > old_version:
+            pass
+        elif version is old_version:
+            logger.warning("Version number didn't change.")
+            if run_id == old_run_id:
+                logger.warning("'run_id' didn't change.")
+            else:
+                logger.warning("Only 'run_id' changed.")
+
+        logger.warning(
+            f"Grids dataset version set to: {version} for run:" f" {run_id}"
+        )
+
         return {"version": version, "run_id": run_id}
 
     return {
