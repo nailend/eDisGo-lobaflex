@@ -1,8 +1,10 @@
 import logging
 
 from edisgo.tools.logger import setup_logger
-from lobaflex.tools.tools import get_config
+
 from lobaflex import config_dir
+from lobaflex.tools.tools import get_config
+
 
 def setup_logging(file_name):
     """

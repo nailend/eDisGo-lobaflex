@@ -8,6 +8,7 @@ opt:
 #  mvgds: [2534]
   feeder: False
   solver: 'gurobi'
+  tolerance: 1e-5
   save_lp_files: False
   save_log_files: False
   opt_bess: False
