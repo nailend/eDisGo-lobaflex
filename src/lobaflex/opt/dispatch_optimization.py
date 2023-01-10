@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import shutil
 import warnings
 
@@ -74,7 +75,7 @@ def export_results(result_dict, result_path, timesteps, filename):
 
     """
 
-    # iteration = re.search(r"iteration_(\d+)", filename).group(1)
+    iteration = re.search(r"iteration_(\d+)", filename).group(1)
     for res_name, res in result_dict.items():
         try:
             res = res.loc[timesteps]
@@ -83,6 +84,11 @@ def export_results(result_dict, result_path, timesteps, filename):
             logger.info(f"No results for {res_name}.")
             continue
         if "slack" in res_name:
+            mask = res > 1e-6
+            if any(mask):
+                logger.warning(
+                    f"Values > 1e-6 in {res_name} iteration at {iteration}"
+                )
             res = res[res > 1e-6]
             res = res.dropna(how="all")
             res = res.dropna(how="all")
