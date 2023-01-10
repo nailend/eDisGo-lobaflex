@@ -1,9 +1,10 @@
 import logging
 import os
 
+import shutil
 from datetime import datetime
 
-from lobaflex import config_dir, data_dir, logs_dir
+from lobaflex import config_dir, data_dir, logs_dir, results_dir
 from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
 from lobaflex.opt.result_concatination import save_concatinated_results
 from lobaflex.tools.logger import setup_logging
@@ -121,6 +122,42 @@ def task_concat_results():
                     f"No Files found for concat dependency of" f" MVGD: {mvgd}"
                 )
                 continue
+
+
+def task_remove_feeder_results():
+    """Generator to remove individual feeder results"""
+
+    def remove_folders(path, version):
+        for root, dirs, files in os.walk(path):
+            for dir in dirs:
+                folder = os.path.join(root, dir)
+                shutil.rmtree(folder)
+                logger.info(f"Removed {folder}")
+            return {"version": version}
+
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    mvgds = sorted(cfg_o["mvgds"])
+    run_id = cfg_o["run_id"]
+
+    # create opt task only for existing grid folders
+    for mvgd in mvgds:
+        mvgd_path = results_dir / str(run_id) / str(mvgd)
+        if os.path.isdir(mvgd_path):
+            yield {
+                "name": f"{mvgd}",
+                "actions": [
+                    (
+                        remove_folders,
+                        [],
+                        {
+                            "path": mvgd_path,
+                        },
+                    )
+                ],
+                "doc": "per mvgd",
+                "getargs": {"version": ("_get_opt_version", "version")},
+                "uptodate": [opt_uptodate],
+            }
 
 
 def task_opt_group():

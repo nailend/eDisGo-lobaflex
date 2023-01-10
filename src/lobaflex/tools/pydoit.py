@@ -47,8 +47,9 @@ def task__set_opt_version():
 
         dep_manager = doit.Globals.dep_manager
         results = dep_manager.get_result("_set_opt_version")
+        results = results if isinstance(results, dict) else {}
 
-        old_version = results.get("version", None)
+        old_version = results.get("version", 0)
         old_run_id = results.get("run_id", None)
 
         if version < old_version:
@@ -56,7 +57,6 @@ def task__set_opt_version():
             if run_id == old_run_id:
                 logger.warning("'run_id' is the same.")
                 raise ValueError("Change 'run_id' in config.")
-
         elif version > old_version:
             pass
         elif version == old_version:
@@ -89,7 +89,7 @@ def opt_uptodate(task):
         task_results = {"version": -1}
     return (
         True
-        if task_results["version"] == dataset_results["version"]
+        if task_results.get("version", None) == dataset_results["version"]
         else False
     )
 
