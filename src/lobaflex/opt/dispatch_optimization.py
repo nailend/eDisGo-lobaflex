@@ -343,7 +343,7 @@ def rolling_horizon_optimization(
             tee=False,
             lp_filename=lp_filename,
             logfile=logfile,
-            tollerance=cfg_o.get("tolerance", None),
+            tolerance=cfg_o.get("tolerance", None),
         )
 
         logger.info(f"Finished optimisation for iteration {iteration}.")
