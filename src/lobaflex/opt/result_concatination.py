@@ -10,7 +10,10 @@ from lobaflex import config_dir, logs_dir, results_dir
 from lobaflex.tools.logger import logging, setup_logging
 from lobaflex.tools.tools import get_config, get_files_in_subdirs
 
-logger = logging.getLogger("lobaflex.opt." + __name__)
+if __name__ == "__main__":
+    logger = logging.getLogger("lobaflex.opt." + __name__)
+else:
+    logger = logging.getLogger(__name__)
 
 
 def concat_results(list_of_files, grids=None, parameters=None, fillna=None):

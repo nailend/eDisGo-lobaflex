@@ -8,17 +8,20 @@ from datetime import datetime
 import pandas as pd
 
 from edisgo.edisgo import EDisGo
-from edisgo.tools.spatial_complexity_reduction import (
-    remove_short_lines,
-    remove_one_meter_lines,
-)
 from edisgo.io.ding0_import import remove_1m_end_lines
+from edisgo.tools.spatial_complexity_reduction import (
+    remove_one_meter_lines,
+    remove_short_lines,
+)
 
 from lobaflex import config_dir, data_dir, logs_dir
 from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.tools import get_config, timeit, write_metadata
 
-logger = logging.getLogger("lobaflex.grids." + __name__)
+if __name__ == "__main__":
+    logger = logging.getLogger("lobaflex.grids." + __name__)
+else:
+    logger = logging.getLogger(__name__)
 
 
 @timeit
@@ -100,10 +103,12 @@ def run_load_integration(
 
 if __name__ == "__main__":
 
-    from lobaflex.tools.tools import split_model_config_in_subconfig
     from datetime import datetime
+
     from lobaflex import logs_dir
     from lobaflex.tools.logger import setup_logging
+    from lobaflex.tools.tools import split_model_config_in_subconfig
+
     split_model_config_in_subconfig()
 
     logger = logging.getLogger("lobaflex.__main__")

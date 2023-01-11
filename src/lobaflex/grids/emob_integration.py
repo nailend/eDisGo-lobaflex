@@ -11,7 +11,10 @@ from edisgo.edisgo import import_edisgo_from_files
 from lobaflex import config_dir, data_dir
 from lobaflex.tools.tools import get_config, timeit, write_metadata
 
-logger = logging.getLogger(__name__)
+if __name__ == "__main__":
+    logger = logging.getLogger("lobaflex.grids." + __name__)
+else:
+    logger = logging.getLogger(__name__)
 
 
 @timeit
@@ -102,10 +105,12 @@ def run_emob_integration(
 
 if __name__ == "__main__":
 
-    from lobaflex.tools.tools import split_model_config_in_subconfig
     from datetime import datetime
+
     from lobaflex import logs_dir
     from lobaflex.tools.logger import setup_logging
+    from lobaflex.tools.tools import split_model_config_in_subconfig
+
     split_model_config_in_subconfig()
 
     logger = logging.getLogger("lobaflex.__main__")

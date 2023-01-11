@@ -12,7 +12,10 @@ from edisgo.network.topology import Topology
 from lobaflex import config_dir, data_dir
 from lobaflex.tools.tools import get_config, timeit, write_metadata
 
-logger = logging.getLogger("lobaflex.grids." + __name__)
+if __name__ == "__main__":
+    logger = logging.getLogger("lobaflex.grids." + __name__)
+else:
+    logger = logging.getLogger(__name__)
 
 
 def get_downstream_nodes_matrix_iterative(grid):
@@ -161,10 +164,12 @@ def run_dnm_generation(
 
 if __name__ == "__main__":
 
-    from lobaflex.tools.tools import split_model_config_in_subconfig
     from datetime import datetime
+
     from lobaflex import logs_dir
     from lobaflex.tools.logger import setup_logging
+    from lobaflex.tools.tools import split_model_config_in_subconfig
+
     split_model_config_in_subconfig()
 
     logger = logging.getLogger("lobaflex.__main__")
@@ -177,4 +182,5 @@ if __name__ == "__main__":
         # grid_id=1056,
         grid_id="5_bus_testgrid",
         feeder=1,
-        save=True)
+        save=True,
+    )

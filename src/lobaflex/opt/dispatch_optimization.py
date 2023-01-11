@@ -21,7 +21,10 @@ from lobaflex.grids.feeder_extraction import get_flexible_loads
 from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.tools import dump_yaml, get_config
 
-logger = logging.getLogger(__name__)
+if __name__ == "__main__":
+    logger = logging.getLogger("lobaflex.opt." + __name__)
+else:
+    logger = logging.getLogger(__name__)
 
 
 def get_dnm(mvgd, feeder):

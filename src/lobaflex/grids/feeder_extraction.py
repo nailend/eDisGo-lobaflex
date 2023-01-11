@@ -11,7 +11,10 @@ from edisgo.tools.complexity_reduction import extract_feeders_nx
 from lobaflex import config_dir, data_dir
 from lobaflex.tools.tools import get_config, timeit, write_metadata
 
-logger = logging.getLogger("lobaflex.grids." + __name__)
+if __name__ == "__main__":
+    logger = logging.getLogger("lobaflex.grids." + __name__)
+else:
+    logger = logging.getLogger(__name__)
 
 
 def get_flexible_loads(
@@ -177,10 +180,12 @@ def run_feeder_extraction(
 
 if __name__ == "__main__":
 
-    from lobaflex.tools.tools import split_model_config_in_subconfig
     from datetime import datetime
+
     from lobaflex import logs_dir
     from lobaflex.tools.logger import setup_logging
+    from lobaflex.tools.tools import split_model_config_in_subconfig
+
     split_model_config_in_subconfig()
 
     logger = logging.getLogger("lobaflex.__main__")
