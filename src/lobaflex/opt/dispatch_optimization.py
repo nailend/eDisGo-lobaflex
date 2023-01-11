@@ -397,8 +397,8 @@ def rolling_horizon_optimization(
 @log_errors()
 def run_dispatch_optimization(
     grid_id,
-    feeder_id=False,
-    edisgo_obj=False,
+    feeder_id=None,
+    edisgo_obj=None,
     save=False,
     doit=False,
     version=None,
@@ -423,11 +423,9 @@ def run_dispatch_optimization(
         f" with run id: {run_id}"
     )
 
-    if not edisgo_obj:
-        if not feeder_id:
-            # TODO if feeder_id False
+    if edisgo_obj is None:
+        if feeder_id is None:
             raise NotImplementedError
-
         else:
             import_dir = cfg_o.get("import_dir")
             import_path = (
@@ -446,6 +444,8 @@ def run_dispatch_optimization(
             import_heat_pump=True,
             import_electromobility=True,
         )
+    else:
+        pass
 
     logger.info("Check integrity.")
     edisgo_obj.check_integrity()
