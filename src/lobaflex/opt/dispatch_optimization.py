@@ -4,15 +4,15 @@ import re
 import shutil
 import warnings
 
-from datetime import datetime
 from copy import deepcopy
+from datetime import datetime
 
 import edisgo.opf.lopf as lopf
-from edisgo.network.timeseries import TimeSeries
 import numpy as np
 import pandas as pd
 
 from edisgo.edisgo import import_edisgo_from_files
+from edisgo.network.timeseries import TimeSeries
 from edisgo.tools.tools import (
     assign_voltage_level_to_component,
     convert_impedances_to_mv,
@@ -46,14 +46,13 @@ def extract_timeframe(edisgo_obj, start_datetime, timesteps, freq="1h"):
     edisgo_obj = deepcopy(edisgo_obj)
 
     timeframe = pd.date_range(
-        start=start_datetime,
-        periods=timesteps,
-        freq=freq
+        start=start_datetime, periods=timesteps, freq=freq
     )
     if not (timeframe.isin(edisgo_obj.timeseries.timeindex)).all():
         # logger.exception()
-        raise ValueError("Edisgo object does not contain all the given "
-                         "timeindex")
+        raise ValueError(
+            "Edisgo object does not contain all the given " "timeindex"
+        )
     # adapt timeseries
     attributes = TimeSeries()._attributes
     edisgo_obj.timeseries.timeindex = timeframe
@@ -65,8 +64,10 @@ def extract_timeframe(edisgo_obj, start_datetime, timesteps, freq="1h"):
                 getattr(edisgo_obj.timeseries, attr).loc[timeframe],
             )
 
-    logger.info(f"Timeseries taken: {timeframe[0]} -> "
-                f"{timeframe[-1]} including {timesteps} timesteps.")
+    logger.info(
+        f"Timeseries taken: {timeframe[0]} -> "
+        f"{timeframe[-1]} including {timesteps} timesteps."
+    )
     # TODO emob flexbänder
     return edisgo_obj
 
@@ -248,7 +249,7 @@ def rolling_horizon_optimization(
 
     # Due to different voltage levels, impedances need to adapted
     # alternatively p.u.
-    logger.info("Convert impedances to mv reference system")
+    logger.info("Convert impedances to MV reference system")
     edisgo_obj = convert_impedances_to_mv(edisgo_obj)
 
     logger.info("Import downstream node matrix")
@@ -264,7 +265,6 @@ def rolling_horizon_optimization(
     )
 
     logger.info("Extract time-invariant parameters")
-    # Create dict with time invariant parameters
     fixed_parameters = lopf.prepare_time_invariant_parameters(
         edisgo_obj=edisgo_obj,
         downstream_nodes_matrix=downstream_nodes_matrix,
@@ -275,11 +275,10 @@ def rolling_horizon_optimization(
         flexible_loads=flexible_loads,
     )
 
+    # TODO move into prepare_time_invariant_parameters
     # get v_min, v_max per bus
     v_minmax = pd.DataFrame(
         data=fixed_parameters["grid_object"].buses_df.index.rename("bus"),
-        # columns=[
-        #     "bus"]
     )
     v_minmax = assign_voltage_level_to_component(
         v_minmax, fixed_parameters["grid_object"].buses_df
@@ -290,7 +289,8 @@ def rolling_horizon_optimization(
     v_minmax.loc[v_minmax["voltage_level"] == "lv", "v_max"] = 1.1
     v_minmax = v_minmax.set_index("bus")
 
-    # define start_values
+    # define start_values for first iteration
+    # will get updated afterwards
     start_values = {
         "energy_level_starts": {
             "ev": None,
@@ -506,7 +506,7 @@ def run_dispatch_optimization(
         edisgo_obj,
         start_datetime=cfg_o["start_datetime"],
         timesteps=cfg_o["total_timesteps"],
-        freq="1h"
+        freq="1h",
     )
 
     logger.info("Check integrity.")
