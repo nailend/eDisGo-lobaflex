@@ -5,8 +5,10 @@ import shutil
 import warnings
 
 from datetime import datetime
+from copy import deepcopy
 
 import edisgo.opf.lopf as lopf
+from edisgo.network.timeseries import TimeSeries
 import numpy as np
 import pandas as pd
 
@@ -25,6 +27,48 @@ if __name__ == "__main__":
     logger = logging.getLogger("lobaflex.opt." + __name__)
 else:
     logger = logging.getLogger(__name__)
+
+
+def extract_timeframe(edisgo_obj, start_datetime, timesteps, freq="1h"):
+    """
+
+    Parameters
+    ----------
+    edisgo_obj :
+    start_datetime :
+    timesteps :
+    freq :
+
+    Returns
+    -------
+
+    """
+    edisgo_obj = deepcopy(edisgo_obj)
+
+    timeframe = pd.date_range(
+        start=start_datetime,
+        periods=timesteps,
+        freq=freq
+    )
+    if not (timeframe.isin(edisgo_obj.timeseries.timeindex)).all():
+        # logger.exception()
+        raise ValueError("Edisgo object does not contain all the given "
+                         "timeindex")
+    # adapt timeseries
+    attributes = TimeSeries()._attributes
+    edisgo_obj.timeseries.timeindex = timeframe
+    for attr in attributes:
+        if not getattr(edisgo_obj.timeseries, attr).empty:
+            setattr(
+                edisgo_obj.timeseries,
+                attr,
+                getattr(edisgo_obj.timeseries, attr).loc[timeframe],
+            )
+
+    logger.info(f"Timeseries taken: {timeframe[0]} -> "
+                f"{timeframe[-1]} including {timesteps} timesteps.")
+    # TODO emob flexbänder
+    return edisgo_obj
 
 
 def get_dnm(mvgd, feeder):
@@ -446,6 +490,14 @@ def run_dispatch_optimization(
         )
     else:
         pass
+
+    logger.info("Extract timeframe")
+    edisgo_obj = extract_timeframe(
+        edisgo_obj,
+        start_datetime=cfg_o["start_datetime"],
+        timesteps=cfg_o["total_timesteps"],
+        freq="1h"
+    )
 
     logger.info("Check integrity.")
     edisgo_obj.check_integrity()
