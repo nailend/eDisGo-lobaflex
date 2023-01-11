@@ -19,7 +19,7 @@ from edisgo.tools.tools import (
 from lobaflex import config_dir, data_dir, logs_dir, results_dir
 from lobaflex.grids.feeder_extraction import get_flexible_loads
 from lobaflex.tools.logger import setup_logging
-from lobaflex.tools.tools import dump_yaml, get_config
+from lobaflex.tools.tools import dump_yaml, get_config, log_errors
 
 if __name__ == "__main__":
     logger = logging.getLogger("lobaflex.opt." + __name__)
@@ -381,6 +381,7 @@ def rolling_horizon_optimization(
         )
 
 
+@log_errors()
 def run_dispatch_optimization(
     grid_id,
     feeder_id=False,

@@ -5,6 +5,7 @@ import sys
 import time
 
 from datetime import date, datetime
+from functools import wraps
 from glob import glob
 from pathlib import Path
 
@@ -17,6 +18,29 @@ from doit.exceptions import BaseFail
 from lobaflex import config_dir
 
 logger = logging.getLogger(__name__)
+
+
+def log_errors():
+    """
+    Decorator object that logs every exception into the defined logger object.
+    """
+
+    def decorator(func):
+        @wraps(func)
+        def exception_wrapper(*args, **kwargs):
+
+            try:
+                return func(*args, **kwargs)
+
+            except Exception as e:
+                issue = "ERROR in " + func.__name__ + "()\n"
+                issue += 10 * "--------------------------" + "\n"
+                logger.exception(issue)
+                raise e
+
+        return exception_wrapper
+
+    return decorator
 
 
 def get_files_in_subdirs(path, pattern):
