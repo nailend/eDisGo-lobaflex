@@ -338,13 +338,26 @@ def rolling_horizon_optimization(
             )
 
         # lpfile
-        lp_filename = result_path / f"lp_file_iteration_{iteration}.lp"
-        lp_filename = lp_filename if cfg_o["save_lp_files"] else None
+        if cfg_o["save_lp_files"]:
+            lp_filename = result_path / f"lp_file_iteration_{iteration}.lp"
+            logger.info(
+                f"LP files for iteration {iteration} are saved to:"
+                f" {lp_filename}"
+            )
+
+        else:
+            lp_filename = None
 
         # logfile
-        date = datetime.now().date().isoformat()
-        logfile = logs_dir / f"gurobi_{date}_iteration_{iteration}.log"
-        logfile = logfile if cfg_o["save_solver_logs"] else None
+        if cfg_o["save_solver_logs"]:
+            date = datetime.now().date().isoformat()
+            logfile = logs_dir / f"gurobi_{date}_iteration_{iteration}.log"
+            logger.info(
+                f"Solver logs for iteration {iteration} are saved to:"
+                f" {logfile}"
+            )
+        else:
+            logfile = None
 
         result_dict = lopf.optimize(
             model=model,
