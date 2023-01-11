@@ -310,21 +310,31 @@ def rolling_horizon_optimization(
     }
 
     # Define optimization timeframe
-    if cfg_o["start_datetime"] is not None:
+    start_datetime = cfg_o["start_datetime"]
+    total_timesteps = cfg_o["total_timesteps"]
+    timesteps_per_iteration = cfg_o["timesteps_per_iteration"]
+    iterations_per_era = cfg_o["iterations_per_era"]
+
+    if start_datetime is not None:
         start_index = edisgo_obj.timeseries.timeindex.slice_indexer(
-            cfg_o["start_datetime"]
+            start_datetime
         ).start
         timeframe = edisgo_obj.timeseries.timeindex[
-            start_index : start_index + cfg_o["total_timesteps"]
+            start_index : start_index + total_timesteps
         ]
+        logger.info(f"Optimized timeframe is: {timeframe[0]} -> "
+                    f"{timeframe[-1]} including {total_timesteps} timesteps.")
+
     else:
         logger.info("No start_datetime given. Start with first timestep")
-        timeframe = edisgo_obj.timeseries.timeindex[: cfg_o["total_timesteps"]]
+        timeframe = edisgo_obj.timeseries.timeindex[: total_timesteps]
+        logger.info(f"Optimized timeframe is: {timeframe[0]} -> "
+                    f"{timeframe[-1]} including {total_timesteps} timesteps.")
 
     # ####################### Rolling Horizon ############################
 
     for iteration in range(
-        0, int(len(timeframe) / cfg_o["timesteps_per_iteration"])
+        0, int(len(timeframe) / timesteps_per_iteration)
     ):
 
         logging.info(f"Starting optimisation for iteration {iteration}.")
@@ -333,13 +343,13 @@ def rolling_horizon_optimization(
         # if last iteration of era, no overlap is added but energy_level
         # at the end needs to be reached
         if (
-            iteration % cfg_o["iterations_per_era"]
-            == cfg_o["iterations_per_era"] - 1
+            iteration % iterations_per_era
+            == iterations_per_era - 1
         ):
             timesteps = edisgo_obj.timeseries.timeindex[
                 iteration
-                * cfg_o["timesteps_per_iteration"] : (iteration + 1)
-                * cfg_o["timesteps_per_iteration"]
+                * timesteps_per_iteration : (iteration + 1)
+                * timesteps_per_iteration
             ]
             # Fixes end energy level to specific percentage (50%)
             energy_level_end = True
@@ -348,8 +358,8 @@ def rolling_horizon_optimization(
         else:
             timesteps = edisgo_obj.timeseries.timeindex[
                 iteration
-                * cfg_o["timesteps_per_iteration"] : (iteration + 1)
-                * cfg_o["timesteps_per_iteration"]
+                * timesteps_per_iteration : (iteration + 1)
+                * timesteps_per_iteration
                 + cfg_o["overlap_iterations"]
             ]
             energy_level_end = None
@@ -423,7 +433,7 @@ def rolling_horizon_optimization(
                 export_results(
                     result_dict=result_dict,
                     result_path=result_path,
-                    timesteps=timesteps[: cfg_o["timesteps_per_iteration"]],
+                    timesteps=timesteps[: timesteps_per_iteration],
                     filename=filename,
                 )
             except Exception:
