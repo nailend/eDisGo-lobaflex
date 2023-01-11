@@ -341,12 +341,12 @@ def rolling_horizon_optimization(
         # logfile
         date = datetime.now().date().isoformat()
         logfile = logs_dir / f"gurobi_{date}_iteration_{iteration}.log"
-        logfile = logfile if cfg_o["save_log_files"] else None
+        logfile = logfile if cfg_o["save_solver_logs"] else None
 
         result_dict = lopf.optimize(
-            model,
-            cfg_o["solver"],
-            tee=False,
+            model=model,
+            solver=cfg_o["solver"],
+            tee=cfg_o["print_solver_logs"],
             lp_filename=lp_filename,
             logfile=logfile,
             tolerance=cfg_o.get("tolerance", None),

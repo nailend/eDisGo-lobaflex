@@ -10,7 +10,8 @@ opt:
   solver: 'gurobi'
   tolerance: 1e-5
   save_lp_files: False
-  save_log_files: False
+  save_solver_logs: False
+  print_solver_logs: True
   opt_bess: False
   opt_hp: True
   opt_emob: True
