@@ -126,14 +126,14 @@ def export_results(result_dict, result_path, timesteps, filename):
     iteration = re.search(r"iteration_(\d+)", filename).group(1)
     for res_name, res in result_dict.items():
         try:
-            res = res.loc[timesteps]
+            res = res#.loc[timesteps]
             # TODO properly handle exception
         except Exception as e:
             logger.info(f"No results for {res_name}.")
             continue
         if "slack" in res_name:
             mask = res > 1e-6
-            if any(mask):
+            if mask.any().any():
                 logger.warning(
                     f"Values > 1e-6 in {res_name} iteration at {iteration}"
                 )
