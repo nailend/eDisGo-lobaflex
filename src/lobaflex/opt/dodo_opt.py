@@ -87,6 +87,7 @@ def task_concat_results():
     feeder_dir = cfg_o["import_dir"]
 
     # create opt task only for existing grid folders
+    # also used for dependency
     for mvgd in mvgds:
         mvgd_path = data_dir / feeder_dir / str(mvgd)
         if os.path.isdir(mvgd_path):
@@ -110,6 +111,8 @@ def task_concat_results():
                         )
                     ],
                     "doc": "per mvgd",
+                    # create dependency for every feeder in grid not only opt
+                    # results
                     "task_dep": [
                         f"opt:{mvgd}/{int(feeder):02}_optimization"
                         for feeder in feeder_ids
@@ -119,7 +122,7 @@ def task_concat_results():
                 }
             except FileNotFoundError as e:
                 logger.info(
-                    f"No Files found for concat dependency of" f" MVGD: {mvgd}"
+                    f"No Files found for concat dependency of MVGD: {mvgd}"
                 )
                 continue
                 
