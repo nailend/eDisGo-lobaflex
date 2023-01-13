@@ -388,6 +388,7 @@ def rolling_horizon_optimization(
                 fixed_parameters=fixed_parameters,
                 objective=cfg_o["objective"],
                 energy_level_end_tes=energy_level_end,
+                energy_level_end_ev=energy_level_end,
                 flexible_loads=flexible_loads,
                 **start_values,
                 # **kwargs,
