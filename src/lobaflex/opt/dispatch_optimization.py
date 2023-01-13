@@ -305,8 +305,8 @@ def rolling_horizon_optimization(
         # TODO workaround to fix charging in first timestep
         "charging_starts": {
             "ev": 0,
-            "tes": 0,
-            "hp": 0,
+            "tes": None,
+            "hp": None,
         },
     }
 
