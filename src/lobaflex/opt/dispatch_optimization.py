@@ -354,6 +354,7 @@ def rolling_horizon_optimization(
             ]
             # Fixes end energy level to specific percentage (50%)
             energy_level_end = True
+            logger.info("End of era")
 
         # in all other iterations overlap is added to the timeframe
         else:
