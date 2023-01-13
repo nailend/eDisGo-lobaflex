@@ -240,7 +240,7 @@ def rolling_horizon_optimization(
     # mvgds = cfg_g["model"].get("mvgd")
     feeder_id = f"{int(feeder_id):02}"
 
-    result_path = results_dir / run_id / str(grid_id) / feeder_id
+    result_path = results_dir / run_id / str(grid_id) / "feeder" / feeder_id
     # TODO maybe add if condition/parameter
     shutil.rmtree(result_path, ignore_errors=True)
     os.makedirs(result_path, exist_ok=True)
