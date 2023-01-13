@@ -107,16 +107,11 @@ def save_concatinated_results(
     )
 
     for (grid, parameter), df in results.items():
-        path = results_dir / cfg_o["run_id"] / grid
+        path = results_dir / cfg_o["run_id"] / grid / "mvgd"
+        os.makedirs(path, exist_ok=True)
         filename = path / f"{grid}_{parameter}.csv"
         df.to_csv(filename, index=True)
         logger.info(f"Save concatenated results to {filename}.")
-
-    if remove:
-        for file in list_of_files:
-            os.remove(file)
-            logger.debug(f"Removed {file}.")
-        logger.info(f"Remove all individual files of {cfg_o['run_id']}")
 
     if doit:
         return {"version": version, "run_id": f"concat_{cfg_o['run_id']}"}
