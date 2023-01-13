@@ -192,12 +192,12 @@ def update_start_values(
         if fixed_parameters["optimize_emob"]:
 
             start_values["charging_starts"].update(
-                {"ev": result_dict["x_charge_ev"].iloc[-overlap_iterations]}
+                {"ev": result_dict["charging_ev"].iloc[-overlap_iterations]}
             )
 
             start_values["energy_level_starts"].update(
                 {
-                    "ev": result_dict["energy_level_cp"].iloc[
+                    "ev": result_dict["energy_level_ev"].iloc[
                         -overlap_iterations
                     ]
                 }
@@ -219,7 +219,8 @@ def update_start_values(
             )
 
             start_values["energy_level_starts"].update(
-                {"tes": result_dict["energy_tes"].iloc[-overlap_iterations]}
+                {"tes": result_dict["energy_level_tes"].iloc[
+                    -overlap_iterations]}
             )
         else:
             logging.info("No start values for heat pumps")
