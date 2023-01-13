@@ -1,12 +1,12 @@
 import logging
 import os
 
-import shutil
 from datetime import datetime
 
 from lobaflex import config_dir, data_dir, logs_dir, results_dir
 from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
 from lobaflex.opt.result_concatination import save_concatinated_results
+from lobaflex.opt.minimal_reinforcement import integrate_and_reinforce
 from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.pydoit import (
     opt_uptodate,
@@ -35,7 +35,13 @@ DOIT_CONFIG = {
 logger.info(f"Run: {cfg_o.get('run_id', None)} - Version:"
             f"{cfg_o.get('version', None)}")
 
+# DOIT_CONFIG = {
+#     "default_tasks": ["concat_results"],
+#     "reporter": TelegramReporter,
+# }
 
+DOIT_CONFIG = {"default_tasks": ["_set_opt_version"], "reporter":
+    TelegramReporter}
 
 
 def task_opt():
@@ -112,7 +118,7 @@ def task_concat_results():
                     ],
                     "doc": "per mvgd",
                     # create dependency for every feeder in grid not only opt
-                    # results
+                    # results if not all opt succeeded
                     "task_dep": [
                         f"opt:{mvgd}/{int(feeder):02}_optimization"
                         for feeder in feeder_ids
@@ -122,10 +128,41 @@ def task_concat_results():
                 }
             except FileNotFoundError as e:
                 logger.info(
-                    f"No Files found for concat dependency of MVGD: {mvgd}"
+                    f"No Files found for concat dependency of MVGD: {mvgd}."
                 )
                 continue
                 
+
+def task_min_reinforce():
+    """Generator for minimal reinforcement tasks"""
+
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    mvgds = sorted(cfg_o["mvgds"])
+    run_id = cfg_o["run_id"]
+
+    # create opt task only for existing grid folders
+    for mvgd in mvgds:
+        mvgd_path = results_dir / run_id / str(mvgd) / "mvgd"
+        if os.path.isdir(mvgd_path):
+            yield {
+                "name": f"{mvgd}",
+                "actions": [
+                    (
+                        integrate_and_reinforce,
+                        [],
+                        {
+                            "grid_id": mvgd,
+                            "doit": True,
+                        },
+                    )
+                ],
+                "doc": "per mvgd",
+                "task_dep": [f"concat_results:{mvgd}"],
+                "getargs": {"version": ("_get_opt_version", "version")},
+                "uptodate": [opt_uptodate],
+            }
+        else:
+            logger.info(f"No Files found for result integration of {mvgd}.")
 
 
 def task_opt_group():
