@@ -6,7 +6,7 @@ opt:
   import_dir: "load_n_gen_n_emob_n_hp_grids_extracted"
   mvgds: [2534, 176, 177, 1056, 1690, 1811]
 #  mvgds: [2534]
-  feeder: False
+  feeder: False # default and not used
   solver: 'gurobi'
   tolerance: 1e-5
   save_lp_files: False
@@ -17,8 +17,8 @@ opt:
   opt_emob: True
   emob_sectors: ["work", "home"]
   objective: 'minimize_loading'
-  rolling_horizon: True
-  load_results: False
+  rolling_horizon: True # depricated
+  load_results: False # depricated
   start_datetime: "2011-01-01 00:00:00"
   total_timesteps: 168
   timesteps_per_iteration: 24 # number of timesteps which are optimized in one
@@ -43,6 +43,8 @@ grids:
   hp_integration:
     import: "load_n_gen_n_emob_grids"
     export: "load_n_gen_n_emob_n_hp_grids"
+    hp_penetration: 0.7
+    tes_size: 4 # covers x highest consecutive days
   feeder_extraction:
     import: "load_n_gen_n_emob_n_hp_grids"
     export: "load_n_gen_n_emob_n_hp_grids_extracted"
