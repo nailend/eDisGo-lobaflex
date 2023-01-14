@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 
+import numpy as np
 import pandas as pd
 
 from edisgo.edisgo import import_edisgo_from_files
@@ -31,7 +32,7 @@ def get_hp_penetration():
     return hp_cap_2035 / number_of_residential_buildings
 
 
-def create_heatpumps_from_db(edisgo_obj):
+def create_heatpumps_from_db(edisgo_obj, penetration=None):
     """"""
 
     def check_nans(df):
@@ -51,62 +52,53 @@ def create_heatpumps_from_db(edisgo_obj):
     residential_loads = edisgo_obj.topology.loads_df.loc[
         edisgo_obj.topology.loads_df.sector == "residential"
     ]
-    # number_of_hps = int(residential_loads.shape[0] / 2)
-    # eGon100RE all buildings with decentral heating
-    # number_of_hps = residential_loads.shape[0]
-
-    # # Get random residential buildings from DB
-    # db_building_ids = get_random_residential_buildings(
-    #     scenario="eGon100RE", limit=number_of_hps
-    # )["building_id"].tolist()
-
-    # # TODO blöder workaround
-    # db_building_ids = [i for i in db_building_ids if i not in [6778, 6780]]
-    # Select random residential loads
-    # residential_loads = residential_loads.sample(number_of_hps)
 
     # TODO get heat_time_series for all buildings in MVGD
     #  and remove district heating buildings
     # ############### get residential heat demand profiles ###############
     mvgd = identify_similar_mvgd(residential_loads.shape[0])
 
-    df_heat_ts = calc_residential_heat_profiles_per_mvgd(
+    logger.info("Get heat demand time series from db.")
+    heat_demand_df = calc_residential_heat_profiles_per_mvgd(
         mvgd=mvgd, scenario="eGon100RE"
     )
     #
     # pivot to allow aggregation with CTS profiles
-    df_heat_ts = df_heat_ts.pivot(
+    heat_demand_df = heat_demand_df.pivot(
         index=["day_of_year", "hour"],
         columns="building_id",
         values="demand_ts",
     )
-    df_heat_ts = df_heat_ts.sort_index().reset_index(drop=True)
-    df_heat_ts = df_heat_ts.iloc[:, : residential_loads.shape[0]]
-    db_building_ids = df_heat_ts.columns
+    heat_demand_df = heat_demand_df.sort_index().reset_index(drop=True)
 
-    # Create HP names and map to db building id randomly
+    if penetration is not None:
+        number_of_hps = int(residential_loads.shape[0] * penetration)
+
+    else:
+        # eGon100RE all buildings with decentral heating
+        number_of_hps = residential_loads.shape[0]
+
+    percentage = number_of_hps / residential_loads.shape[0] * 100
+    logger.info(f"{number_of_hps} heat pumps identified ({percentage:.2f} %).")
+
+    # Select random residential loads
+    residential_loads = residential_loads.sample(
+        number_of_hps, random_state=42
+    )
+
+    # Select random heat profiles
+    heat_demand_df = heat_demand_df.sample(number_of_hps, random_state=42)
+
+    # Create HP names and map to db building id by order
     hp_names = [f"HP_{i}" for i in residential_loads.index]
-    map_hp_to_loads = dict(zip(db_building_ids, hp_names))
-
-    heat_demand_df = df_heat_ts.rename(columns=map_hp_to_loads)
+    map_hp_to_loads = dict(zip(heat_demand_df.columns, hp_names))
+    heat_demand_df = heat_demand_df.rename(columns=map_hp_to_loads)
 
     # Get cop for selected buildings
-    cop_df = get_cop(db_building_ids)
+    logger.info("Get COP ts")
+    cop_df = get_cop(heat_demand_df.columns)
     check_nans(cop_df)
-    cop_df = cop_df.rename(columns=map_hp_to_loads)
-
-    # # Get heat timeseries for selected buildings
-    # heat_demand_df = pd.concat(
-    #     [
-    #         create_timeseries_for_building(building_id, scenario="eGon2035")
-    #         for building_id in db_building_ids
-    #     ],
-    #     axis=1,
-    # )
-    # check_nans(heat_demand_df)
-    # heat_demand_df = heat_demand_df.rename(columns=map_hp_to_loads)
-
-    # heat_demand_df.max()
+    cop_df.rename(columns=map_hp_to_loads, inplace=True)
 
     # Adapt timeindex to timeseries
     year = edisgo_obj.timeseries.timeindex.year.unique()[0]
@@ -122,18 +114,18 @@ def create_heatpumps_from_db(edisgo_obj):
         heat_demand_df = heat_demand_df.resample(freq_load).ffill()
         cop_df = cop_df.resample(freq_load).ffill()
         logger.info(
-            f"Heat demand ts and cop ts resampled to from "
+            f"Heat demand ts and cop ts resampled from "
             f"{timeindex_db.freq} to {freq_load}"
         )
 
-    # Only keep loads timesteps
+    # Reduce to timeindex of grid
     heat_demand_df = heat_demand_df.loc[edisgo_obj.timeseries.timeindex]
     cop_df = cop_df.loc[edisgo_obj.timeseries.timeindex]
     logger.info(f"Heat pump time series cut adapted to year {year}")
 
-    # TODO set p_set? minimal capacity?
-    peak_load = heat_demand_df.max()
-    hp_p_set = determine_minimum_hp_capacity_per_building(peak_load)
+    # Minimum hp capacity is determined by peak load
+    logger.info("Determine minimum hp capacity by peak load")
+    hp_p_set = determine_minimum_hp_capacity_per_building(heat_demand_df.max())
     # hp_p_set = heat_demand_df.div(cop_df).max() * 0.8
 
     buses = residential_loads.bus
@@ -143,9 +135,20 @@ def create_heatpumps_from_db(edisgo_obj):
         data={"bus": buses.values, "p_set": hp_p_set, "type": "heat_pump"},
     )
 
+    cfg = get_config(path=config_dir / ".grids.yaml")
+    tes_size = cfg["hp_integration"].get("tes_size", 4)
+    tes_capacity = heat_demand_df.rolling(window=tes_size).sum().max()
+
+    # ceil to next value base
+    # TODO check
+    def custom_round(x, base=0.001):
+        return int(base * np.ceil(float(x) / base))
+
+    tes_capacity = tes_capacity.apply(lambda x: custom_round(x, base=0.001))
     thermal_storage_units_df = pd.DataFrame(
         data={
-            "capacity": [0.05],
+            # "capacity": [0.05],
+            "capacity": tes_capacity,
             "efficiency": [1.0],
             "state_of_charge_initial": [0.5],
         },
@@ -208,7 +211,10 @@ def run_hp_integration(
     # TODO add durchdringung
     # hp_penetration = get_hp_penetration()
     logger.info("Add heat pumps to eDisGo")
-    edisgo_obj = create_heatpumps_from_db(edisgo_obj)
+    hp_penetration = cfg["hp_integration"].get("hp_penetration")
+    edisgo_obj = create_heatpumps_from_db(
+        edisgo_obj, penetration=hp_penetration
+    )
 
     logger.info("Apply heat pump operating strategy")
     edisgo_obj.apply_heat_pump_operating_strategy()
