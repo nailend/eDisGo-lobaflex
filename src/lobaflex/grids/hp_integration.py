@@ -44,10 +44,9 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
                 f"{nan_building_ids.values}"
             )
 
-    # HP-disaggregation
-    # TODO HP-disaggregation from egon-data insert here
+    def custom_round(x, base=0.001):
+        return base * np.ceil(float(x) / base)
 
-    # Workaround: assign to half of all residentials
     # Get all residentials
     residential_loads = edisgo_obj.topology.loads_df.loc[
         edisgo_obj.topology.loads_df.sector == "residential"
@@ -83,11 +82,13 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
 
     # Select random residential loads
     residential_loads = residential_loads.sample(
-        number_of_hps, random_state=42
+        number_of_hps, axis="index", random_state=42
     )
 
     # Select random heat profiles
-    heat_demand_df = heat_demand_df.sample(number_of_hps, random_state=42)
+    heat_demand_df = heat_demand_df.sample(
+        number_of_hps, axis="columns", random_state=42
+    )
 
     # Create HP names and map to db building id by order
     hp_names = [f"HP_{i}" for i in residential_loads.index]
@@ -96,7 +97,7 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
 
     # Get cop for selected buildings
     logger.info("Get COP ts")
-    cop_df = get_cop(heat_demand_df.columns)
+    cop_df = get_cop(map_hp_to_loads.keys())
     check_nans(cop_df)
     cop_df.rename(columns=map_hp_to_loads, inplace=True)
 
@@ -126,6 +127,8 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
     # Minimum hp capacity is determined by peak load
     logger.info("Determine minimum hp capacity by peak load")
     hp_p_set = determine_minimum_hp_capacity_per_building(heat_demand_df.max())
+    # round to next kW
+    hp_p_set = hp_p_set.apply(lambda x: custom_round(x, base=0.001))
     # hp_p_set = heat_demand_df.div(cop_df).max() * 0.8
 
     buses = residential_loads.bus
@@ -139,12 +142,8 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
     tes_size = cfg["hp_integration"].get("tes_size", 4)
     tes_capacity = heat_demand_df.rolling(window=tes_size).sum().max()
 
-    # ceil to next value base
-    # TODO check
-    def custom_round(x, base=0.001):
-        return int(base * np.ceil(float(x) / base))
-
-    tes_capacity = tes_capacity.apply(lambda x: custom_round(x, base=0.001))
+    # round to next 5 kWh
+    tes_capacity = tes_capacity.apply(lambda x: custom_round(x, base=0.005))
     thermal_storage_units_df = pd.DataFrame(
         data={
             # "capacity": [0.05],
