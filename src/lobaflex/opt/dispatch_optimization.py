@@ -29,12 +29,14 @@ else:
     logger = logging.getLogger(__name__)
 
 
-def extract_timeframe(edisgo_obj, start_datetime, timesteps, freq="1h"):
+def extract_timeframe(
+        edisgo_obj, timeframe=None, start_datetime=None, timesteps=None, freq="1h"):
     """
 
     Parameters
     ----------
     edisgo_obj :
+    timeframe :
     start_datetime :
     timesteps :
     freq :
@@ -45,9 +47,11 @@ def extract_timeframe(edisgo_obj, start_datetime, timesteps, freq="1h"):
     """
     edisgo_obj = deepcopy(edisgo_obj)
 
-    timeframe = pd.date_range(
-        start=start_datetime, periods=timesteps, freq=freq
-    )
+    if timeframe is None:
+        timeframe = pd.date_range(
+            start=start_datetime, periods=timesteps, freq=freq
+        )
+
     if not (timeframe.isin(edisgo_obj.timeseries.timeindex)).all():
         # logger.exception()
         raise ValueError(
