@@ -10,11 +10,10 @@ import pandas as pd
 from edisgo.edisgo import import_edisgo_from_files
 
 from lobaflex import config_dir, data_dir, logs_dir, results_dir
-from lobaflex.tools.logger import setup_logging
-from lobaflex.tools.tools import get_config, get_files_in_subdirs
 from lobaflex.grids.feeder_extraction import get_flexible_loads
 from lobaflex.opt.dispatch_optimization import extract_timeframe
-
+from lobaflex.tools.logger import setup_logging
+from lobaflex.tools.tools import get_config, get_files_in_subdirs
 
 if __name__ == "__main__":
     logger = logging.getLogger("lobaflex.opt." + __name__)
@@ -63,8 +62,7 @@ def integrate_opt_results(edisgo_obj, parameters, run_id=None, grid_id=None):
     )
 
     edisgo_obj = extract_timeframe(
-        edisgo_obj=edisgo_obj,
-        timeframe=df_loads_active_power.index
+        edisgo_obj=edisgo_obj, timeframe=df_loads_active_power.index
     )
 
     # logger.info("Identify flexible loads.")
@@ -101,8 +99,9 @@ def integrate_opt_results(edisgo_obj, parameters, run_id=None, grid_id=None):
     return edisgo_obj
 
 
-def integrate_and_reinforce(edisgo_obj=None, grid_id=None, doit=False,
-                            version=None):
+def integrate_and_reinforce(
+    edisgo_obj=None, grid_id=None, doit=False, version=None
+):
     """
 
     Parameters
