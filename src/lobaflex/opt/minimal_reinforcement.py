@@ -119,13 +119,13 @@ def integrate_and_reinforce(edisgo_obj=None, grid_id=None, doit=False,
                          f"_{date}.log"
     setup_logging(file_name=logfile)
 
-    # TODO define
+    # TODO define via config
     selected_parameters = []
     if cfg_o["opt_hp"]:
         selected_parameters += ["charging_hp_el"]
         logger.info("Integrate hp results.")
     if cfg_o["opt_emob"]:
-        selected_parameters += ["charge_ev"]
+        selected_parameters += ["charging_ev"]
         logger.info("Integrate emob results.")
 
     date = datetime.now().date().isoformat()
