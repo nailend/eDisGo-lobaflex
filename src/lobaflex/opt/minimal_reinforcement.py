@@ -67,18 +67,25 @@ def integrate_opt_results(edisgo_obj, parameters, run_id=None, grid_id=None):
         timeframe=df_loads_active_power.index
     )
 
-    logger.info("Identify flexible loads.")
-    df_flexible_loads = get_flexible_loads(
-        edisgo_obj,
-        heat_pump=True,
-        electromobility=True,
-        electromobility_sectors=cfg_o["emob_sectors"],
-    )
+    # logger.info("Identify flexible loads.")
+    # df_flexible_loads = get_flexible_loads(
+    #     edisgo_obj,
+    #     heat_pump=True,
+    #     electromobility=True,
+    #     electromobility_sectors=cfg_o["emob_sectors"],
+    # )
+
+    # logger.info("Drop former timeseries of flexible loads.")
+    # edisgo_obj.timeseries.loads_active_power = (
+    #     edisgo_obj.timeseries.loads_active_power.drop(
+    #         columns=df_flexible_loads.index, #errors="ignore"
+    #     )
+    # )
 
     logger.info("Drop former timeseries of flexible loads.")
     edisgo_obj.timeseries.loads_active_power = (
         edisgo_obj.timeseries.loads_active_power.drop(
-            columns=df_flexible_loads.index, errors="ignore"
+            columns=df_loads_active_power.columns, errors="ignore"
         )
     )
 
@@ -113,10 +120,10 @@ def integrate_and_reinforce(edisgo_obj=None, grid_id=None, doit=False,
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     cfg_g = get_config(path=config_dir / ".grids.yaml")
+    run_id = cfg_o["run_id"]
 
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"opt_minimal_reinforcement_{cfg_o['run_id']}" \
-                         f"_{date}.log"
+    logfile = logs_dir / f"opt_minimal_reinforcement_{run_id}_{date}.log"
     setup_logging(file_name=logfile)
 
     # TODO define via config
@@ -154,7 +161,7 @@ def integrate_and_reinforce(edisgo_obj=None, grid_id=None, doit=False,
     logger.info("Start minimal reinforce")
     edisgo_obj.reinforce()
 
-    export_path = results_dir / str(grid_id) / "min_reinforce"
+    export_path = results_dir / run_id / str(grid_id) / "min_reinforce"
     os.makedirs(export_path, exist_ok=True)
 
     logger.info("Save reinforced grid")
@@ -168,7 +175,7 @@ def integrate_and_reinforce(edisgo_obj=None, grid_id=None, doit=False,
     )
 
     if doit:
-        return {"version": version, "run_id": cfg_o["run_id"]}
+        return {"version": version, "run_id": run_id}
 
 
 if __name__ == "__main__":
