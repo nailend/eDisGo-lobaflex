@@ -398,7 +398,7 @@ class TelegramReporter(object):
             summary = "Summary:\n"
             summary += str().join([f"-- {i}\n" for i in uptodate])
             summary += str().join([f".. {i}\n" for i in success])
-            summary += str().join([f".! {i}\n" for i in dependency])
+            summary += str().join([f"-! {i}\n" for i in dependency])
             summary += str().join([f"!! {i}\n" for i in failed])
 
             try:
