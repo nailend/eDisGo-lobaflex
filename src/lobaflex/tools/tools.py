@@ -294,7 +294,7 @@ class TelegramReporter(object):
         if task.name[0] != "_":
             self.write("-- %s\n" % task.title())
             self.status[task.name] = "uptodate"
-            self.telegram(text=f"Skip: {task.title()}.")
+            # self.telegram(text=f"Skip: {task.title()}.")
 
     def skip_ignore(self, task):
         """skipped ignored task"""
