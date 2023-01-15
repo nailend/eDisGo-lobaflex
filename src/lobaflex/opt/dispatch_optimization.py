@@ -313,6 +313,9 @@ def rolling_horizon_optimization(
             "hp": None,
         },
     }
+    # define result_dict for first iteration
+    # will be overwritten afterwards
+    result_dict = {}
 
     # Define optimization timeframe
     start_datetime = cfg_o["start_datetime"]
@@ -385,6 +388,10 @@ def rolling_horizon_optimization(
                 # **kwargs,
             )
         else:
+            logger.info("Update start values for next iteration.")
+            start_values = update_start_values(
+                result_dict, fixed_parameters, iteration, start_values
+            )
             logger.info(f"Update model for iteration {iteration}.")
             model = lopf.update_model(
                 model=model,
@@ -448,11 +455,6 @@ def rolling_horizon_optimization(
                     "Optimization Error. Result's couldn't be exported."
                 )
                 raise ValueError("Results not valid")
-
-        logger.info("Update start values for next iteration.")
-        start_values = update_start_values(
-            result_dict, fixed_parameters, iteration, start_values
-        )
 
 
 @log_errors()
