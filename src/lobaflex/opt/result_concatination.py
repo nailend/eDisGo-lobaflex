@@ -19,7 +19,7 @@ else:
 def concat_results(list_of_files, grids=None, parameters=None, fillna=None):
 
     # identify file by filename pattern:
-    pattern = r"\d+/\d+/(.*)_(\d+)-(\d+)_iteration_(\d+).csv"
+    pattern = r"\d+/feeder/\d+/(.*)_(\d+)-(\d+)_iteration_(\d+).csv"
     mapping = pd.DataFrame(
         [re.search(pattern, string=i).groups() for i in list_of_files],
         columns=["parameter", "grid", "feeder", "iteration"],
