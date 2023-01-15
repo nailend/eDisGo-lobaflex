@@ -256,12 +256,12 @@ class TelegramReporter(object):
                 exec_time = time.gmtime(exec_time)
                 exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
                 self.telegram(text=f"Failed: {task.name} after {exec_time}")
+                self.status[task.name] = "fail"
             except KeyError:
                 self.telegram(text=f"Unmet dependency: {task.name}")
+                self.status[task.name] = "dependency"
             self.failures.append(result)
             self._write_failure(result)
-
-        self.status[task.name] = "fail"
 
     def add_success(self, task):
         """called when execution finishes successfully"""
@@ -381,15 +381,24 @@ class TelegramReporter(object):
                 if value == "uptodate" and "_version" not in key
             ]
 
+            dependency = [
+                key
+                for key, value in self.status.items()
+                if value == "dependency" and "_version" not in key
+            ]
+
+            total = len(success) + len(failed) + len(uptodate) + len(dependency)
             statistic = "Statistic:\n"
-            statistic += f"Total of {len(success) + len(failed) + len(uptodate)} tasks.\n"
+            statistic += f"Total of {total} tasks.\n"
             statistic += f"{len(uptodate)} uptodate.\n"
             statistic += f"{len(success)} succeeded.\n"
+            statistic += f"{len(dependency)} unmet dependencies.\n"
             statistic += f"{len(failed)} failed.\n"
 
             summary = "Summary:\n"
             summary += str().join([f"-- {i}\n" for i in uptodate])
             summary += str().join([f".. {i}\n" for i in success])
+            summary += str().join([f".! {i}\n" for i in dependency])
             summary += str().join([f"!! {i}\n" for i in failed])
 
             try:
