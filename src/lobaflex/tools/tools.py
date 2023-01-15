@@ -356,7 +356,7 @@ class TelegramReporter(object):
         # this should only happen if _set is executed individually
         # TODO doesnt work yet
         if "_set_" not in str().join(self.status.keys()):
-        # if True:
+
             exec_time = time.perf_counter() - self.start_time["total"]
             exec_time = time.gmtime(exec_time)
             exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
