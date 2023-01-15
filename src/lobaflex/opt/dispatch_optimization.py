@@ -449,7 +449,7 @@ def rolling_horizon_optimization(
                 )
                 raise ValueError("Results not valid")
 
-        logger.info(f"Update start values for iteration {iteration+1}.")
+        logger.info("Update start values for next iteration.")
         start_values = update_start_values(
             result_dict, fixed_parameters, iteration, start_values
         )
