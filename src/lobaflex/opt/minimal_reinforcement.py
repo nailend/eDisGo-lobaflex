@@ -22,13 +22,15 @@ else:
     logger = logging.getLogger(__name__)
 
 
-def integrate_opt_results(edisgo_obj, parameters):
+def integrate_opt_results(edisgo_obj, parameters, run_id=None, grid_id=None):
     """
 
     Parameters
     ----------
     edisgo_obj :
     parameters :
+    run_id :
+    grid_id :
 
     Returns
     -------
@@ -36,11 +38,14 @@ def integrate_opt_results(edisgo_obj, parameters):
     """
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
-    grid_id = edisgo_obj.topology.mv_grid.id
+    if grid_id is None:
+        grid_id = edisgo_obj.topology.mv_grid.id
+    if run_id is None:
+        run_id = cfg_o["run_id"]
 
-    logger.info(f"Start minimal reinforcement of {grid_id}.")
+    logger.info(f"Start minimal reinforcement of {grid_id} in {run_id}.")
 
-    results_path = results_dir / cfg_o["run_id"] / str(grid_id) / "mvgd"
+    results_path = results_dir / run_id / str(grid_id) / "mvgd"
 
     list_of_files = get_files_in_subdirs(results_path, pattern="*.csv")
 
@@ -149,7 +154,7 @@ def integrate_and_reinforce(edisgo_obj=None, grid_id=None, doit=False,
     logger.info("Start minimal reinforce")
     edisgo_obj.reinforce()
 
-    export_path = results_dir / str(grid_id) / "minimal_reinforce"
+    export_path = results_dir / str(grid_id) / "min_reinforce"
     os.makedirs(export_path, exist_ok=True)
 
     logger.info("Save reinforced grid")
