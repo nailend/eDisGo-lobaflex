@@ -130,11 +130,11 @@ def task_min_reinforce():
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
-    run_id = cfg_o["run_id"]
+    feeder_dir = cfg_o["import_dir"]
 
     # create opt task only for existing grid folders
     for mvgd in mvgds:
-        mvgd_path = results_dir / run_id / str(mvgd) / "mvgd"
+        mvgd_path = data_dir / feeder_dir / str(mvgd)
         if os.path.isdir(mvgd_path):
             yield {
                 "name": f"{mvgd}",
