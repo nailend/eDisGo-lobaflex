@@ -35,14 +35,6 @@ DOIT_CONFIG = {
 logger.info(f"Run: {cfg_o.get('run_id', None)} - Version:"
             f"{cfg_o.get('version', None)}")
 
-# DOIT_CONFIG = {
-#     "default_tasks": ["concat_results"],
-#     "reporter": TelegramReporter,
-# }
-
-DOIT_CONFIG = {"default_tasks": ["_set_opt_version"], "reporter":
-    TelegramReporter}
-
 
 def task_opt():
     """Generator for optimization tasks"""
