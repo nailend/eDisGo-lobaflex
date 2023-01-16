@@ -129,12 +129,7 @@ def export_results(result_dict, result_path, timesteps, filename):
 
     iteration = re.search(r"iteration_(\d+)", filename).group(1)
     for res_name, res in result_dict.items():
-        try:
-            res = res#.loc[timesteps]
-            # TODO properly handle exception
-        except Exception as e:
-            logger.info(f"No results for {res_name}.")
-            continue
+
         if "slack" in res_name:
             mask = res > 1e-6
             if mask.any().any():
@@ -144,7 +139,9 @@ def export_results(result_dict, result_path, timesteps, filename):
             res = res[res > 1e-6]
             res = res.dropna(how="all")
             res = res.dropna(how="all")
-        if not res.empty:
+        if res.empty:
+            logger.info(f"No results for {res_name}.")
+        else:
             file_path = result_path / filename.replace("$res_name$", res_name)
             res.astype(np.float16).to_csv(file_path)
             logger.info(f"Saved results for {res_name}.")
