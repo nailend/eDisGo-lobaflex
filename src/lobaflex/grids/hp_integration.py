@@ -128,7 +128,12 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
     logger.info("Determine minimum hp capacity by peak load")
     hp_p_set = determine_minimum_hp_capacity_per_building(heat_demand_df.max())
     # round to next kW
-    hp_p_set = hp_p_set.apply(lambda x: custom_round(x, base=0.001))
+    hp_stepsize = 0.001
+    logger.info(
+        "HP capacities are rounded to the next higher value of "
+        f"base {hp_stepsize*1e3} kW."
+    )
+    hp_p_set = hp_p_set.apply(lambda x: custom_round(x, base=hp_stepsize))
     # hp_p_set = heat_demand_df.div(cop_df).max() * 0.8
 
     buses = residential_loads.bus
@@ -138,12 +143,24 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
         data={"bus": buses.values, "p_set": hp_p_set, "type": "heat_pump"},
     )
 
+    logger.info("Determine thermal energy storage.")
     cfg = get_config(path=config_dir / ".grids.yaml")
     tes_size = cfg["hp_integration"].get("tes_size", 4)
+    logger.info(
+        f"Storage size will cover the heat demand of {tes_size} "
+        f"highest consecutive days."
+    )
     tes_capacity = heat_demand_df.rolling(window=tes_size).sum().max()
 
     # round to next 5 kWh
-    tes_capacity = tes_capacity.apply(lambda x: custom_round(x, base=0.005))
+    tes_stepsize = 0.005
+    logger.info(
+        "TES capacities are rounded to the next higher value of "
+        f"base {tes_stepsize*1e3} kWh"
+    )
+    tes_capacity = tes_capacity.apply(
+        lambda x: custom_round(x, base=tes_stepsize)
+    )
     thermal_storage_units_df = pd.DataFrame(
         data={
             # "capacity": [0.05],
