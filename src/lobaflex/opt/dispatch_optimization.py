@@ -276,25 +276,6 @@ def rolling_horizon_optimization(
     v_minmax.loc[v_minmax["voltage_level"] == "lv", "v_max"] = 1.1
     v_minmax = v_minmax.set_index("bus")
 
-    # define start_values for first iteration
-    # will get updated afterwards
-    start_values = {
-        "energy_level_starts": {
-            "ev": None,
-            "tes": None,
-        },
-        # "charging_starts": {
-        #     "ev": None,
-        #     "tes": None,
-        #     "hp": None,
-        # },
-        # TODO workaround to fix charging in first timestep
-        "charging_starts": {
-            "ev": 0,
-            "tes": None,
-            "hp": None,
-        },
-    }
     # define result_dict for first iteration
     # will be overwritten afterwards
     result_dict = {}
@@ -355,6 +336,27 @@ def rolling_horizon_optimization(
             energy_level_end = None
 
         if iteration == 0:
+
+            # define start_values for first iteration
+            # will get updated afterwards
+            start_values = {
+                "energy_level_starts": {
+                    "ev": None,
+                    "tes": None,
+                },
+                # "charging_starts": {
+                #     "ev": None,
+                #     "tes": None,
+                #     "hp": None,
+                # },
+                # TODO workaround to fix charging in first timestep
+                "charging_starts": {
+                    "ev": 0,
+                    "tes": None,
+                    "hp": None,
+                },
+            }
+
             logger.info(f"Set up model for first iteration {iteration}.")
             model = lopf.setup_model(
                 fixed_parameters=fixed_parameters,
@@ -370,9 +372,7 @@ def rolling_horizon_optimization(
             )
         else:
             logger.info("Update start values for next iteration.")
-            start_values = update_start_values(
-                result_dict, fixed_parameters
-            )
+            start_values = update_start_values(result_dict, fixed_parameters)
             logger.info(f"Update model for iteration {iteration}.")
             model = lopf.update_model(
                 model=model,
