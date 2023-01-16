@@ -371,7 +371,7 @@ def rolling_horizon_optimization(
         else:
             logger.info("Update start values for next iteration.")
             start_values = update_start_values(
-                result_dict, fixed_parameters, iteration
+                result_dict, fixed_parameters
             )
             logger.info(f"Update model for iteration {iteration}.")
             model = lopf.update_model(
