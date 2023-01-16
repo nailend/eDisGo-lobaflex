@@ -407,10 +407,7 @@ def rolling_horizon_optimization(
 
         # lpfile
         if cfg_o["save_lp_files"]:
-            lp_filename = (
-                result_path / f"lp_file_{grid_id}_{feeder_id}_iteration"
-                f"_{iteration}.lp"
-            )
+            lp_filename = result_path / f"lp_file_iteration_{iteration}.lp"
             logger.info(
                 f"LP files for iteration {iteration} are saved to:"
                 f" {lp_filename}"
