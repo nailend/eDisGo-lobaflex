@@ -72,7 +72,7 @@ def concat_results(
                 ),
                 axis=0,
             )
-            print(parameter + " - " + feeder)
+
             # slack_initial is only one timestep
             if "slack_initial" in parameter:
                 df_all_iterations = df_all_iterations.T
