@@ -419,7 +419,10 @@ def rolling_horizon_optimization(
         # logfile
         if cfg_o["save_solver_logs"]:
             date = datetime.now().date().isoformat()
-            logfile = logs_dir / f"gurobi_{date}_iteration_{iteration}.log"
+            logfile = (
+                logs_dir / f"gurobi_{date}_{grid_id}_{feeder_id}"
+                f"_iteration_{iteration}.log"
+            )
             logger.info(
                 f"Solver logs for iteration {iteration} are saved to:"
                 f" {logfile}"
