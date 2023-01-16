@@ -13,7 +13,7 @@ from lobaflex import config_dir, data_dir, logs_dir, results_dir
 from lobaflex.grids.feeder_extraction import get_flexible_loads
 from lobaflex.opt.dispatch_optimization import extract_timeframe
 from lobaflex.tools.logger import setup_logging
-from lobaflex.tools.tools import get_config, get_files_in_subdirs
+from lobaflex.tools.tools import get_config, get_files_in_subdirs, log_errors
 
 if __name__ == "__main__":
     logger = logging.getLogger("lobaflex.opt." + __name__)
@@ -99,6 +99,7 @@ def integrate_opt_results(edisgo_obj, parameters, run_id=None, grid_id=None):
     return edisgo_obj
 
 
+@log_errors()
 def integrate_and_reinforce(
     edisgo_obj=None, grid_id=None, doit=False, version=None
 ):

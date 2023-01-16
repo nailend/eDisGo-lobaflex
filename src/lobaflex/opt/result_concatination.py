@@ -8,7 +8,7 @@ import pandas as pd
 
 from lobaflex import config_dir, logs_dir, results_dir
 from lobaflex.tools.logger import logging, setup_logging
-from lobaflex.tools.tools import get_config, get_files_in_subdirs
+from lobaflex.tools.tools import get_config, get_files_in_subdirs, log_errors
 
 if __name__ == "__main__":
     logger = logging.getLogger("lobaflex.opt." + __name__)
@@ -82,6 +82,7 @@ def concat_results(list_of_files, grids=None, parameters=None, fillna=None):
     return collected_results
 
 
+@log_errors()
 def save_concatinated_results(
     grids=None, remove=False, doit=False, version=None
 ):
