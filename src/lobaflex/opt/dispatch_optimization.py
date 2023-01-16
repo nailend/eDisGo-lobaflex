@@ -56,7 +56,7 @@ def extract_timeframe(
     if not (timeframe.isin(edisgo_obj.timeseries.timeindex)).all():
         # logger.exception()
         raise ValueError(
-            "Edisgo object does not contain all the given " "timeindex"
+            "Edisgo object does not contain all the given timeindex"
         )
     # adapt timeseries
     attributes = TimeSeries()._attributes
@@ -436,7 +436,7 @@ def rolling_horizon_optimization(
             tee=cfg_o["print_solver_logs"],
             lp_filename=lp_filename,
             logfile=logfile,
-            tolerance=cfg_o.get("tolerance", None),
+            options=cfg_o["options"]
         )
 
         logger.info(f"Finished optimisation for iteration {iteration}.")
