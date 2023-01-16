@@ -57,13 +57,18 @@ def concat_results(list_of_files, grids=None, parameters=None, fillna=None):
                 axis=0,
             )
 
+            # slack_initial is only one timestep
+            if "slack_initial" in parameter:
+                df_all_iterations = df_all_iterations.T
             # concat all feeder
             df_grid_parameter = pd.concat(
                 [df_grid_parameter, df_all_iterations], axis=1
             )
 
         if df_grid_parameter.isna().any().any():
-            logger.warning(f"There are NaN values in {grid}/{parameter}")
+            logger.warning(
+                f"There are NaN values in {grid}/{feeder}/{parameter}"
+            )
 
             if fillna is not None:
                 df_grid_parameter = df_grid_parameter.fillna(**fillna)
