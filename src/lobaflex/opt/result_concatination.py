@@ -16,7 +16,23 @@ else:
     logger = logging.getLogger(__name__)
 
 
-def concat_results(list_of_files, grids=None, parameters=None, fillna=None):
+def concat_results(
+    list_of_files, timeframe, grids=None, parameters=None, fillna=None
+):
+    """
+
+    Parameters
+    ----------
+    list_of_files :
+    timeframe :
+    grids :
+    parameters :
+    fillna :
+
+    Returns
+    -------
+
+    """
 
     # identify file by filename pattern:
     pattern = r"\d+/feeder/\d+/(.*)_(\d+)-(\d+)_iteration_(\d+).csv"
@@ -62,11 +78,6 @@ def concat_results(list_of_files, grids=None, parameters=None, fillna=None):
                 df_all_iterations = df_all_iterations.T
             else:
                 # only select defined timeframe
-                timeframe = pd.date_range(
-                    start=cfg_o["start_datetime"],
-                    periods=cfg_o["total_timesteps"],
-                    freq="1h",
-                )
                 df_all_iterations = df_all_iterations.loc[timeframe]
             # concat all feeder
             df_grid_parameter = pd.concat(
@@ -112,9 +123,16 @@ def save_concatinated_results(
     list_of_files = pd.Series(
         get_files_in_subdirs(run_dir, pattern="*iteration_*.csv")
     )
+    # define timeframe to concat
+    timeframe = pd.date_range(
+        start=cfg_o["start_datetime"],
+        periods=cfg_o["total_timesteps"],
+        freq="1h",
+    )
 
     results = concat_results(
         list_of_files=list_of_files,
+        timeframe=timeframe,
         grids=grids,
         parameters=selected_parameters,
         fillna={"value": 0},
