@@ -392,14 +392,14 @@ class TelegramReporter(object):
             statistic += f"Total of {total} tasks.\n"
             statistic += f"{len(uptodate)} uptodate.\n"
             statistic += f"{len(success)} succeeded.\n"
-            statistic += f"{len(dependency)} unmet dependencies.\n"
             statistic += f"{len(failed)} failed.\n"
+            statistic += f"{len(dependency)} unmet dependencies.\n"
 
             summary = "Summary:\n"
             summary += str().join([f"-- {i}\n" for i in uptodate])
             summary += str().join([f".. {i}\n" for i in success])
-            summary += str().join([f"-! {i}\n" for i in dependency])
             summary += str().join([f"!! {i}\n" for i in failed])
+            summary += str().join([f"-! {i}\n" for i in dependency])
 
             try:
                 run_id = self.run.pop()
