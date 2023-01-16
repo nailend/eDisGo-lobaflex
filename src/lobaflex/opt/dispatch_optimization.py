@@ -30,7 +30,8 @@ else:
 
 
 def extract_timeframe(
-        edisgo_obj, timeframe=None, start_datetime=None, timesteps=None, freq="1h"):
+    edisgo_obj, timeframe=None, start_datetime=None, timesteps=None, freq="1h"
+):
     """
 
     Parameters
@@ -220,8 +221,11 @@ def update_start_values(
             )
 
             start_values["energy_level_starts"].update(
-                {"tes": result_dict["energy_level_tes"].iloc[
-                    -overlap_iterations]}
+                {
+                    "tes": result_dict["energy_level_tes"].iloc[
+                        -overlap_iterations
+                    ]
+                }
             )
         else:
             logging.info("No start values for heat pumps")
@@ -327,30 +331,29 @@ def rolling_horizon_optimization(
         timeframe = edisgo_obj.timeseries.timeindex[
             start_index : start_index + total_timesteps
         ]
-        logger.info(f"Optimized timeframe is: {timeframe[0]} -> "
-                    f"{timeframe[-1]} including {total_timesteps} timesteps.")
+        logger.info(
+            f"Optimized timeframe is: {timeframe[0]} -> "
+            f"{timeframe[-1]} including {total_timesteps} timesteps."
+        )
 
     else:
         logger.info("No start_datetime given. Start with first timestep")
-        timeframe = edisgo_obj.timeseries.timeindex[: total_timesteps]
-        logger.info(f"Optimized timeframe is: {timeframe[0]} -> "
-                    f"{timeframe[-1]} including {total_timesteps} timesteps.")
+        timeframe = edisgo_obj.timeseries.timeindex[:total_timesteps]
+        logger.info(
+            f"Optimized timeframe is: {timeframe[0]} -> "
+            f"{timeframe[-1]} including {total_timesteps} timesteps."
+        )
 
     # ####################### Rolling Horizon ############################
 
-    for iteration in range(
-        0, int(len(timeframe) / timesteps_per_iteration)
-    ):
+    for iteration in range(0, int(len(timeframe) / timesteps_per_iteration)):
 
         logging.info(f"Starting optimisation for iteration {iteration}.")
 
         # Defines windows of iteration with timesteps
         # if last iteration of era, no overlap is added but energy_level
         # at the end needs to be reached
-        if (
-            iteration % iterations_per_era
-            == iterations_per_era - 1
-        ):
+        if iteration % iterations_per_era == iterations_per_era - 1:
             timesteps = edisgo_obj.timeseries.timeindex[
                 iteration
                 * timesteps_per_iteration : (iteration + 1)
@@ -406,7 +409,7 @@ def rolling_horizon_optimization(
         if cfg_o["save_lp_files"]:
             lp_filename = (
                 result_path / f"lp_file_{grid_id}_{feeder_id}_iteration"
-                              f"_{iteration}.lp"
+                f"_{iteration}.lp"
             )
             logger.info(
                 f"LP files for iteration {iteration} are saved to:"
@@ -447,7 +450,7 @@ def rolling_horizon_optimization(
                 export_results(
                     result_dict=result_dict,
                     result_path=result_path,
-                    timesteps=timesteps[: timesteps_per_iteration],
+                    timesteps=timesteps[:timesteps_per_iteration],
                     filename=filename,
                 )
             except Exception:
