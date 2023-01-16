@@ -148,19 +148,16 @@ def export_results(result_dict, result_path, timesteps, filename):
             logger.info(f"Saved results for {res_name}.")
 
 
-def update_start_values(
-    result_dict, fixed_parameters, iteration, start_values
-):
+def update_start_values(result_dict, fixed_parameters):
     """
     End values of the iteration results are extracted to be used as
-    starting values for the next iteration. End values is the last timestep
+    starting values for the next iteration. End value is the last timestep
     minus the overlap.
 
     Parameters
     ----------
     result_dict :
-    iteration :
-    cfg_o :
+    fixed_parameters :
 
     Returns
     -------
@@ -168,67 +165,51 @@ def update_start_values(
     """
     cfg_o = get_config(path=config_dir / ".opt.yaml")
 
-    iterations_per_era = cfg_o["iterations_per_era"]
     overlap_iterations = cfg_o["overlap_iterations"]
 
-    # if iteration is the last one of era
-    if iteration % iterations_per_era == iterations_per_era - 1:
-        start_values = start_values.update(
-            {
-                "energy_level_starts": {
-                    "ev": None,
-                    "tes": None,
-                },
-                "charging_starts": {
-                    "ev": None,
-                    "tes": None,
-                    "hp": None,
-                },
-            }
-        )
+    # define start_values
+    # will get updated afterwards
+    start_values = {
+        "energy_level_starts": {
+            "ev": None,
+            "tes": None,
+        },
+        "charging_starts": {
+            "ev": None,
+            "tes": None,
+            "hp": None,
+        },
+    }
 
     # if iteration is not the last one of era use results from last
     # iteration as starting value (overlapping hours are neglected)
 
+    if fixed_parameters["optimize_emob"]:
+
+        start_values["charging_starts"].update(
+            {"ev": result_dict["charging_ev"].iloc[-overlap_iterations]}
+        )
+
+        start_values["energy_level_starts"].update(
+            {"ev": result_dict["energy_level_ev"].iloc[-overlap_iterations]}
+        )
+
     else:
-        if fixed_parameters["optimize_emob"]:
+        logging.info("No start values for electromobility")
 
-            start_values["charging_starts"].update(
-                {"ev": result_dict["charging_ev"].iloc[-overlap_iterations]}
-            )
+    if fixed_parameters["optimize_hp"]:
+        start_values["charging_starts"].update(
+            {
+                "hp": result_dict["charging_hp_el"].iloc[-overlap_iterations],
+                "tes": result_dict["charging_tes"].iloc[-overlap_iterations],
+            }
+        )
 
-            start_values["energy_level_starts"].update(
-                {
-                    "ev": result_dict["energy_level_ev"].iloc[
-                        -overlap_iterations
-                    ]
-                }
-            )
-
-        else:
-            logging.info("No start values for electromobility")
-
-        if fixed_parameters["optimize_hp"]:
-            start_values["charging_starts"].update(
-                {
-                    "hp": result_dict["charging_hp_el"].iloc[
-                        -overlap_iterations
-                    ],
-                    "tes": result_dict["charging_tes"].iloc[
-                        -overlap_iterations
-                    ],
-                }
-            )
-
-            start_values["energy_level_starts"].update(
-                {
-                    "tes": result_dict["energy_level_tes"].iloc[
-                        -overlap_iterations
-                    ]
-                }
-            )
-        else:
-            logging.info("No start values for heat pumps")
+        start_values["energy_level_starts"].update(
+            {"tes": result_dict["energy_level_tes"].iloc[-overlap_iterations]}
+        )
+    else:
+        logging.info("No start values for heat pumps")
     return start_values
 
 
@@ -390,7 +371,7 @@ def rolling_horizon_optimization(
         else:
             logger.info("Update start values for next iteration.")
             start_values = update_start_values(
-                result_dict, fixed_parameters, iteration, start_values
+                result_dict, fixed_parameters, iteration
             )
             logger.info(f"Update model for iteration {iteration}.")
             model = lopf.update_model(
@@ -436,7 +417,7 @@ def rolling_horizon_optimization(
             tee=cfg_o["print_solver_logs"],
             lp_filename=lp_filename,
             logfile=logfile,
-            options=cfg_o["options"]
+            options=cfg_o["options"],
         )
 
         logger.info(f"Finished optimisation for iteration {iteration}.")
