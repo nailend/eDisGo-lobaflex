@@ -56,10 +56,18 @@ def concat_results(list_of_files, grids=None, parameters=None, fillna=None):
                 ),
                 axis=0,
             )
-
+            print(parameter + " - " + feeder)
             # slack_initial is only one timestep
             if "slack_initial" in parameter:
                 df_all_iterations = df_all_iterations.T
+            else:
+                # only select defined timeframe
+                timeframe = pd.date_range(
+                    start=cfg_o["start_datetime"],
+                    periods=cfg_o["total_timesteps"],
+                    freq="1h",
+                )
+                df_all_iterations = df_all_iterations.loc[timeframe]
             # concat all feeder
             df_grid_parameter = pd.concat(
                 [df_grid_parameter, df_all_iterations], axis=1
