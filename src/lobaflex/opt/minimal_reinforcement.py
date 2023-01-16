@@ -42,7 +42,7 @@ def integrate_opt_results(edisgo_obj, parameters, run_id=None, grid_id=None):
     if run_id is None:
         run_id = cfg_o["run_id"]
 
-    logger.info(f"Start minimal reinforcement of {grid_id} in {run_id}.")
+    logger.info(f"Start result integration of {grid_id} in {run_id}.")
 
     results_path = results_dir / run_id / str(grid_id) / "mvgd"
 
@@ -61,9 +61,16 @@ def integrate_opt_results(edisgo_obj, parameters, run_id=None, grid_id=None):
         axis=1,
     )
 
-    edisgo_obj = extract_timeframe(
-        edisgo_obj=edisgo_obj, timeframe=df_loads_active_power.index
+    # define timeframe to concat
+    timeframe = pd.date_range(
+        start=cfg_o["start_datetime"],
+        periods=cfg_o["total_timesteps"],
+        freq="1h",
     )
+
+    logger.info("Reduce timeseries to selected timeframe.")
+    edisgo_obj = extract_timeframe(edisgo_obj=edisgo_obj, timeframe=timeframe)
+    df_loads_active_power = df_loads_active_power.loc[timeframe]
 
     # logger.info("Identify flexible loads.")
     # df_flexible_loads = get_flexible_loads(
@@ -122,18 +129,11 @@ def integrate_and_reinforce(
     cfg_g = get_config(path=config_dir / ".grids.yaml")
     run_id = cfg_o["run_id"]
 
+    logger.info(f"Start integrate and reinforce of {grid_id} in {run_id}.")
+
     date = datetime.now().date().isoformat()
     logfile = logs_dir / f"opt_minimal_reinforcement_{run_id}_{date}.log"
     setup_logging(file_name=logfile)
-
-    # TODO define via config
-    selected_parameters = []
-    if cfg_o["opt_hp"]:
-        selected_parameters += ["charging_hp_el"]
-        logger.info("Integrate hp results.")
-    if cfg_o["opt_emob"]:
-        selected_parameters += ["charging_ev"]
-        logger.info("Integrate emob results.")
 
     date = datetime.now().date().isoformat()
     logfile = logs_dir / f"reinforcement_{grid_id}_{date}.log"
@@ -154,6 +154,14 @@ def integrate_and_reinforce(
             import_heat_pump=True,
         )
 
+    # TODO define via config
+    selected_parameters = []
+    if cfg_o["opt_hp"]:
+        selected_parameters += ["charging_hp_el"]
+    if cfg_o["opt_emob"]:
+        selected_parameters += ["charging_ev"]
+
+    logger.info(f"Selected parameters: {'& '.join(selected_parameters)}")
     edisgo_obj = integrate_opt_results(
         edisgo_obj, parameters=selected_parameters
     )
