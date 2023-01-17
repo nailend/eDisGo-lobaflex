@@ -61,6 +61,10 @@ def integrate_opt_results(edisgo_obj, parameters, run_id=None, grid_id=None):
         axis=1,
     )
 
+    edisgo_obj.topology.loads_df.loc[:, "opt"] = False
+    edisgo_obj.topology.loads_df.loc[
+        df_loads_active_power.columns, "opt"
+    ] = True
     # define timeframe to concat
     timeframe = pd.date_range(
         start=cfg_o["start_datetime"],
