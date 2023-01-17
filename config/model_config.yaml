@@ -35,20 +35,24 @@ grids:
   mvgds: [2534, 176, 177, 1056, 1690, 1811]
 #  mvgds: [1056]
   load_integration:
+    fix_version: True
     generator_scenario: ego100
     import: elia_ding0_grids
     export: load_n_gen_grids
   emob_integration:
+    fix_version: True
     import: load_n_gen_grids
     export: load_n_gen_n_emob_grids
     to_freq: 1h
     flexbands: null
   hp_integration:
+    fix_version: False 
     import: load_n_gen_n_emob_grids
     export: load_n_gen_n_emob_n_hp_grids
     hp_penetration: 0.7 
     tes_size: 4 # covers x highest consecutive days
   feeder_extraction:
+    fix_version: False
     import: load_n_gen_n_emob_n_hp_grids
     export: load_n_gen_n_emob_n_hp_grids_extracted
     flexible_loads:
@@ -58,6 +62,7 @@ grids:
       emob_flex_sectors: [work, home]
     only_flex_ev: False
   dnm_generation:
+    fix_version: False
     feeder: True
     import: load_n_gen_n_emob_n_hp_grids_extracted
     export: load_n_gen_n_emob_n_hp_grids_extracted

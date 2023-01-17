@@ -48,7 +48,8 @@ DOIT_CONFIG = {"default_tasks": ["grids"], "reporter": TelegramReporter}
 
 def load_integration_task(mvgd):
     """Generator to define load integration task for a mvgd"""
-
+    cfg = get_config(path=config_dir / ".grids.yaml")
+    fix = cfg["load_integration"]["fix_version"]
     yield {
         "name": f"{mvgd}_load_integration",
         "actions": [
@@ -62,7 +63,7 @@ def load_integration_task(mvgd):
                 },
             )
         ],
-        "uptodate": [grids_uptodate],
+        "uptodate": [True] if fix else [grids_uptodate],
         # take current version number of dataset
         "getargs": {"version": ("_get_grids_version", "version")},
         "verbosity": 2,
@@ -73,7 +74,7 @@ def emob_integration_task(mvgd):
     """Generator to define emob integration task for a mvgd"""
     cfg = get_config(path=config_dir / ".grids.yaml")
     to_freq = cfg["emob_integration"].get("to_freq")
-
+    fix = cfg["emob_integration"]["fix_version"]
     yield {
         "name": f"{mvgd}_emob_integration",
         "actions": [
@@ -91,14 +92,15 @@ def emob_integration_task(mvgd):
         "task_dep": [f"grids:{mvgd}_load_integration"],
         # take current version number of dataset
         "getargs": {"version": ("_get_grids_version", "version")},
-        "uptodate": [grids_uptodate],
+        "uptodate": [True] if fix else [grids_uptodate],
         "verbosity": 2,
     }
 
 
 def hp_integration_task(mvgd):
     """Generator to define hp integration task for a mvgd"""
-
+    cfg = get_config(path=config_dir / ".grids.yaml")
+    fix = cfg["hp_integration"]["fix_version"]
     yield {
         "name": f"{mvgd}_hp_integration",
         "actions": [
@@ -115,14 +117,15 @@ def hp_integration_task(mvgd):
         "task_dep": [f"grids:{mvgd}_emob_integration"],
         # take current version number of dataset
         "getargs": {"version": ("_get_grids_version", "version")},
-        "uptodate": [grids_uptodate],
+        "uptodate": [True] if fix else [grids_uptodate],
         "verbosity": 2,
     }
 
 
 def feeder_extraction_task(mvgd):
     """Generator to define feeder extraction task for a mvgd"""
-
+    cfg = get_config(path=config_dir / ".grids.yaml")
+    fix = cfg["feeder_extraction"]["fix_version"]
     yield {
         "name": f"{mvgd}_feeder_extraction",
         "actions": [
@@ -139,7 +142,7 @@ def feeder_extraction_task(mvgd):
         "task_dep": [f"grids:{mvgd}_hp_integration"],
         # take current version number of dataset
         "getargs": {"version": ("_get_grids_version", "version")},
-        "uptodate": [grids_uptodate],
+        "uptodate": [True] if fix else [grids_uptodate],
         "verbosity": 2,
     }
 
@@ -147,6 +150,7 @@ def feeder_extraction_task(mvgd):
 def dnm_generation_task(mvgd):
     """Generator to define dnm generation task for a feeder or mvgd"""
     cfg = get_config(path=config_dir / ".grids.yaml")
+    fix = cfg["hp_integration"]["fix_version"]
     yield {
         "name": f"{mvgd}_dnm_generation",
         "actions": [
@@ -164,7 +168,7 @@ def dnm_generation_task(mvgd):
         "task_dep": [f"grids:{mvgd}_feeder_extraction"],
         # take current version number of dataset
         "getargs": {"version": ("_get_grids_version", "version")},
-        "uptodate": [grids_uptodate],
+        "uptodate": [True] if fix else [grids_uptodate],
         "verbosity": 2,
     }
 
@@ -282,9 +286,11 @@ def task_grids_group():
 
 
 if __name__ == "__main__":
-
+    import doit
+    from lobaflex.tools.tools import split_model_config_in_subconfig
     logger = logging.getLogger("lobaflex.__main__")
 
-    import doit
+    split_model_config_in_subconfig()
+
 
     doit.run(globals())
