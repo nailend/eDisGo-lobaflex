@@ -502,7 +502,7 @@ def run_dispatch_optimization(
     edisgo_obj = extract_timeframe(
         edisgo_obj,
         start_datetime=cfg_o["start_datetime"],
-        timesteps=cfg_o["total_timesteps"] + cfg_o["overlap_iterations"],
+        timesteps=cfg_o["total_timesteps"],
         freq="1h",
     )
 
