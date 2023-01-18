@@ -92,12 +92,10 @@ def opt_uptodate(task):
         if task_results.get("version") == dataset_results["version"]:
             status = True
         elif task_results.get("version") > dataset_results["version"]:
-            logger.error("Task version > config version")
             status = False
         elif task_results.get("version") < dataset_results["version"]:
             status = False
     else:
-        logger.warning("New run id")
         status = False
 
     return status
