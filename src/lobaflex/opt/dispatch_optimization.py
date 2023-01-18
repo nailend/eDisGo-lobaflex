@@ -128,8 +128,12 @@ def export_results(result_dict, result_path, timesteps, filename):
 
     """
 
-    iteration = re.search(r"iteration_(\d+)", filename).group(1)
+    iteration = re.findall(r"iteration_(\d+)", filename)[0]
     for res_name, res in result_dict.items():
+
+        # dont export overlap
+        if "slack_initial" not in res_name:
+            res = res.loc[timesteps]
 
         if "slack" in res_name:
             mask = res > 1e-6
@@ -137,7 +141,7 @@ def export_results(result_dict, result_path, timesteps, filename):
                 logger.warning(
                     f"Values > 1e-6 in {res_name} iteration at {iteration}"
                 )
-            res = res[res > 1e-6]
+            res = res[mask]
             res = res.dropna(how="all")
             res = res.dropna(how="all")
         if res.empty:
