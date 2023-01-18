@@ -1,13 +1,17 @@
 import logging
 
-from load_integration import run_load_integration
 from datetime import datetime
 
-from lobaflex import config_dir
+import doit
+
+from load_integration import run_load_integration
+
+from lobaflex import config_dir, logs_dir
 from lobaflex.grids.dnm_generation import run_dnm_generation
 from lobaflex.grids.emob_integration import run_emob_integration
 from lobaflex.grids.feeder_extraction import run_feeder_extraction
 from lobaflex.grids.hp_integration import run_hp_integration
+from lobaflex.tools.logger import setup_logging
 
 # the following task are used by pydoit task generator
 # fmt: off
@@ -16,16 +20,14 @@ from lobaflex.tools.pydoit import task__set_grids_version  # noqa: F401
 from lobaflex.tools.pydoit import task__split_model_config_in_subconfig  # noqa: F401
 from lobaflex.tools.pydoit import grids_uptodate
 from lobaflex.tools.tools import TelegramReporter, get_config
-from lobaflex.tools.logger import setup_logging
-from lobaflex import logs_dir
+
+# fmt: on
 
 logger = logging.getLogger("lobaflex.grids." + __name__)
 date = datetime.now().date().isoformat()
 cfg_o = get_config(path=config_dir / ".opt.yaml")
 logfile = logs_dir / f"grids_dodo_{date}.log"
 setup_logging(file_name=logfile)
-
-# fmt: on
 
 # TODO
 #   4. alternative uptodate function: version,
@@ -50,6 +52,8 @@ def load_integration_task(mvgd):
     """Generator to define load integration task for a mvgd"""
     cfg = get_config(path=config_dir / ".grids.yaml")
     fix = cfg["load_integration"]["fix_version"]
+    dep_manager = doit.Globals.dep_manager
+    grids_version = dep_manager.get_result("_set_grids_version")["version"]
     yield {
         "name": f"{mvgd}_load_integration",
         "actions": [
@@ -60,12 +64,13 @@ def load_integration_task(mvgd):
                     "grid_id": mvgd,
                     "doit": True,
                     "save": True,
+                    "version": grids_version,
                 },
             )
         ],
         "uptodate": [True] if fix else [grids_uptodate],
         # take current version number of dataset
-        "getargs": {"version": ("_get_grids_version", "version")},
+        # "getargs": {"version": ("_get_grids_version", "version")},
         "verbosity": 2,
     }
 
@@ -75,6 +80,9 @@ def emob_integration_task(mvgd):
     cfg = get_config(path=config_dir / ".grids.yaml")
     to_freq = cfg["emob_integration"].get("to_freq")
     fix = cfg["emob_integration"]["fix_version"]
+    dep_manager = doit.Globals.dep_manager
+    grids_version = dep_manager.get_result("_set_grids_version")["version"]
+
     yield {
         "name": f"{mvgd}_emob_integration",
         "actions": [
@@ -86,12 +94,13 @@ def emob_integration_task(mvgd):
                     "to_freq": to_freq,
                     "doit": True,
                     "save": True,
+                    "version": grids_version,
                 },
             )
         ],
         "task_dep": [f"grids:{mvgd}_load_integration"],
         # take current version number of dataset
-        "getargs": {"version": ("_get_grids_version", "version")},
+        # "getargs": {"version": ("_get_grids_version", "version")},
         "uptodate": [True] if fix else [grids_uptodate],
         "verbosity": 2,
     }
@@ -101,6 +110,9 @@ def hp_integration_task(mvgd):
     """Generator to define hp integration task for a mvgd"""
     cfg = get_config(path=config_dir / ".grids.yaml")
     fix = cfg["hp_integration"]["fix_version"]
+    dep_manager = doit.Globals.dep_manager
+    grids_version = dep_manager.get_result("_set_grids_version")["version"]
+
     yield {
         "name": f"{mvgd}_hp_integration",
         "actions": [
@@ -111,12 +123,13 @@ def hp_integration_task(mvgd):
                     "grid_id": mvgd,
                     "doit": True,
                     "save": True,
+                    "version": grids_version,
                 },
             )
         ],
         "task_dep": [f"grids:{mvgd}_emob_integration"],
         # take current version number of dataset
-        "getargs": {"version": ("_get_grids_version", "version")},
+        # "getargs": {"version": ("_get_grids_version", "version")},
         "uptodate": [True] if fix else [grids_uptodate],
         "verbosity": 2,
     }
@@ -126,6 +139,9 @@ def feeder_extraction_task(mvgd):
     """Generator to define feeder extraction task for a mvgd"""
     cfg = get_config(path=config_dir / ".grids.yaml")
     fix = cfg["feeder_extraction"]["fix_version"]
+    dep_manager = doit.Globals.dep_manager
+    grids_version = dep_manager.get_result("_set_grids_version")["version"]
+
     yield {
         "name": f"{mvgd}_feeder_extraction",
         "actions": [
@@ -136,12 +152,13 @@ def feeder_extraction_task(mvgd):
                     "grid_id": mvgd,
                     "doit": True,
                     "save": True,
+                    "version": grids_version,
                 },
             )
         ],
         "task_dep": [f"grids:{mvgd}_hp_integration"],
         # take current version number of dataset
-        "getargs": {"version": ("_get_grids_version", "version")},
+        # "getargs": {"version": ("_get_grids_version", "version")},
         "uptodate": [True] if fix else [grids_uptodate],
         "verbosity": 2,
     }
@@ -151,6 +168,9 @@ def dnm_generation_task(mvgd):
     """Generator to define dnm generation task for a feeder or mvgd"""
     cfg = get_config(path=config_dir / ".grids.yaml")
     fix = cfg["hp_integration"]["fix_version"]
+    dep_manager = doit.Globals.dep_manager
+    grids_version = dep_manager.get_result("_set_grids_version")["version"]
+
     yield {
         "name": f"{mvgd}_dnm_generation",
         "actions": [
@@ -162,12 +182,13 @@ def dnm_generation_task(mvgd):
                     "doit": True,
                     "save": True,
                     "feeder": cfg["dnm_generation"]["feeder"],
+                    "version": grids_version,
                 },
             )
         ],
         "task_dep": [f"grids:{mvgd}_feeder_extraction"],
         # take current version number of dataset
-        "getargs": {"version": ("_get_grids_version", "version")},
+        # "getargs": {"version": ("_get_grids_version", "version")},
         "uptodate": [True] if fix else [grids_uptodate],
         "verbosity": 2,
     }
@@ -287,10 +308,11 @@ def task_grids_group():
 
 if __name__ == "__main__":
     import doit
+
     from lobaflex.tools.tools import split_model_config_in_subconfig
+
     logger = logging.getLogger("lobaflex.__main__")
 
     split_model_config_in_subconfig()
-
 
     doit.run(globals())
