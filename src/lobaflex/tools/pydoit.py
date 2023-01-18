@@ -79,7 +79,8 @@ def task__set_opt_version():
 
 def opt_uptodate(task):
     """This function compares the version number of each task with the
-    dataset version. If it's not equal the task is not uptodate."""
+    dataset version if the run_id is the same. If it's not equal the task is
+    not uptodate."""
     dep_manager = doit.Globals.dep_manager
     dataset_results = dep_manager.get_result("_set_opt_version")
     if dataset_results is None:
@@ -87,11 +88,19 @@ def opt_uptodate(task):
     task_results = dep_manager.get_result(task.name)
     if task_results is None:
         task_results = {"version": -1}
-    return (
-        True
-        if task_results.get("version", None) == dataset_results["version"]
-        else False
-    )
+    if task_results.get("run_id") == dataset_results["run_id"]:
+        if task_results.get("version") == dataset_results["version"]:
+            status = True
+        elif task_results.get("version") > dataset_results["version"]:
+            logger.error("Task version > config version")
+            status = False
+        elif task_results.get("version") < dataset_results["version"]:
+            status = False
+    else:
+        logger.warning("New run id")
+        status = False
+
+    return status
 
 
 def grids_uptodate(task):
