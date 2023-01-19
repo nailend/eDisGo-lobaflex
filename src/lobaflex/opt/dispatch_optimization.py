@@ -30,7 +30,14 @@ else:
 
 
 def extract_timeframe(
-    edisgo_obj, timeframe=None, start_datetime=None, timesteps=None, freq="1h"
+    edisgo_obj,
+    timeframe=None,
+    start_datetime=None,
+    timesteps=None,
+    freq="1h",
+    ts=True,
+    emob=True,
+    hp=True,
 ):
     """
 
@@ -41,6 +48,9 @@ def extract_timeframe(
     start_datetime :
     timesteps :
     freq :
+    ts :
+    emob :
+    hp :
 
     Returns
     -------
@@ -59,21 +69,35 @@ def extract_timeframe(
             "Edisgo object does not contain all the given timeindex"
         )
     # adapt timeseries
-    attributes = TimeSeries()._attributes
-    edisgo_obj.timeseries.timeindex = timeframe
-    for attr in attributes:
-        if not getattr(edisgo_obj.timeseries, attr).empty:
-            setattr(
-                edisgo_obj.timeseries,
-                attr,
-                getattr(edisgo_obj.timeseries, attr).loc[timeframe],
-            )
+    if ts:
+        attributes = TimeSeries()._attributes
+        edisgo_obj.timeseries.timeindex = timeframe
+        for attr in attributes:
+            if not getattr(edisgo_obj.timeseries, attr).empty:
+                setattr(
+                    edisgo_obj.timeseries,
+                    attr,
+                    getattr(edisgo_obj.timeseries, attr).loc[timeframe],
+                )
+        # logger.info("")
+    if emob:
+        for key, df in edisgo_obj.electromobility.flexibility_bands.items():
+            if ~df.empty:
+                df = df.loc[timeframe]
+                edisgo_obj.electromobility.flexibility_bands.update({key: df})
+    if hp:
+        for attr in ["cop_df", "heat_demand_df"]:
+            if not getattr(edisgo_obj.heat_pump, attr).empty:
+                setattr(
+                    edisgo_obj.heat_pump,
+                    attr,
+                    getattr(edisgo_obj.heat_pump, attr).loc[timeframe],
+                )
 
     logger.info(
         f"Timeseries taken: {timeframe[0]} -> "
         f"{timeframe[-1]} including {timesteps} timesteps."
     )
-    # TODO emob flexbänder
     return edisgo_obj
 
 
