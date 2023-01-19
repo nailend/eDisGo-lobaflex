@@ -46,8 +46,8 @@ def get_hps_mvgd(penetration, residentials_mvgd):
             number_of_residential_buildings_germany_2035 = 42 * 1e6
 
             penetration = (
-                    number_of_hps_germany /
-                    number_of_residential_buildings_germany_2035
+                number_of_hps_germany
+                / number_of_residential_buildings_germany_2035
             )
             number_of_hps_mvgd = int(residentials_mvgd * penetration)
 
@@ -78,6 +78,8 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
     def custom_round(x, base=0.001):
         return base * np.ceil(float(x) / base)
 
+    cfg_g = get_config(path=config_dir / ".grids.yaml")
+
     # Get all residentials
     residential_loads = edisgo_obj.topology.loads_df.loc[
         edisgo_obj.topology.loads_df.sector == "residential"
@@ -90,10 +92,9 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
 
     logger.info("Get heat demand time series from db.")
     heat_demand_df = calc_residential_heat_profiles_per_mvgd(
-        mvgd=mvgd, scenario="eGon100RE"
+        mvgd=mvgd, scenario=cfg_g["hp_integration"]["scenario"]
     )
     #
-    # pivot to allow aggregation with CTS profiles
     heat_demand_df = heat_demand_df.pivot(
         index=["day_of_year", "hour"],
         columns="building_id",

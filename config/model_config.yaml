@@ -49,7 +49,8 @@ grids:
     fix_version: False 
     import: load_n_gen_n_emob_grids
     export: load_n_gen_n_emob_n_hp_grids
-    hp_penetration: 0.7 
+    scenario: eGon2035
+    hp_penetration: NEP2035
     tes_size: 4 # covers x highest consecutive days
   feeder_extraction:
     fix_version: False
