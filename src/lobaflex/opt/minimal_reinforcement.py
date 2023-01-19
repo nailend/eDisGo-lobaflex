@@ -1,7 +1,7 @@
 import logging
 import os
 import warnings
-
+from copy import deepcopy
 from datetime import datetime
 from functools import partial
 
@@ -35,6 +35,7 @@ def integrate_opt_results(edisgo_obj, parameters, run_id=None, grid_id=None):
     -------
 
     """
+    edisgo_obj = deepcopy(edisgo_obj)
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     if grid_id is None:
@@ -61,6 +62,7 @@ def integrate_opt_results(edisgo_obj, parameters, run_id=None, grid_id=None):
         axis=1,
     )
 
+    # mark all optimised loads
     edisgo_obj.topology.loads_df.loc[:, "opt"] = False
     edisgo_obj.topology.loads_df.loc[
         df_loads_active_power.columns, "opt"
