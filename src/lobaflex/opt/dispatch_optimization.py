@@ -339,9 +339,9 @@ def rolling_horizon_optimization(
             ]
             energy_level_end = None
 
-        if iteration == 0:
+        if iteration % timesteps_per_iteration:
 
-            # define start_values for first iteration
+            # define start_values for first iteration of era
             # will get updated afterwards
             start_values = {
                 "energy_level_starts": {
@@ -361,6 +361,12 @@ def rolling_horizon_optimization(
                 },
             }
 
+        else:
+            logger.info("Update start values for next iteration.")
+            start_values = update_start_values(result_dict, fixed_parameters)
+
+        if iteration == 0:
+
             logger.info(f"Set up model for first iteration {iteration}.")
             model = lopf.setup_model(
                 fixed_parameters=fixed_parameters,
@@ -375,8 +381,7 @@ def rolling_horizon_optimization(
                 # **kwargs,
             )
         else:
-            logger.info("Update start values for next iteration.")
-            start_values = update_start_values(result_dict, fixed_parameters)
+
             logger.info(f"Update model for iteration {iteration}.")
             model = lopf.update_model(
                 model=model,
@@ -498,6 +503,7 @@ def run_dispatch_optimization(
     else:
         pass
 
+    # TODO remove after time series decomposition
     logger.info("Extract timeframe")
     edisgo_obj = extract_timeframe(
         edisgo_obj,
