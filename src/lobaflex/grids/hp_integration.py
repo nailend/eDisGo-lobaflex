@@ -88,7 +88,20 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
     # TODO get heat_time_series for all buildings in MVGD
     #  and remove district heating buildings
     # ############### get residential heat demand profiles ###############
-    mvgd = identify_similar_mvgd(residential_loads.shape[0])
+    # Overhead of profiles is needed as only profiles in range 8-20MWh are
+    # selected.
+    if penetration == "NEP2035":
+        overhead_factor = 1
+    elif penetration < 0.3:
+        overhead_factor = 1
+    elif penetration < 0.7:
+        overhead_factor = 2
+    else:
+        overhead_factor = 3
+
+    mvgd = identify_similar_mvgd(
+        residential_loads.shape[0], overhead_factor=overhead_factor
+    )
 
     logger.info("Get heat demand time series from db.")
     heat_demand_df = calc_residential_heat_profiles_per_mvgd(
@@ -104,7 +117,7 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
 
     # define number of hp in the grid
     number_of_hps_mvgd = get_hps_mvgd(
-        penetration, residentials_mvgd=residential_loads.shape[0]
+        penetration=penetration, residentials_mvgd=residential_loads.shape[0]
     )
 
     percentage = number_of_hps_mvgd / residential_loads.shape[0] * 100

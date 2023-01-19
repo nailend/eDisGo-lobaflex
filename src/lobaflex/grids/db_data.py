@@ -534,13 +534,29 @@ def calc_cts_building_profiles(
     return df_building_profiles
 
 
-def identify_similar_mvgd(number_of_residentials):
+def identify_similar_mvgd(number_of_residentials, overhead_factor=1):
+    """
+
+    Parameters
+    ----------
+    number_of_residentials :
+    overhead_factor :
+
+    Returns
+    -------
+
+    """
 
     from saio.boundaries import egon_map_zensus_mvgd_buildings
 
     logger.info(
-        f"Looking for MVGD with more then {number_of_residentials} residentials."
+        f"Looking for MVGD with 100% more then {number_of_residentials} "
+        f"residentials."
     )
+
+    # Add puffer
+    number_of_residentials = overhead_factor * number_of_residentials
+
     with db.session_scope() as session:
         cells_query = (
             session.query(
