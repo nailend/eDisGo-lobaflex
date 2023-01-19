@@ -102,24 +102,37 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
     )
     heat_demand_df = heat_demand_df.sort_index().reset_index(drop=True)
 
-    if penetration is not None:
-        number_of_hps = int(residential_loads.shape[0] * penetration)
+    # define number of hp in the grid
+    number_of_hps_mvgd = get_hps_mvgd(
+        penetration, residentials_mvgd=residential_loads.shape[0]
+    )
 
-    else:
-        # eGon100RE all buildings with decentral heating
-        number_of_hps = residential_loads.shape[0]
-
-    percentage = number_of_hps / residential_loads.shape[0] * 100
-    logger.info(f"{number_of_hps} heat pumps identified ({percentage:.2f} %).")
+    percentage = number_of_hps_mvgd / residential_loads.shape[0] * 100
+    logger.info(
+        f"{number_of_hps_mvgd} heat pumps identified ({percentage:.2f} %)."
+    )
 
     # Select random residential loads
     residential_loads = residential_loads.sample(
-        number_of_hps, axis="index", random_state=42
+        number_of_hps_mvgd, axis="index", random_state=42
     )
 
-    # Select random heat profiles
+    # Select n smallest heat profiles
+    # id_profiles = heat_demand_df.sum(axis="rows").nsmallest(
+    #     number_of_hps_mvgd).index
+    # heat_demand_df = heat_demand_df.loc[:, id_profiles]
+
+    logger.info("Select heat demand profiles in range 8 - 20 MWh/a.")
+    heat_demand_df_sum = heat_demand_df.sum(axis="rows")
+    selected_ids = heat_demand_df_sum.loc[
+        (heat_demand_df_sum > 8) & (heat_demand_df_sum < 20)
+    ].index
+    logger.info(f"{len(selected_ids)} heat demand profiles selected.")
+    heat_demand_df = heat_demand_df.loc[:, selected_ids]
+
+    # Select n  random heat profiles
     heat_demand_df = heat_demand_df.sample(
-        number_of_hps, axis="columns", random_state=42
+        number_of_hps_mvgd, axis="columns", random_state=42
     )
 
     # Create HP names and map to db building id by order
@@ -176,8 +189,7 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
     )
 
     logger.info("Determine thermal energy storage.")
-    cfg = get_config(path=config_dir / ".grids.yaml")
-    tes_size = cfg["hp_integration"].get("tes_size", 4)
+    tes_size = cfg_g["hp_integration"].get("tes_size", 4)
     logger.info(
         f"Storage size will cover the heat demand of {tes_size} "
         f"highest consecutive days."
@@ -241,10 +253,10 @@ def run_hp_integration(
 ):
 
     logger.info(f"Start heat pump integration for {grid_id}.")
-    cfg = get_config(path=config_dir / ".grids.yaml")
+    cfg_g = get_config(path=config_dir / ".grids.yaml")
 
     if not edisgo_obj:
-        import_dir = cfg["hp_integration"].get("import")
+        import_dir = cfg_g["hp_integration"].get("import")
         import_path = data_dir / import_dir / str(grid_id)
         logger.info(f"Import Grid from file: {import_path}")
 
@@ -259,7 +271,7 @@ def run_hp_integration(
     # TODO add durchdringung
     # hp_penetration = get_hp_penetration()
     logger.info("Add heat pumps to eDisGo")
-    hp_penetration = cfg["hp_integration"].get("hp_penetration")
+    hp_penetration = cfg_g["hp_integration"].get("hp_penetration")
     edisgo_obj = create_heatpumps_from_db(
         edisgo_obj, penetration=hp_penetration
     )
@@ -268,7 +280,7 @@ def run_hp_integration(
     edisgo_obj.apply_heat_pump_operating_strategy()
 
     if save:
-        export_dir = cfg["hp_integration"].get("export")
+        export_dir = cfg_g["hp_integration"].get("export")
         export_path = data_dir / export_dir / str(grid_id)
         shutil.rmtree(export_path, ignore_errors=True)
         os.makedirs(export_path, exist_ok=True)
@@ -308,7 +320,6 @@ if __name__ == "__main__":
 
     logger = logging.getLogger("lobaflex.__main__")
     date = datetime.now().date().isoformat()
-    cfg_o = get_config(path=config_dir / ".opt.yaml")
     logfile = logs_dir / f"hp_integration_{date}_local.log"
     setup_logging(file_name=logfile)
 
