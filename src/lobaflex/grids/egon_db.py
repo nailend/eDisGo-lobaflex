@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import functools
 import logging
 import os
 
@@ -111,7 +112,8 @@ def credentials():
     return configuration
 
 
-def engine():
+@functools.lru_cache(maxsize=None)
+def engine_for(pid):  # pylint: disable=unused-argument
     """Engine for local database."""
     db_config = credentials()
     return create_engine(
@@ -120,6 +122,11 @@ def engine():
         f"{db_config['PORT']}/{db_config['POSTGRES_DB']}",
         echo=False,
     )
+
+
+def engine():
+    """Engine for local database."""
+    return engine_for(os.getpid())
 
 
 @contextmanager
