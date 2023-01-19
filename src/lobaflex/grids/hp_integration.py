@@ -23,13 +23,44 @@ else:
     logger = logging.getLogger(__name__)
 
 
-def get_hp_penetration():
-    """Derive percentage of households with hp from NEP2035"""
-    # TODO anderes überlegen
-    hp_cap_2035 = 50
-    number_of_residential_buildings = 540000
+def get_hps_mvgd(penetration, residentials_mvgd):
+    """Disaggregate number of hp per grid
 
-    return hp_cap_2035 / number_of_residential_buildings
+    Parameters
+    ----------
+    penetration : float/string
+    residentials_mvgd : int
+
+    Returns
+    -------
+    number of hps per grid
+
+    """
+
+    if penetration is not None:
+        if isinstance(penetration, float):
+            number_of_hps_mvgd = int(residentials_mvgd * penetration)
+        elif penetration == "NEP2035":
+
+            number_of_hps_germany = 7 * 1e6
+            number_of_residential_buildings_germany_2035 = 42 * 1e6
+
+            penetration = (
+                    number_of_hps_germany /
+                    number_of_residential_buildings_germany_2035
+            )
+            number_of_hps_mvgd = int(residentials_mvgd * penetration)
+
+        elif penetration == 1:
+            number_of_hps_mvgd = residentials_mvgd
+        else:
+            raise ValueError
+
+    else:
+        # eGon100RE all buildings with decentral heating
+        number_of_hps_mvgd = residentials_mvgd
+
+    return number_of_hps_mvgd
 
 
 def create_heatpumps_from_db(edisgo_obj, penetration=None):
