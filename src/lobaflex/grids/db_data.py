@@ -657,6 +657,8 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
         .div(df_profile_merge["buildings"])
     )
 
+    df_profile_merge = df_profile_merge.astype(float)
+
     return df_profile_merge.loc[:, columns]
 
 
