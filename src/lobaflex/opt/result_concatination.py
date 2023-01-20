@@ -148,7 +148,7 @@ def save_concatinated_results(
         logger.info(f"Save concatenated results to {filename}.")
 
     if doit:
-        return {"version": version, "run_id": f"concat_{cfg_o['run_id']}"}
+        return {"version": version, "run_id": cfg_o['run_id']}
 
 
 if __name__ == "__main__":
