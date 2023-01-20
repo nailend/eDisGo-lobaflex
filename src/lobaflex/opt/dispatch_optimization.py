@@ -82,7 +82,7 @@ def extract_timeframe(
         # logger.info("")
     if emob:
         for key, df in edisgo_obj.electromobility.flexibility_bands.items():
-            if ~df.empty:
+            if not df.empty:
                 df = df.loc[timeframe]
                 edisgo_obj.electromobility.flexibility_bands.update({key: df})
     if hp:
