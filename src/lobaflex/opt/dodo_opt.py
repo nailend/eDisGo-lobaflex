@@ -2,6 +2,7 @@ import logging
 import os
 
 from datetime import datetime
+import doit
 
 from lobaflex import config_dir, data_dir, logs_dir, results_dir
 from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
@@ -195,6 +196,5 @@ def task_opt_group():
 
 
 if __name__ == "__main__":
-    import doit
 
     doit.run(globals())
