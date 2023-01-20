@@ -37,6 +37,8 @@ def integrate_opt_results(
     ----------
     edisgo_obj :
     parameters :
+    start_datetime :
+    periods :
     run_id :
     grid_id :
 
@@ -174,10 +176,9 @@ def integrate_and_reinforce(
         edisgo_obj.reinforce()
     except ValueError as e:
         exluded_timesteps = (
-            re.findall(
-                pattern=r"DatetimeIndex\(\[(.*)\], dtype", string=str(e)
-            )[0]
+            re.findall(pattern=r"DatetimeIndex\(\[(.*)\],", string=str(e))[0]
             .replace("'", "")
+            .replace("\n", "")
             .split(",")
         )
         exluded_timesteps = pd.to_datetime(exluded_timesteps)
