@@ -1,6 +1,8 @@
 import logging
 import os
+import re
 import warnings
+
 from copy import deepcopy
 from datetime import datetime
 from functools import partial
@@ -21,7 +23,14 @@ else:
     logger = logging.getLogger(__name__)
 
 
-def integrate_opt_results(edisgo_obj, parameters, run_id=None, grid_id=None):
+def integrate_opt_results(
+    edisgo_obj,
+    parameters,
+    start_datetime=None,
+    periods=None,
+    run_id=None,
+    grid_id=None,
+):
     """
 
     Parameters
@@ -68,30 +77,18 @@ def integrate_opt_results(edisgo_obj, parameters, run_id=None, grid_id=None):
         df_loads_active_power.columns, "opt"
     ] = True
     # define timeframe to concat
-    timeframe = pd.date_range(
-        start=cfg_o["start_datetime"],
-        periods=cfg_o["total_timesteps"],
-        freq="1h",
-    )
+    if start_datetime and periods is not None:
+        timeframe = pd.date_range(
+            start=cfg_o["start_datetime"],
+            periods=cfg_o["total_timesteps"],
+            freq="1h",
+        )
+        df_loads_active_power = df_loads_active_power.loc[timeframe]
+    else:
+        timeframe = df_loads_active_power.index
 
     logger.info("Reduce timeseries to selected timeframe.")
     edisgo_obj = extract_timeframe(edisgo_obj=edisgo_obj, timeframe=timeframe)
-    df_loads_active_power = df_loads_active_power.loc[timeframe]
-
-    # logger.info("Identify flexible loads.")
-    # df_flexible_loads = get_flexible_loads(
-    #     edisgo_obj,
-    #     heat_pump=True,
-    #     electromobility=True,
-    #     electromobility_sectors=cfg_o["emob_sectors"],
-    # )
-
-    # logger.info("Drop former timeseries of flexible loads.")
-    # edisgo_obj.timeseries.loads_active_power = (
-    #     edisgo_obj.timeseries.loads_active_power.drop(
-    #         columns=df_flexible_loads.index, #errors="ignore"
-    #     )
-    # )
 
     logger.info("Drop former timeseries of flexible loads.")
     edisgo_obj.timeseries.loads_active_power = (
@@ -173,7 +170,29 @@ def integrate_and_reinforce(
     )
 
     logger.info("Start minimal reinforce")
-    edisgo_obj.reinforce()
+    try:
+        edisgo_obj.reinforce()
+    except ValueError as e:
+        exluded_timesteps = (
+            re.findall(
+                pattern=r"DatetimeIndex\(\[(.*)\], dtype", string=str(e)
+            )[0]
+            .replace("'", "")
+            .split(",")
+        )
+        exluded_timesteps = pd.to_datetime(exluded_timesteps)
+
+        logger.warning(
+            "Powerflow didn't converge for time steps: "
+            f"{exluded_timesteps}."
+        )
+        reduced_timesteps = edisgo_obj.timeseries.timeindex.drop(
+            exluded_timesteps
+        )
+        logger.info("Start partial reinforce with reduced time steps.")
+        edisgo_obj.reinforce(reduced_timesteps)
+        logger.info("Continue partial reinforce with excluded time steps.")
+        edisgo_obj.reinforce(exluded_timesteps)
 
     export_path = results_dir / run_id / str(grid_id) / "min_reinforce"
     os.makedirs(export_path, exist_ok=True)
