@@ -363,7 +363,7 @@ def rolling_horizon_optimization(
             ]
             energy_level_end = None
 
-        if iteration % timesteps_per_iteration:
+        if iteration % timesteps_per_iteration == 0:
 
             # define start_values for first iteration of era
             # will get updated afterwards
