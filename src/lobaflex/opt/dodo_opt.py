@@ -42,6 +42,8 @@ def task_opt():
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
     feeder_dir = cfg_o["import_dir"]
+    dep_manager = doit.Globals.dep_manager
+    opt_version = dep_manager.get_result("_set_opt_version")["version"]
 
     # create opt task only for existing grid folders
     for mvgd in mvgds:
@@ -67,11 +69,12 @@ def task_opt():
                             "feeder_id": feeder,
                             "doit": True,
                             "save": True,
+                            "version": opt_version,
                         },
                     )
                 ],
                 # "task_dep": [f"grids:{mvgd}_feeder_extraction"],
-                "getargs": {"version": ("_get_opt_version", "version")},
+                # "getargs": {"version": ("_get_opt_version", "version")},
                 "uptodate": [opt_uptodate],
                 "verbosity": 2,
             }
@@ -83,6 +86,8 @@ def task_concat_results():
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
     feeder_dir = cfg_o["import_dir"]
+    dep_manager = doit.Globals.dep_manager
+    opt_version = dep_manager.get_result("_set_opt_version")["version"]
 
     # create opt task only for existing grid folders
     # also used for dependency
@@ -105,6 +110,7 @@ def task_concat_results():
                             {
                                 "grids": [mvgd],
                                 "doit": True,
+                                "version": opt_version,
                             },
                         )
                     ],
@@ -115,7 +121,7 @@ def task_concat_results():
                         f"opt:{mvgd}/{int(feeder):02}_optimization"
                         for feeder in feeder_ids
                     ],
-                    "getargs": {"version": ("_get_opt_version", "version")},
+                    # "getargs": {"version": ("_get_opt_version", "version")},
                     "uptodate": [opt_uptodate],
                 }
             except FileNotFoundError as e:
@@ -131,6 +137,8 @@ def task_min_reinforce():
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
     feeder_dir = cfg_o["import_dir"]
+    dep_manager = doit.Globals.dep_manager
+    opt_version = dep_manager.get_result("_set_opt_version")["version"]
 
     # create opt task only for existing grid folders
     for mvgd in mvgds:
@@ -145,12 +153,13 @@ def task_min_reinforce():
                         {
                             "grid_id": mvgd,
                             "doit": True,
+                            "version": opt_version,
                         },
                     )
                 ],
                 "doc": "per mvgd",
                 "task_dep": [f"concat_results:{mvgd}"],
-                "getargs": {"version": ("_get_opt_version", "version")},
+                # "getargs": {"version": ("_get_opt_version", "version")},
                 "uptodate": [opt_uptodate],
             }
         else:
