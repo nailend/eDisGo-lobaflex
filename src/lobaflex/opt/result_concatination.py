@@ -109,7 +109,9 @@ def save_concatinated_results(
     cfg_o = get_config(path=config_dir / ".opt.yaml")
 
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"opt_concat_results_{cfg_o['run_id']}_{date}.log"
+    logfile = (
+        logs_dir / f"opt_concat_results_{cfg_o['run_id']}_{grids[0]}{date}.log"
+    )
     setup_logging(file_name=logfile)
 
     logger.info("Start concatenating files")
