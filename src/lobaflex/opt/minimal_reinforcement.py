@@ -175,12 +175,14 @@ def integrate_and_reinforce(
     try:
         edisgo_obj.reinforce()
     except ValueError as e:
-        exluded_timesteps = (
-            re.findall(pattern=r"DatetimeIndex\(\[(.*)\],", string=str(e))[0]
-            .replace("'", "")
-            .replace("\n", "")
-            .split(",")
+        exluded_timesteps = re.findall(
+            pattern=r"DatetimeIndex\(\[([\S\s]*)\],[\s]*dtype=", string=str(e)
+        )[0]
+        exluded_timesteps = re.sub(
+            pattern=r"',[\s]*'", string=exluded_timesteps, repl="', '"
         )
+        exluded_timesteps = exluded_timesteps.split(", ")
+
         exluded_timesteps = pd.to_datetime(exluded_timesteps)
 
         logger.warning(
