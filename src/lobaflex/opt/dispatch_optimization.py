@@ -474,7 +474,7 @@ def rolling_horizon_optimization(
                 raise ValueError("Results not valid")
 
 
-@log_errors()
+@log_errors
 def run_dispatch_optimization(
     grid_id,
     feeder_id=None,

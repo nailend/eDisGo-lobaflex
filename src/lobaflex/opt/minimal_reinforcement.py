@@ -111,7 +111,7 @@ def integrate_opt_results(
     return edisgo_obj
 
 
-@log_errors()
+@log_errors
 def integrate_and_reinforce(
     edisgo_obj=None, grid_id=None, doit=False, version=None
 ):

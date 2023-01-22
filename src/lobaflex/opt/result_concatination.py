@@ -101,7 +101,7 @@ def concat_results(
     return collected_results
 
 
-@log_errors()
+@log_errors
 def save_concatinated_results(
     grids=None, remove=False, doit=False, version=None
 ):
