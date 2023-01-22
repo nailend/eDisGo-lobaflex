@@ -20,27 +20,24 @@ from lobaflex import config_dir
 logger = logging.getLogger(__name__)
 
 
-def log_errors():
+def log_errors(func):
     """
     Decorator object that logs every exception into the defined logger object.
     """
 
-    def decorator(func):
-        @wraps(func)
-        def exception_wrapper(*args, **kwargs):
+    @wraps(func)
+    def exception_wrapper(*args, **kwargs):
 
-            try:
-                return func(*args, **kwargs)
+        try:
+            return func(*args, **kwargs)
 
-            except Exception as e:
-                issue = "ERROR in " + func.__name__ + "()\n"
-                issue += 10 * "--------------------------" + "\n"
-                logger.exception(issue)
-                raise e
+        except Exception as e:
+            issue = "ERROR in " + func.__name__ + "()\n"
+            issue += 10 * "--------------------------" + "\n"
+            logger.exception(issue)
+            raise e
 
-        return exception_wrapper
-
-    return decorator
+    return exception_wrapper
 
 
 def get_files_in_subdirs(path, pattern):
@@ -387,7 +384,9 @@ class TelegramReporter(object):
                 if value == "dependency" and "_version" not in key
             ]
 
-            total = len(success) + len(failed) + len(uptodate) + len(dependency)
+            total = (
+                len(success) + len(failed) + len(uptodate) + len(dependency)
+            )
             statistic = "Statistic:\n"
             statistic += f"Total of {total} tasks.\n"
             statistic += f"{len(uptodate)} uptodate.\n"
