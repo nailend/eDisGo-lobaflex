@@ -76,6 +76,9 @@ def concat_results(
             # slack_initial is only one timestep
             if "slack_initial" in parameter:
                 df_all_iterations = df_all_iterations.T
+            elif "slack" in parameter:
+                # all other slacks only contain timesteps with values
+                pass
             else:
                 # only select defined timeframe
                 logger.debug(f"Select timesteps of {grid}/{feeder}"
@@ -127,6 +130,7 @@ def save_concatinated_results(
     list_of_files = pd.Series(
         get_files_in_subdirs(run_dir, pattern="*iteration_*.csv")
     )
+
     # define timeframe to concat
     timeframe = pd.date_range(
         start=cfg_o["start_datetime"],
