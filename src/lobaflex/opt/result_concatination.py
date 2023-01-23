@@ -78,6 +78,8 @@ def concat_results(
                 df_all_iterations = df_all_iterations.T
             else:
                 # only select defined timeframe
+                logger.debug(f"Select timesteps of {grid}/{feeder}"
+                             f"/{parameter}.")
                 df_all_iterations = df_all_iterations.loc[timeframe]
             # concat all feeder
             df_grid_parameter = pd.concat(
