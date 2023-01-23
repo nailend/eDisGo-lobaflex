@@ -110,7 +110,7 @@ def save_concatinated_results(
 
     date = datetime.now().date().isoformat()
     logfile = (
-        logs_dir / f"opt_concat_results_{cfg_o['run_id']}_{grids[0]}{date}.log"
+        logs_dir / f"opt_concat_results_{cfg_o['run_id']}_{grids[0]}_{date}.log"
     )
     setup_logging(file_name=logfile)
 
