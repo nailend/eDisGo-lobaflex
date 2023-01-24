@@ -229,7 +229,7 @@ class TelegramReporter(object):
                 + "\n"
                 + "-" * 28
             )
-            self.telegram(text=f"Pipeline:\n{pipeline}")
+            # self.telegram(text=f"Pipeline:\n{pipeline}")
 
     def get_status(self, task):
         """called when task is selected (check if up-to-date)"""
@@ -272,7 +272,7 @@ class TelegramReporter(object):
             exec_time = time.perf_counter() - self.start_time[task.name]
             exec_time = time.gmtime(exec_time)
             exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
-            self.telegram(text=f"Success: {task.title()}\n in {exec_time}")
+            # self.telegram(text=f"Success: {task.title()}\n in {exec_time}")
         if "_set" in task.name:
             group = task.name.split("_")[2]
             version = task.result["version"]
