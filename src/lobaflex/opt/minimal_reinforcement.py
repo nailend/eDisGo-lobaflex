@@ -111,6 +111,55 @@ def integrate_opt_results(
     return edisgo_obj
 
 
+def reinforce(edisgo_obj, mode=None):
+    """
+
+    Parameters
+    ----------
+    edisgo_obj :
+    mode :
+    Returns
+    -------
+
+    """
+    logger.info("Start minimal reinforce")
+    if mode == "failsafe":
+        logger.info("Reinforce in failsafe mode.")
+        try:
+            edisgo_obj.reinforce()
+        except ValueError as e:
+            exluded_timesteps = re.findall(
+                pattern=r"DatetimeIndex\(\[([\S\s]*)\],[\s]*dtype=", string=str(e)
+            )[0]
+            exluded_timesteps = re.sub(
+                pattern=r"',[\s]*'", string=exluded_timesteps, repl="', '"
+            )
+            exluded_timesteps = exluded_timesteps.split(", ")
+
+            exluded_timesteps = pd.to_datetime(exluded_timesteps)
+
+            logger.warning(
+                "Powerflow didn't converge for time steps: "
+                f"{exluded_timesteps}."
+            )
+            reduced_timesteps = edisgo_obj.timeseries.timeindex.drop(
+                exluded_timesteps
+            )
+            logger.info("Start partial reinforce with reduced time steps.")
+            edisgo_obj.reinforce(reduced_timesteps)
+            logger.info("Continue partial reinforce with excluded time steps.")
+            edisgo_obj.reinforce(exluded_timesteps)
+    elif mode == "lpf":
+        logger.info("Reinforce in 'lpf' mode.")
+        edisgo_obj.reinforce(troubleshooting_mode='lpf')
+    elif mode == "iterative":
+        raise NotImplementedError
+    else:
+        edisgo_obj.reinforce()
+
+    return edisgo_obj
+
+
 @log_errors
 def integrate_and_reinforce(
     edisgo_obj=None, grid_id=None, doit=False, version=None
@@ -171,31 +220,7 @@ def integrate_and_reinforce(
         edisgo_obj, parameters=selected_parameters
     )
 
-    logger.info("Start minimal reinforce")
-    try:
-        edisgo_obj.reinforce()
-    except ValueError as e:
-        exluded_timesteps = re.findall(
-            pattern=r"DatetimeIndex\(\[([\S\s]*)\],[\s]*dtype=", string=str(e)
-        )[0]
-        exluded_timesteps = re.sub(
-            pattern=r"',[\s]*'", string=exluded_timesteps, repl="', '"
-        )
-        exluded_timesteps = exluded_timesteps.split(", ")
-
-        exluded_timesteps = pd.to_datetime(exluded_timesteps)
-
-        logger.warning(
-            "Powerflow didn't converge for time steps: "
-            f"{exluded_timesteps}."
-        )
-        reduced_timesteps = edisgo_obj.timeseries.timeindex.drop(
-            exluded_timesteps
-        )
-        logger.info("Start partial reinforce with reduced time steps.")
-        edisgo_obj.reinforce(reduced_timesteps)
-        logger.info("Continue partial reinforce with excluded time steps.")
-        edisgo_obj.reinforce(exluded_timesteps)
+    edisgo_obj = reinforce(edisgo_obj, mode="lpf")
 
     export_path = results_dir / run_id / str(grid_id) / "min_reinforce"
     os.makedirs(export_path, exist_ok=True)
