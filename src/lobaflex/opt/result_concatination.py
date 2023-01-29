@@ -16,23 +16,35 @@ else:
     logger = logging.getLogger(__name__)
 
 
-def concat_results(
-    list_of_files, timeframe, grids=None, parameters=None, fillna=None
-):
+def concat_results(grid_id, timeframe, parameters=None, fillna=None):
     """
+    Concat results of all iterations and feeders of one grid and
+    selected parameters.
 
     Parameters
     ----------
-    list_of_files :
-    timeframe :
-    grids :
-    parameters :
-    fillna :
+    grid_id : int
+        Grid id
+    timeframe : pd.DatetimeIndex
+        Timeframe to be selected
+    parameters : list of str, optional
+        List of parameters to be collected. If None, all parameters are
+    fillna : dict, optional
+        kwargs from pandas.core.frame.DataFrame.fillna
 
     Returns
     -------
+    collected_results : dict
+        Dictionary with parameter as key and concatinated results as value
 
     """
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    grid_path = results_dir / cfg_o["run_id"] / str(grid_id)
+
+    # get list of all iteration_*.csv
+    list_of_files = pd.Series(
+        get_files_in_subdirs(grid_path, pattern="*iteration_*.csv")
+    )
 
     # identify file by filename pattern:
     pattern = r"\d+/feeder/\d+/(.*)_(\d+)-(\d+)_iteration_(\d+).csv"
@@ -44,11 +56,7 @@ def concat_results(
         by=["grid", "parameter", "feeder", "iteration"]
     )
 
-    # select specific parameters or grids if given
-    if grids is not None:
-        grids = grids if isinstance(grids, list) else list(grids)
-        grids = [str(i) for i in grids]
-        mapping = mapping.loc[mapping.grid.isin(grids)]
+    # select parameters from list of csv files
     if parameters is not None:
         parameters if isinstance(parameters, list) else list(parameters)
         mapping = mapping.loc[mapping.parameter.isin(parameters)]
@@ -62,7 +70,7 @@ def concat_results(
         for (grid, parameter, feeder), grid_param_feeder in grid_param.groupby(
             ["grid", "parameter", "feeder"]
         ):
-
+            # concat all iterations of one feeder
             df_all_iterations = pd.concat(
                 map(
                     functools.partial(
@@ -81,8 +89,9 @@ def concat_results(
                 pass
             else:
                 # only select defined timeframe
-                logger.debug(f"Select timesteps of {grid}/{feeder}"
-                             f"/{parameter}.")
+                logger.debug(
+                    f"Select timesteps of {grid}/{feeder}" f"/{parameter}."
+                )
                 df_all_iterations = df_all_iterations.loc[timeframe]
             # concat all feeder
             df_grid_parameter = pd.concat(
@@ -107,29 +116,31 @@ def concat_results(
 
 
 @log_errors
-def save_concatinated_results(
-    grids=None, remove=False, doit=False, version=None
-):
+def save_concatinated_results(grid_id, doit=False, version=None):
+    """Concatinate all results of one grid and save them to csv.
+
+    Parameters
+    ----------
+    grid_id : int
+    doit : bool
+    version : int
+
+    Returns
+    -------
+    if doit is True, the function returns version of the results
+        version : int, run_id : str
+
+    """
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
 
     date = datetime.now().date().isoformat()
     logfile = (
-        logs_dir / f"opt_concat_results_{cfg_o['run_id']}_{grids[0]}_{date}.log"
+        logs_dir / f"opt_concat_results_{cfg_o['run_id']}_{grid_id}_{date}.log"
     )
     setup_logging(file_name=logfile)
 
     logger.info("Start concatenating files")
-    # selected_parameters = ["charging_hp_el", "charging_tes", "energy_tes",
-    #                        "x_charge_ev", "energy_level_cp"]
-    selected_parameters = None
-
-    run_dir = results_dir / cfg_o["run_id"]
-
-    # get list of all iteration_*.csv
-    list_of_files = pd.Series(
-        get_files_in_subdirs(run_dir, pattern="*iteration_*.csv")
-    )
 
     # define timeframe to concat
     timeframe = pd.date_range(
@@ -139,10 +150,9 @@ def save_concatinated_results(
     )
 
     results = concat_results(
-        list_of_files=list_of_files,
+        grid_id=grid_id,
         timeframe=timeframe,
-        grids=grids,
-        parameters=selected_parameters,
+        parameters=None,
         fillna={"value": 0},
     )
 
@@ -154,7 +164,7 @@ def save_concatinated_results(
         logger.info(f"Save concatenated results to {filename}.")
 
     if doit:
-        return {"version": version, "run_id": cfg_o['run_id']}
+        return {"version": version, "run_id": cfg_o["run_id"]}
 
 
 if __name__ == "__main__":
@@ -170,12 +180,7 @@ if __name__ == "__main__":
     setup_logging(file_name=logfile)
 
     save_concatinated_results(
-        # grid_id=1056, feeder_id=1, edisgo_obj=False, save=True, doit=False
-        # grid_id=2534,
         # grid_id=1056,
-        grids=[1111],
-        # feeder_id=8,
+        grid_id=1111,
         doit=False,
     )
-
-    # lopf.combine_results_for_grid

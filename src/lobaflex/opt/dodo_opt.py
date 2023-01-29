@@ -109,7 +109,7 @@ def task_concat_results():
                             save_concatinated_results,
                             [],
                             {
-                                "grids": [mvgd],
+                                "grids": mvgd,
                                 "doit": True,
                                 "version": opt_version,
                             },
