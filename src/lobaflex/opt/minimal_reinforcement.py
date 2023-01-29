@@ -7,6 +7,7 @@ from copy import deepcopy
 from datetime import datetime
 from functools import partial
 
+import numpy as np
 import pandas as pd
 
 from edisgo.edisgo import import_edisgo_from_files
@@ -111,25 +112,46 @@ def integrate_opt_results(
     return edisgo_obj
 
 
-def reinforce(edisgo_obj, mode=None):
-    """
+def reinforce(edisgo_obj, mode=None, iterations=10):
+    """Edisgo reinforce is conducted if Value Error is raised.
 
     Parameters
     ----------
-    edisgo_obj :
-    mode :
+    edisgo_obj : :class:`~.EDisGo`
+        EDisGo object
+    mode : str
+            * 'split'
+                Catch not converged time steps from error message and rerun
+                converged ones first. Then rerun reinforced grid with not
+                converged time steps. Limitation to max 100 time steps!
+            * 'lpf'
+                Non-linear power flow initial guess is seeded with the voltage
+                angles from the linear power flow.
+            * 'iterative'
+                Reinforcement is conducted by reducing all power values of
+                generators and loads to a fraction starting from 50% to 100%,
+                e.g. solving the load flow and reinforcement with 50% and then
+                60%,....
+    iterations : int
+        number of iterations taken in 'iterative' mode until 100% gen/load is
+        reached e.g. 5 : [0.5, 0.6, 0.7, 0.8, 0.9, 1]
     Returns
     -------
 
     """
     logger.info("Start minimal reinforce")
-    if mode == "failsafe":
-        logger.info("Reinforce in failsafe mode.")
-        try:
-            edisgo_obj.reinforce()
-        except ValueError as e:
+    try:
+        edisgo_obj.reinforce()
+    except ValueError as e:
+        if mode is not None:
+            logger.warning(f"Reinforce failed. Restart in {mode} mode.")
+        if mode == "split":
+            # might not catch all timesteps if > 100 print out is limited to
+            # 50 lines. Better to use return values of _check_convergence()
+            # in analyze()
             exluded_timesteps = re.findall(
-                pattern=r"DatetimeIndex\(\[([\S\s]*)\],[\s]*dtype=", string=str(e)
+                pattern=r"DatetimeIndex\(\[([\S\s]*)\],[\s]*dtype=",
+                string=str(e),
             )[0]
             exluded_timesteps = re.sub(
                 pattern=r"',[\s]*'", string=exluded_timesteps, repl="', '"
@@ -139,23 +161,46 @@ def reinforce(edisgo_obj, mode=None):
             exluded_timesteps = pd.to_datetime(exluded_timesteps)
 
             logger.warning(
-                "Powerflow didn't converge for time steps: "
-                f"{exluded_timesteps}."
+                f"Powerflow didn't converge for {len(exluded_timesteps)} time "
+                f"steps: {exluded_timesteps}."
             )
             reduced_timesteps = edisgo_obj.timeseries.timeindex.drop(
                 exluded_timesteps
             )
-            logger.info("Start partial reinforce with reduced time steps.")
-            edisgo_obj.reinforce(reduced_timesteps)
-            logger.info("Continue partial reinforce with excluded time steps.")
-            edisgo_obj.reinforce(exluded_timesteps)
-    elif mode == "lpf":
-        logger.info("Reinforce in 'lpf' mode.")
-        edisgo_obj.reinforce(troubleshooting_mode='lpf')
-    elif mode == "iterative":
-        raise NotImplementedError
-    else:
-        edisgo_obj.reinforce()
+            logger.info(
+                "Start partial reinforce with reduced time steps ("
+                f"{len(reduced_timesteps)})."
+            )
+            edisgo_obj.reinforce(reduced_timesteps, max_while_iterations=50)
+            logger.info(
+                "Continue partial reinforce with excluded time steps ("
+                f"{len(exluded_timesteps)})."
+            )
+            edisgo_obj.reinforce(exluded_timesteps, max_while_iterations=50)
+
+            logger.info("Final reinforce.")
+            edisgo_obj.reinforce(max_while_iterations=50)
+        elif mode == "lpf":
+            edisgo_obj.reinforce(troubleshooting_mode="lpf")
+        elif mode == "iterative":
+
+            ts_orig = deepcopy(edisgo_obj.timeseries)
+            for n in np.linspace(0.5, 1, iterations):
+
+                logger.info(f"Fraction: {n} x load")
+
+                for attr in ts_orig._attributes:
+                    setattr(
+                        edisgo_obj.timeseries, attr, getattr(ts_orig, attr) * n
+                    )
+
+                edisgo_obj.reinforce(max_while_iterations=50)
+
+            logger.info("Final reinforce.")
+            edisgo_obj.reinforce(max_while_iterations=50)
+        else:
+            logging.warning(e)
+            raise ValueError("No reinforcement mode selected")
 
     return edisgo_obj
 
@@ -220,7 +265,7 @@ def integrate_and_reinforce(
         edisgo_obj, parameters=selected_parameters
     )
 
-    edisgo_obj = reinforce(edisgo_obj, mode="lpf")
+    edisgo_obj = reinforce(edisgo_obj, mode="iterative", iterations=5)
 
     export_path = results_dir / run_id / str(grid_id) / "min_reinforce"
     os.makedirs(export_path, exist_ok=True)
