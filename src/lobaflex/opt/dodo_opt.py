@@ -60,7 +60,7 @@ def task_opt():
             continue
         for feeder in sorted(feeder_ids):
             yield {
-                "name": f"{mvgd}/{int(feeder):02}_optimization",
+                "name": f"{mvgd}/{int(feeder):02}",
                 "actions": [
                     (
                         run_dispatch_optimization,
@@ -119,7 +119,7 @@ def task_concat_results():
                     # create dependency for every feeder in grid not only opt
                     # results if not all opt succeeded
                     "task_dep": [
-                        f"opt:{mvgd}/{int(feeder):02}_optimization"
+                        f"opt:{mvgd}/{int(feeder):02}"
                         for feeder in feeder_ids
                     ],
                     # "getargs": {"version": ("_get_opt_version", "version")},
@@ -190,7 +190,7 @@ def task_opt_group():
             "name": str(mvgd),
             "doc": "per mvgd",
             "task_dep": [
-                f"opt:{mvgd}/{int(i):02}_optimization" for i in feeder_ids
+                f"opt:{mvgd}/{int(i):02}" for i in feeder_ids
             ],
         }
 
