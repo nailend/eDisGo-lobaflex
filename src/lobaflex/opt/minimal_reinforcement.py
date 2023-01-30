@@ -112,7 +112,7 @@ def integrate_opt_results(
     return edisgo_obj
 
 
-def reinforce(edisgo_obj, mode=None, iterations=10):
+def reinforce(edisgo_obj, mode=None, iterations=10, combined_analysis=False):
     """Edisgo reinforce is conducted if Value Error is raised.
 
     Parameters
@@ -133,15 +133,21 @@ def reinforce(edisgo_obj, mode=None, iterations=10):
                 e.g. solving the load flow and reinforcement with 50% and then
                 60%,....
     iterations : int
-        number of iterations taken in 'iterative' mode until 100% gen/load is
-        reached e.g. 5 : [0.5, 0.6, 0.7, 0.8, 0.9, 1]
+        number of iterations taken in 'iterative' mode from 50% until 100%
+        gen/load is reached e.g. 5 : [0.5, 0.6, 0.7, 0.8, 0.9, 1]
+    combined_analysis : bool
+        If True allowed voltage deviations for combined analysis of MV
+        and LV topology are used. If False different allowed voltage
+        deviations for MV and LV are used. See also config section
+        `grid_expansion_allowed_voltage_deviations`. If `mode` is set to
+        'mv' `combined_analysis` should be False. Default: False.
     Returns
     -------
 
     """
     logger.info("Start minimal reinforce")
     try:
-        edisgo_obj.reinforce()
+        edisgo_obj.reinforce(combined_analysis=combined_analysis)
     except ValueError as e:
         if mode is not None:
             logger.warning(f"Reinforce failed. Restart in {mode} mode.")
@@ -171,17 +177,33 @@ def reinforce(edisgo_obj, mode=None, iterations=10):
                 "Start partial reinforce with reduced time steps ("
                 f"{len(reduced_timesteps)})."
             )
-            edisgo_obj.reinforce(reduced_timesteps, max_while_iterations=50)
+            edisgo_obj.reinforce(
+                reduced_timesteps,
+                combined_analysis=combined_analysis,
+                troubleshooting_mode="lpf",
+                raise_not_converge=False,
+                max_while_iterations=50,
+            )
             logger.info(
                 "Continue partial reinforce with excluded time steps ("
                 f"{len(exluded_timesteps)})."
             )
-            edisgo_obj.reinforce(exluded_timesteps, max_while_iterations=50)
+            edisgo_obj.reinforce(
+                exluded_timesteps,
+                combined_analysis=combined_analysis,
+                troubleshooting_mode="lpf",
+                raise_not_converge=False,
+                max_while_iterations=50,
+            )
 
             logger.info("Final reinforce.")
-            edisgo_obj.reinforce(max_while_iterations=50)
+            edisgo_obj.reinforce(
+                combined_analysis=combined_analysis, max_while_iterations=50
+            )
         elif mode == "lpf":
-            edisgo_obj.reinforce(troubleshooting_mode="lpf")
+            edisgo_obj.reinforce(
+                combined_analysis=combined_analysis, troubleshooting_mode="lpf"
+            )
         elif mode == "iterative":
 
             ts_orig = deepcopy(edisgo_obj.timeseries)
@@ -194,10 +216,15 @@ def reinforce(edisgo_obj, mode=None, iterations=10):
                         edisgo_obj.timeseries, attr, getattr(ts_orig, attr) * n
                     )
 
-                edisgo_obj.reinforce(max_while_iterations=50)
+                edisgo_obj.reinforce(
+                    combined_analysis=combined_analysis,
+                    max_while_iterations=50,
+                )
 
             logger.info("Final reinforce.")
-            edisgo_obj.reinforce(max_while_iterations=50)
+            edisgo_obj.reinforce(
+                combined_analysis=combined_analysis, max_while_iterations=50
+            )
         else:
             logging.warning(e)
             raise ValueError("No reinforcement mode selected")
@@ -265,7 +292,9 @@ def integrate_and_reinforce(
         edisgo_obj, parameters=selected_parameters
     )
 
-    edisgo_obj = reinforce(edisgo_obj, mode="iterative", iterations=5)
+    edisgo_obj = reinforce(
+        edisgo_obj, combined_analysis=True, mode="split", iterations=5
+    )
 
     export_path = results_dir / run_id / str(grid_id) / "min_reinforce"
     os.makedirs(export_path, exist_ok=True)
@@ -298,7 +327,7 @@ if __name__ == "__main__":
 
     integrate_and_reinforce(
         # grid_id=1056, feeder_id=1, edisgo_obj=False, save=True, doit=False
-        # grid_id=2534,
+        # grid_id=176,
         # grid_id=1056,
         grid_id=1111,
         # feeder_id=8,
