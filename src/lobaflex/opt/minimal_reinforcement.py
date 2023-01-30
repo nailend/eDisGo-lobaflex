@@ -181,7 +181,7 @@ def reinforce(edisgo_obj, mode=None, iterations=10, combined_analysis=False):
                 reduced_timesteps,
                 combined_analysis=combined_analysis,
                 troubleshooting_mode="lpf",
-                raise_not_converge=False,
+                raise_not_converged=False,
                 max_while_iterations=50,
             )
             logger.info(
