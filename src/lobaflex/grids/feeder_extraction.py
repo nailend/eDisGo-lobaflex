@@ -5,10 +5,11 @@ import os
 import shutil
 import warnings
 
+from edisgo.edisgo import EDisGo
 from edisgo.edisgo import import_edisgo_from_files
 from edisgo.tools.complexity_reduction import extract_feeders_nx
 
-from lobaflex import config_dir, data_dir
+from lobaflex import config_dir, data_dir, results_dir
 from lobaflex.tools.tools import get_config, timeit, write_metadata
 
 if __name__ == "__main__":
@@ -18,29 +19,27 @@ else:
 
 
 def get_flexible_loads(
-    edisgo_obj, heat_pump=False, electromobility=False, bess=False, **kwargs
+    edisgo_obj, hp=False, ev=False, bess=False, **kwargs
 ):
     """
 
-    :param edisgo_obj:
-    :type edisgo_obj: eDisGo-obj
-    :param heat_pump:
-    :type heat_pump: bool
-    :param electromobility:
-    :type electromobility: bool
-    :param bess:
-    :type bess: bool
-    :return:
-    :rtype:
+    Parameters
+    ----------
+    edisgo_obj :  eDisGo-obj
+    hp :
+    ev :
+    bess :
+    kwargs :
+        ev_flex_sectors : None or set(str)
+            Specifies which electromobility sectors are flexible. By default this
+            is set to None, in which case all sectors are taken.
 
-    Other Parameters
-    ------------------
-    electromobility_sectors : None or set(str)
-        Specifies which electromobility sectores are flexible. By default this
-        is set to None, in which case all sectors are taken.
+    Returns
+    -------
+    flexible_loads : pd.DataFrame
 
     """
-    emob_sectors_flex = kwargs.get("electromobility_sectors", ["home", "work"])
+    emob_sectors_flex = kwargs.get("ev_flex_sectors", ["home", "work"])
 
     emob_sectors = edisgo_obj.topology.loads_df.loc[
         edisgo_obj.topology.loads_df["type"] == "charging_point", "sector"
@@ -48,9 +47,9 @@ def get_flexible_loads(
     emob_sectors_fix = [i for i in emob_sectors if i not in emob_sectors_flex]
 
     types = list()
-    if heat_pump:
+    if hp:
         types += ["heat_pump"]
-    if electromobility:
+    if ev:
         types += ["charging_point"]
     if bess:
         # TODO
@@ -61,7 +60,7 @@ def get_flexible_loads(
         edisgo_obj.topology.loads_df["type"].isin(types)
     ]
 
-    if electromobility:
+    if ev:
         flexible_loads = flexible_loads.drop(
             flexible_loads.loc[
                 (flexible_loads["type"] == "charging_point")
@@ -97,9 +96,9 @@ def extract_feeders_parallel(
     flexible_loads = get_flexible_loads(
         edisgo_obj=edisgo_obj,
         bess=cfg_flexible_loads["bess"],
-        heat_pump=cfg_flexible_loads["hp"],
-        electromobility=cfg_flexible_loads["emob"],
-        electromobility_sectors=cfg_flexible_loads["emob_flex_sectors"],
+        hp=cfg_flexible_loads["hp"],
+        ev=cfg_flexible_loads["ev"],
+        ev_flex_sectors=cfg_flexible_loads["ev_flex_sectors"],
     )
 
     feeders, buses_with_feeders = extract_feeders_nx(
@@ -112,47 +111,62 @@ def extract_feeders_parallel(
 
 
 @timeit
-def run_feeder_extraction(
-    grid_id, edisgo_obj=False, save=False, doit=False, version=None
-):
+def run_feeder_extraction(obj_or_path, run_id=None, version=None, export_path=None):
+    """
 
-    logger.info(f"Extracting feeders of {grid_id}.")
+    Parameters
+    ----------
+    obj_or_path :
+    run_id :
+    version :
+    export_path :
+
+    Returns
+    -------
+
+    """
+    logger.info(f"Run feeder extraction")
+    # logger.info(f"Extracting feeders of {grid_id}.")
 
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
-    cfg = get_config(path=config_dir / ".grids.yaml")
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    cfg_flexible_loads = cfg_o["flexible_loads"]
 
-    # TODO maybe remove only flex ev?
-    only_flex_ev = cfg["feeder_extraction"].get("only_flex_ev")
-    cfg_flexible_loads = cfg["feeder_extraction"].get("flexible_loads")
-
-    if not edisgo_obj:
-        import_dir = cfg["feeder_extraction"].get("import")
-        import_path = data_dir / import_dir / str(grid_id)
-        logger.info(f"Import Grid from file: {import_path}")
+    if isinstance(obj_or_path, EDisGo):
+        edisgo_obj = obj_or_path
+    else:
+        # import_dir = cfg["feeder_extraction"].get("import")
+        # import_path = data_dir / import_dir / str(grid_id)
+        # import_path = results_dir
+        # logger.info(f"Import Grid from file: {import_path}")
+        logger.info(f"Import Grid from file: {obj_or_path}")
 
         edisgo_obj = import_edisgo_from_files(
-            import_path,
+            edisgo_path=obj_or_path,
             import_topology=True,
             import_timeseries=True,
             import_electromobility=True,
             import_heat_pump=True,
         )
 
-    if save:
-        export_dir = cfg["feeder_extraction"].get("export")
-        export_path = data_dir / export_dir / str(grid_id)
+    grid_id = edisgo_obj.topology.mv_grid.id
+    logger.info(f"Extracting feeders of {grid_id}.")
+
+    if export_path is not None:
+        # export_dir = cfg_o["feeder_extraction"].get("export")
+        # export_path = data_dir / export_dir / str(grid_id)
         shutil.rmtree(export_path, ignore_errors=True)
         os.makedirs(export_path, exist_ok=True)
 
         feeders, buses_with_feeders = extract_feeders_parallel(
             edisgo_obj=edisgo_obj,
             export_path=export_path,
-            only_flex_ev=only_flex_ev,
             cfg_flexible_loads=cfg_flexible_loads,
         )
         for feeder_id, feeder in enumerate(feeders):
             # TODO sth is off here. Feeder id == 0 doesnt exist? investigate!
+            #     might be hvmv station
             try:
                 # meta_path = export_path / "feeder" / str(feeder_id + 1)
                 folder = f"{feeder_id+1:02}"
@@ -168,12 +182,11 @@ def run_feeder_extraction(
         feeders, buses_with_feeders = extract_feeders_parallel(
             edisgo_obj=edisgo_obj,
             export_path=False,
-            only_flex_ev=only_flex_ev,
             cfg_flexible_loads=cfg_flexible_loads,
         )
 
-    if doit:
-        return {"version": version}
+    if version and run_id is not None:
+        return {"version": version, "run_id": run_id}
     else:
         return feeders, buses_with_feeders
 
@@ -194,4 +207,6 @@ if __name__ == "__main__":
     logfile = logs_dir / f"feeder_extraction_{date}_local.log"
     setup_logging(file_name=logfile)
 
-    run_feeder_extraction(grid_id=2534, save=True)
+    run_feeder_extraction(obj_or_path=path, run_id=2,
+                          export_path=results_dir / "test" / str(1111) /
+                                        "feeder")

@@ -9,6 +9,7 @@ from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
 from lobaflex.opt.result_concatination import save_concatinated_results
 from lobaflex.opt.minimal_reinforcement import integrate_and_reinforce
 from lobaflex.tools.logger import setup_logging
+from lobaflex.opt.tasks import *
 from lobaflex.tools.pydoit import (
     opt_uptodate,
     task__get_opt_version,

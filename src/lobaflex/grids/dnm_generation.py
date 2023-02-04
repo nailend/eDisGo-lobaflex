@@ -90,30 +90,45 @@ def get_downstream_nodes_matrix_iterative(grid):
 
 
 @timeit
-def run_dnm_generation(
-    grid_id, feeder=False, save=False, doit=False, version=None
+def run_dnm_generation(path, grid_id, feeder=False, doit=False, version=None,
+                       run_id=None
 ):
+    """
+
+    Parameters
+    ----------
+    path :
+    grid_id :
+    feeder :
+    doit :
+    version :
+    run_id :
+
+    Returns
+    -------
+
+    """
 
     logger.info(f"Get Downstream Node Matrix of {grid_id}")
     warnings.simplefilter(action="ignore", category=FutureWarning)
     cfg = get_config(path=config_dir / ".grids.yaml")
 
-    import_dir = cfg["dnm_generation"].get("import")
-    import_path = data_dir / import_dir / str(grid_id)
-
-    logger.debug("Use export dir from config file.")
-    export_dir = cfg["dnm_generation"].get("export")
-    export_path = data_dir / export_dir / str(grid_id)
+    # import_dir = cfg["dnm_generation"].get("import")
+    # import_path = data_dir / import_dir / str(grid_id)
+    #
+    # logger.debug("Use export dir from config file.")
+    # export_dir = cfg["dnm_generation"].get("export")
+    # export_path = data_dir / export_dir / str(grid_id)
 
     if feeder:
-        feeder_dir = import_path / "feeder"
-        feeder_list = sorted(os.listdir(feeder_dir))
+        feeder_list = sorted(os.listdir(path))
+        feeder_list = [i for i in feeder_list if "md" not in i]
         logger.info(
             f"Getting downstream nodes matrices of {len(feeder_list)} feeder."
         )
-        grid_dirs = [feeder_dir / str(feeder) for feeder in feeder_list]
+        grid_dirs = [path/ str(feeder) for feeder in feeder_list]
     else:
-        grid_dirs = [import_path]
+        grid_dirs = [path]
 
     for grid_dir in grid_dirs:
 
@@ -129,28 +144,24 @@ def run_dnm_generation(
             import_electromobility=True,
             import_heat_pump=True,
             import_timeseries=True,
+            # TODO ass results?!
         )
 
         downstream_node_matrix = get_downstream_nodes_matrix_iterative(
             edisgo_obj.topology
         )
 
-        if save:
-            if feeder:
-                export_path_dnm = (
-                    export_path
-                    / "feeder"
-                    / grid_dir.name
-                    / f"downstream_node_matrix_{grid_id}_{grid_dir.name}.csv"
-                )
+        if feeder is True:
+            export_path_dnm = (
+                    grid_dir / f"downstream_node_matrix_{grid_id}_{grid_dir.name}.csv"
+            )
+        else:
+            export_path_dnm = (
+                grid_dir / f"downstream_node_matrix_{grid_id}.csv"
+            )
 
-            else:
-                export_path_dnm = (
-                    export_path / f"downstream_node_matrix_{grid_id}.csv"
-                )
-
-            os.makedirs(export_path_dnm.parent, exist_ok=True)
-            downstream_node_matrix.to_csv(export_path_dnm)
+        os.makedirs(export_path_dnm.parent, exist_ok=True)
+        downstream_node_matrix.to_csv(export_path_dnm)
     # if save:
     #     write_metadata(
     #         export_path,
@@ -158,8 +169,8 @@ def run_dnm_generation(
     #         text=f"Downstream Node Matrix of {int(feeder)+1} feeder",
     #     )
 
-    if doit:
-        return {"version": version}
+    if version and run_id is not None:
+        return {"version": version, "run_id": run_id}
 
 
 if __name__ == "__main__":
@@ -169,7 +180,7 @@ if __name__ == "__main__":
     from lobaflex import logs_dir
     from lobaflex.tools.logger import setup_logging
     from lobaflex.tools.tools import split_model_config_in_subconfig
-
+    from pathlib import Path
     split_model_config_in_subconfig()
 
     logger = logging.getLogger("lobaflex.__main__")
@@ -183,4 +194,5 @@ if __name__ == "__main__":
         grid_id="5_bus_testgrid",
         feeder=1,
         save=True,
+        "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/results/test/1111"),
     )

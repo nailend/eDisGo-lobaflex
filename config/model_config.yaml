@@ -7,6 +7,8 @@ opt:
   mvgds: [2534, 176, 177, 1056, 1690, 1811]
 #  mvgds: [2534]
   feeder: False # default and not used
+  prepare:
+    fix_version: False
   solver: gurobi
   options:
     threads: 16
@@ -15,6 +17,11 @@ opt:
   save_lp_files: True
   save_solver_logs: True
   print_solver_logs: True
+  flexible_loads:
+    bess: False
+    hp: True
+    ev: True
+    ev_flex_sectors: [ work, home ]
   opt_bess: False
   opt_hp: True
   opt_emob: True

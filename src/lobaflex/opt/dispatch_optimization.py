@@ -270,13 +270,14 @@ def rolling_horizon_optimization(
     logger.info("Import downstream node matrix")
     downstream_nodes_matrix = get_dnm(mvgd=grid_id, feeder=int(feeder_id))
 
+    cfg_flexible_loads = cfg_o["flexible_loads"]
     logger.info("Get flexible loads")
     flexible_loads = get_flexible_loads(
         edisgo_obj=edisgo_obj,
-        heat_pump=cfg_o["opt_hp"],
-        electromobility=cfg_o["opt_emob"],
-        bess=cfg_o["opt_bess"],
-        electromobility_sectors=cfg_o["emob_sectors"],
+        hp=cfg_flexible_loads["hp"],
+        ev=cfg_flexible_loads["ev"],
+        bess=cfg_flexible_loads["bess"],
+        ev_flex_sectors=cfg_flexible_loads["ev_flex_sectors"],
     )
 
     logger.info("Extract time-invariant parameters")
