@@ -189,10 +189,10 @@ if __name__ == "__main__":
     logfile = logs_dir / f"dnm_generation{date}_local.log"
     setup_logging(file_name=logfile)
 
-    run_dnm_generation(
-        # grid_id=1056,
-        grid_id="5_bus_testgrid",
-        feeder=1,
-        save=True,
+    run_dnm_generation(path=Path(
         "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/results/test/1111"),
+                       grid_id=1111,
+                       feeder=True,
+                       doit=False,
+                       version=1
     )

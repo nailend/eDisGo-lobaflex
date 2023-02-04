@@ -207,6 +207,7 @@ if __name__ == "__main__":
     logfile = logs_dir / f"feeder_extraction_{date}_local.log"
     setup_logging(file_name=logfile)
 
+    path = "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/data/load_n_gen_n_emob_n_hp_grids/1111"
     run_feeder_extraction(obj_or_path=path, run_id=2,
                           export_path=results_dir / "test" / str(1111) /
                                         "feeder")
