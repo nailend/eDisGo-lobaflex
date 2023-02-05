@@ -3,6 +3,7 @@ import os
 import re
 
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 
@@ -16,21 +17,22 @@ else:
     logger = logging.getLogger(__name__)
 
 
-def concat_results(grid_id, timeframe, parameters=None, fillna=None):
+def concat_results(path, timeframe=None, parameters=None, fillna=None):
     """
     Concat results of all iterations and feeders of one grid and
     selected parameters.
 
     Parameters
     ----------
-    grid_id : int
-        Grid id
+    path : PosixPath
+        Path to directory containing results of dispatch
+        optimization with pattern `iteration_*.csv`
     timeframe : pd.DatetimeIndex
-        Timeframe to be selected
+        Timeframe to be selected, if None all times steps are selected
     parameters : list of str, optional
         List of parameters to be collected. If None, all parameters are
     fillna : dict, optional
-        kwargs from pandas.core.frame.DataFrame.fillna
+        kwargs from `pandas.core.frame.DataFrame.fillna`
 
     Returns
     -------
@@ -38,16 +40,13 @@ def concat_results(grid_id, timeframe, parameters=None, fillna=None):
         Dictionary with parameter as key and concatinated results as value
 
     """
-    cfg_o = get_config(path=config_dir / ".opt.yaml")
-    grid_path = results_dir / cfg_o["run_id"] / str(grid_id)
-
     # get list of all iteration_*.csv
     list_of_files = pd.Series(
-        get_files_in_subdirs(grid_path, pattern="*iteration_*.csv")
+        get_files_in_subdirs(path, pattern="*iteration_*.csv")
     )
 
     # identify file by filename pattern:
-    pattern = r"\d+/feeder/\d+/(.*)_(\d+)-(\d+)_iteration_(\d+).csv"
+    pattern = r"\d+/.*/\d+/(.*)_(\d+)-(\d+)_iteration_(\d+).csv"
     mapping = pd.DataFrame(
         [re.search(pattern, string=i).groups() for i in list_of_files],
         columns=["parameter", "grid", "feeder", "iteration"],
@@ -84,15 +83,15 @@ def concat_results(grid_id, timeframe, parameters=None, fillna=None):
             # slack_initial is only one timestep
             if "slack_initial" in parameter:
                 df_all_iterations = df_all_iterations.T
-            elif "slack" in parameter:
-                # all other slacks only contain timesteps with values
-                pass
-            else:
-                # only select defined timeframe
-                logger.debug(
-                    f"Select timesteps of {grid}/{feeder}" f"/{parameter}."
-                )
-                df_all_iterations = df_all_iterations.loc[timeframe]
+            # elif "slack" in parameter:
+            #     # all other slacks only contain timesteps with values
+            #     pass
+            # else:
+            #     # only select defined timeframe
+            #     logger.debug(
+            #         f"Select timesteps of {grid}/{feeder}" f"/{parameter}."
+            #     )
+            #     df_all_iterations = df_all_iterations.loc[timeframe]
             # concat all feeder
             df_grid_parameter = pd.concat(
                 [df_grid_parameter, df_all_iterations], axis=1
@@ -116,55 +115,53 @@ def concat_results(grid_id, timeframe, parameters=None, fillna=None):
 
 
 @log_errors
-def save_concatinated_results(grid_id, doit=False, version=None):
+def save_concatinated_results(grid_id, path, run_id=None, version=None):
     """Concatinate all results of one grid and save them to csv.
 
     Parameters
     ----------
     grid_id : int
-    doit : bool
-    version : int
+    path : PosixPath
+    run_id : str or None
+        Run id for pydoit version
+    version : int or None
+        Version number of the run id
 
     Returns
     -------
-    if doit is True, the function returns version of the results
-        version : int, run_id : str
+    If run_id and version are not None, a dictionary with these values is
+    given for the pydoit versioning.
 
     """
 
-    cfg_o = get_config(path=config_dir / ".opt.yaml")
-
     date = datetime.now().date().isoformat()
-    logfile = (
-        logs_dir / f"opt_concat_results_{cfg_o['run_id']}_{grid_id}_{date}.log"
-    )
+    logfile = logs_dir / f"opt_concat_results_{run_id}_{grid_id}_{date}.log"
     setup_logging(file_name=logfile)
 
     logger.info("Start concatenating files")
 
-    # define timeframe to concat
-    timeframe = pd.date_range(
-        start=cfg_o["start_datetime"],
-        periods=cfg_o["total_timesteps"],
-        freq="1h",
-    )
+    # # define timeframe to concat
+    # timeframe = pd.date_range(
+    #     start=cfg_o["start_datetime"],
+    #     periods=cfg_o["total_timesteps"],
+    #     freq="1h",
+    # )
 
     results = concat_results(
-        grid_id=grid_id,
-        timeframe=timeframe,
+        path=path,
         parameters=None,
         fillna={"value": 0},
     )
 
+    export_path = Path(str(path).split("_feeder")[0] + "_concat")
+    os.makedirs(export_path, exist_ok=True)
     for (grid, parameter), df in results.items():
-        path = results_dir / cfg_o["run_id"] / grid / "mvgd"
-        os.makedirs(path, exist_ok=True)
-        filename = path / f"{grid}_{parameter}.csv"
+        filename = export_path / f"{grid}_{parameter}.csv"
         df.to_csv(filename, index=True)
         logger.info(f"Save concatenated results to {filename}.")
 
-    if doit:
-        return {"version": version, "run_id": cfg_o["run_id"]}
+    if version is not None and run_id is not None:
+        return {"version": version, "run_id": run_id}
 
 
 if __name__ == "__main__":
@@ -179,8 +176,10 @@ if __name__ == "__main__":
     logfile = logs_dir / f"result_concatination_{date}_local.log"
     setup_logging(file_name=logfile)
 
+    grid_id = 1111
     save_concatinated_results(
-        # grid_id=1056,
         grid_id=1111,
-        doit=False,
+        path=results_dir / "debug" / str(grid_id) / "minimize_loading_feeder",
+        run_id=None,
+        version=None,
     )
