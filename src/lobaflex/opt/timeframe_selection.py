@@ -110,7 +110,7 @@ def run_timeframe_selection(
     obj_or_path,
     grid_id,
     run_id=None,
-    version=None,
+    version_db=None,
 ):
     """Extract timeframe from edisgo object or dump. Currently using timeindex
     generate from config file input.
@@ -121,10 +121,10 @@ def run_timeframe_selection(
         edisgo object or path to edisgo dump
     grid_id :
         grid id of MVGD
-    run_id :
+    run_id : str
         run id used for pydoit versioning
-    version :
-        version number of run id used for pydoit versioning
+    version_db : dict
+        Dictionary with version information for pydoit versioning
 
 
     Returns
@@ -179,5 +179,5 @@ def run_timeframe_selection(
         save_results=True,
     )
 
-    if version is not None and run_id is not None:
-        return {"version": version, "run_id": run_id}
+    if version_db is not None:
+        return version_db["db"]

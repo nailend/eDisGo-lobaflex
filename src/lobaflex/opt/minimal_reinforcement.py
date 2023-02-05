@@ -145,16 +145,19 @@ def iterative_reinforce(
 
 
 @log_errors
-def reinforce_grid(obj_or_path, grid_id=None, run_id=None, version=None):
+def reinforce_grid(obj_or_path, grid_id=None, run_id=None, version_db=None):
     """
 
     Parameters
     ----------
     obj_or_path : :class:`edisgo.EDisGo` or PosixPath
         edisgo object or path to edisgo dump
-    grid_id :
-    run_id :
-    version :
+    grid_id : int
+        grid id of MVGD
+    run_id : str
+        run id used for pydoit versioning
+    version_db : dict
+        Dictionary with version information for pydoit versioning
 
     Returns
     -------
@@ -198,8 +201,8 @@ def reinforce_grid(obj_or_path, grid_id=None, run_id=None, version=None):
         save_results=True,
     )
 
-    if version is not None and run_id is not None:
-        return {"version": version, "run_id": run_id}
+    if version_db is not None:
+        return version_db["db"]
 
 
 if __name__ == "__main__":

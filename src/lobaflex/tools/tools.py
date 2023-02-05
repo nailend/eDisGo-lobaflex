@@ -275,8 +275,9 @@ class TelegramReporter(object):
             # self.telegram(text=f"Success: {task.title()}\n in {exec_time}")
         if "_set" in task.name:
             group = task.name.split("_")[2]
-            version = task.result["version"]
-            run_id = task.result.get("run_id", None)
+            version = task.result["current"]["version"]
+            run_id = task.result["current"]["run_id"]
+            # run_id = task.result.get("run_id", None)
             if run_id is None:
                 message = f"Version of {group} set to {version}."
             else:

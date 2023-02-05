@@ -120,7 +120,12 @@ def extract_feeders_parallel(
 
 @timeit
 def run_feeder_extraction(
-    obj_or_path, grid_id, export_path=None, run_id=None, version=None
+    obj_or_path,
+    grid_id,
+    export_path=None,
+    run_id=None,
+    version_db=None
+    # obj_or_path, grid_id, version_db
 ):
     """
 
@@ -130,10 +135,10 @@ def run_feeder_extraction(
         edisgo object or path to edisgo dump
     export_path : PosixPath or None
         Path to export feeders to, if non given feeders are not exported
-    run_id :
+    run_id : str
         run id used for pydoit versioning
-    version :
-        version number of run id used for pydoit versioning
+    version_db : dict
+        Dictionary with version information for pydoit versioning
 
 
     Returns
@@ -141,6 +146,7 @@ def run_feeder_extraction(
     If run_id and version are not None, a dictionary with these values is
     given for the pydoit versioning.
     """
+
     logger.info(f"Run feeder extraction of {grid_id}")
 
     warnings.simplefilter(action="ignore", category=FutureWarning)
@@ -198,8 +204,9 @@ def run_feeder_extraction(
             cfg_flexible_loads=cfg_flexible_loads,
         )
 
-    if version is not None and run_id is not None:
-        return {"version": version, "run_id": run_id}
+    if version_db is not None:
+        return version_db["db"]
+
     else:
         return feeders, buses_with_feeders
 

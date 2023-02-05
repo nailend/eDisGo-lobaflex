@@ -94,7 +94,9 @@ def get_downstream_nodes_matrix_iterative(grid):
 
 
 @timeit
-def run_dnm_generation(path, grid_id, feeder=False, version=None, run_id=None):
+def run_dnm_generation(
+    path, grid_id, feeder=False, run_id=None, version_db=None
+):
     """
 
     Parameters
@@ -105,10 +107,10 @@ def run_dnm_generation(path, grid_id, feeder=False, version=None, run_id=None):
         Grid id of the MVGD
     feeder : bool
         If true generates dnm matrix for all feeders in path
-    run_id : str or None
-        Run id for pydoit version
-    version : int or None
-        Version number of the run id
+    run_id : str
+        run id used for pydoit versioning
+    version_db : dict
+        Dictionary with version information for pydoit versioning
 
     Returns
     -------
@@ -167,8 +169,8 @@ def run_dnm_generation(path, grid_id, feeder=False, version=None, run_id=None):
     #         text=f"Downstream Node Matrix of {int(feeder)+1} feeder",
     #     )
 
-    if version is not None and run_id is not None:
-        return {"version": version, "run_id": run_id}
+    if version_db is not None:
+        return version_db["db"]
 
 
 if __name__ == "__main__":

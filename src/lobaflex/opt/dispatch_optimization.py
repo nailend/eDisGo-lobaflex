@@ -462,8 +462,8 @@ def run_dispatch_optimization(
     grid_id,
     feeder_id,
     objective,
-    version=None,
     run_id=None,
+    version_db=None,
 ):
     """
 
@@ -477,10 +477,10 @@ def run_dispatch_optimization(
         feeder id, respective folder name of feeder
     objective :
         objective function to be used for optimization
-    run_id :
+    run_id : str
         run id used for pydoit versioning
-    version :
-        version number of run id used for pydoit versioning
+    version_db : dict
+        Dictionary with version information for pydoit versioning
 
     Returns
     -------
@@ -547,8 +547,8 @@ def run_dispatch_optimization(
         export_path=export_path,
     )
 
-    if version is not None and run_id is not None:
-        return {"version": version, "run_id": run_id}
+    if version_db is not None:
+        return version_db["db"]
 
 
 if __name__ == "__main__":

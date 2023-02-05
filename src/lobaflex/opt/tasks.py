@@ -24,9 +24,8 @@ logfile = logs_dir / f"opt_tasks_{date}.log"
 setup_logging(file_name=logfile)
 
 
-def timeframe_selection_task(mvgd, run_id, version):
+def timeframe_selection_task(mvgd, run_id, version_db):
     """"""
-
     import_dir = cfg_o["import_dir"]
     import_path = data_dir / import_dir / str(mvgd)
     fix = cfg_o["prepare"]["fix_version"]
@@ -40,7 +39,7 @@ def timeframe_selection_task(mvgd, run_id, version):
                 {  # kwargs
                     "obj_or_path": import_path,
                     "grid_id": mvgd,
-                    "version": version,
+                    "version_db": version_db,
                     "run_id": run_id,
                 },
             )
@@ -50,13 +49,12 @@ def timeframe_selection_task(mvgd, run_id, version):
     }
 
 
-def feeder_extraction_task(mvgd, run_id, version):
+def feeder_extraction_task(mvgd, run_id, version_db):
     """Generator to define feeder extraction task for a mvgd"""
 
     fix = cfg_o["prepare"]["fix_version"]
     import_path = results_dir / run_id / str(mvgd) / "timeframe"
     export_path = import_path.parent / "timeframe_feeder"
-
     return {
         "name": f"feeder_{mvgd}",
         "actions": [
@@ -67,7 +65,7 @@ def feeder_extraction_task(mvgd, run_id, version):
                     "obj_or_path": import_path,
                     "grid_id": mvgd,
                     "export_path": export_path,
-                    "version": version,
+                    "version_db": version_db,
                     "run_id": run_id,
                 },
             )
@@ -105,7 +103,7 @@ def feeder_extraction_task(mvgd, run_id, version):
 #     }
 
 
-def optimization_task(mvgd, feeder, objective, run_id, version):
+def optimization_task(mvgd, feeder, objective, run_id, version_db):
     """Generator to define optimization task for a feeder"""
 
     import_path = (
@@ -127,7 +125,7 @@ def optimization_task(mvgd, feeder, objective, run_id, version):
                     "grid_id": mvgd,
                     "feeder_id": feeder,
                     "objective": objective,
-                    "version": version,
+                    "version_db": version_db,
                     "run_id": run_id,
                 },
             )
@@ -138,7 +136,7 @@ def optimization_task(mvgd, feeder, objective, run_id, version):
     }
 
 
-def result_concatination_task(mvgd, objective, run_id, version, dep):
+def result_concatination_task(mvgd, objective, run_id, version_db, dep):
     """"""
 
     def teardown(path):
@@ -157,7 +155,7 @@ def result_concatination_task(mvgd, objective, run_id, version, dep):
                     "grid_id": mvgd,
                     "path": path,
                     "run_id": run_id,
-                    "version": version,
+                    "version_db": version_db,
                 },
             )
         ],
@@ -170,7 +168,7 @@ def result_concatination_task(mvgd, objective, run_id, version, dep):
     }
 
 
-def dispatch_integration_task(mvgd, objective, run_id, version, dep):
+def dispatch_integration_task(mvgd, objective, run_id, version_db, dep):
     """"""
     obj_path = data_dir / cfg_o["import_dir"] / str(mvgd)
     import_path = results_dir / run_id / str(mvgd) / (objective + "_concat")
@@ -186,7 +184,7 @@ def dispatch_integration_task(mvgd, objective, run_id, version, dep):
                     "import_path": import_path,
                     "grid_id": mvgd,
                     "run_id": run_id,
-                    "version": version,
+                    "version_db": version_db,
                 },
             )
         ],
@@ -198,7 +196,7 @@ def dispatch_integration_task(mvgd, objective, run_id, version, dep):
     }
 
 
-def grid_reinforcement_task(mvgd, objective, run_id, version, dep):
+def grid_reinforcement_task(mvgd, objective, run_id, version_db, dep):
     """"""
     obj_path = results_dir / run_id / str(mvgd) / (objective + "_mvgd")
 
@@ -212,7 +210,7 @@ def grid_reinforcement_task(mvgd, objective, run_id, version, dep):
                     "obj_or_path": obj_path,
                     "grid_id": mvgd,
                     "run_id": run_id,
-                    "version": version,
+                    "version_db": version_db,
                 },
             )
         ],

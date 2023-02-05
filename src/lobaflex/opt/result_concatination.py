@@ -115,17 +115,17 @@ def concat_results(path, timeframe=None, parameters=None, fillna=None):
 
 
 @log_errors
-def save_concatinated_results(grid_id, path, run_id=None, version=None):
+def save_concatinated_results(grid_id, path, run_id=None, version_db=None):
     """Concatinate all results of one grid and save them to csv.
 
     Parameters
     ----------
     grid_id : int
     path : PosixPath
-    run_id : str or None
-        Run id for pydoit version
-    version : int or None
-        Version number of the run id
+    run_id : str
+        run id used for pydoit versioning
+    version_db : dict
+        Dictionary with version information for pydoit versioning
 
     Returns
     -------
@@ -160,8 +160,8 @@ def save_concatinated_results(grid_id, path, run_id=None, version=None):
         df.to_csv(filename, index=True)
         logger.info(f"Save concatenated results to {filename}.")
 
-    if version is not None and run_id is not None:
-        return {"version": version, "run_id": run_id}
+    if version_db is not None:
+        return version_db["db"]
 
 
 if __name__ == "__main__":

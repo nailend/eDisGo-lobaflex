@@ -116,7 +116,7 @@ def integrate_timeseries(
 
 @log_errors
 def integrate_dispatch(
-    obj_or_path, import_path, grid_id=None, run_id=None, version=None
+    obj_or_path, import_path, grid_id=None, run_id=None, version_db=None
 ):
     """
 
@@ -128,10 +128,10 @@ def integrate_dispatch(
         Path to directory where results are stored
     grid_id : int or None
         Grid id of MVGD
-    run_id : str or None
-        Run id for pydoit versioning
-    version : int or None
-        Version number of run_id
+    run_id : str
+        run id used for pydoit versioning
+    version_db : dict
+        Dictionary with version information for pydoit versioning
 
     Returns
     -------
@@ -190,8 +190,8 @@ def integrate_dispatch(
         save_results=True,
     )
 
-    if version is not None and run_id is not None:
-        return {"version": version, "run_id": run_id}
+    if version_db is not None:
+        return version_db["db"]
 
 
 if __name__ == "__main__":

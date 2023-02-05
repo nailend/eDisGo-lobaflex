@@ -17,14 +17,16 @@ from lobaflex.opt.tasks import (  # dnm_generation_task,
     timeframe_selection_task,
 )
 from lobaflex.tools.logger import setup_logging
-from lobaflex.tools.pydoit import (
-    opt_uptodate,
-    task__get_opt_version,
-    task__set_opt_version,
-    task__split_model_config_in_subconfig,
+from lobaflex.tools.pydoit import opt_uptodate  # noqa: F401
+from lobaflex.tools.pydoit import task__get_opt_version  # noqa: F401
+from lobaflex.tools.pydoit import task__set_opt_version  # noqa: F401; noqa: F401
+from lobaflex.tools.tools import (
+    TelegramReporter,
+    get_config,
+    split_model_config_in_subconfig,
 )
-from lobaflex.tools.tools import TelegramReporter, get_config
 
+split_model_config_in_subconfig()
 logger = logging.getLogger("lobaflex.opt." + __name__)
 date = datetime.now().date().isoformat()
 cfg_o = get_config(path=config_dir / ".opt.yaml")
@@ -41,19 +43,14 @@ DOIT_CONFIG = {
     "reporter": TelegramReporter,
 }
 
-logger.info(
-    f"Run: {cfg_o.get('run_id', None)} - Version:"
-    f"{cfg_o.get('version', None)}"
-)
 
-# DOIT_CONFIG = {
-#     "default_tasks": ["_set_opt_version"],
-#     "reporter": TelegramReporter,
-# }
-# DOIT_CONFIG = {
-#     "default_tasks": ["prep", "min_load"],
-#     # "reporter": TelegramReporter,
-# }
+def task_update():
+    """Logs the current version and run_id with every doit command"""
+    dep_manager = doit.Globals.dep_manager
+    version_db = dep_manager.get_result("_set_opt_version")
+    version_db = version_db if isinstance(version_db, dict) else {"db": {}}
+    version = version_db.get("current", {"run_id": None, "version": None})
+    logger.info(f"Run: {version['run_id']} - Version: {version['version']}")
 
 
 def task_prep():
@@ -65,20 +62,22 @@ def task_prep():
     import_dir = cfg_o["import_dir"]
 
     dep_manager = doit.Globals.dep_manager
-    version = dep_manager.get_result("_set_opt_version")["version"]
-    run_id = dep_manager.get_result("_set_opt_version")["run_id"]
+    version_db = dep_manager.get_result("_set_opt_version")
+    version_db = version_db if isinstance(version_db, dict) else {"db": {}}
+    task_version = version_db.get("current", {"run_id": "None"})
+    run_id = task_version.get("run_id", "None")
 
     # TODO
-    # observattion_import = data_dir / import_dir / str(mvgd)
+    # observation_import = data_dir / import_dir / str(mvgd)
     # path = results_dir / run_id / str(mvgd) / timeframe
     for mvgd in mvgds:
         data_path = data_dir / import_dir / str(mvgd)
         if os.path.isdir(data_path):
 
             # TODO observation periods
-            yield timeframe_selection_task(mvgd, run_id, version)
+            yield timeframe_selection_task(mvgd, run_id, version_db)
 
-            yield feeder_extraction_task(mvgd, run_id, version)
+            yield feeder_extraction_task(mvgd, run_id, version_db)
 
             # yield dnm_generation_task(mvgd=mvgd,
             #                           run_id=run_id,
@@ -91,13 +90,13 @@ def task_min_load():
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
-    # import_dir = cfg_o["import_dir"]
-    # objective = cfg_o["objective"]
     objective = "minimize_loading"
-    # feeder_dir =
+
     dep_manager = doit.Globals.dep_manager
-    version = dep_manager.get_result("_set_opt_version")["version"]
-    run_id = dep_manager.get_result("_set_opt_version")["run_id"]
+    version_db = dep_manager.get_result("_set_opt_version")
+    version_db = version_db if isinstance(version_db, dict) else {"db": {}}
+    task_version = version_db.get("current", {"run_id": "None"})
+    run_id = task_version.get("run_id", "None")
 
     # create opt task only for existing grid folders
     for mvgd in mvgds:
@@ -116,20 +115,20 @@ def task_min_load():
             for feeder in sorted(feeder_ids):
 
                 yield optimization_task(
-                    mvgd, feeder, objective, run_id, version
+                    mvgd, feeder, objective, run_id, version_db
                 )
 
                 dependencies += [f"min_load:opt_{mvgd}/{int(feeder):02}"]
 
             yield result_concatination_task(
-                mvgd, objective, run_id, version, dep=dependencies
+                mvgd, objective, run_id, version_db, dep=dependencies
             )
 
             yield dispatch_integration_task(
                 mvgd,
                 objective,
                 run_id,
-                version,
+                version_db,
                 dep=[f"min_load:concat_{mvgd}"],
             )
 
@@ -137,7 +136,7 @@ def task_min_load():
                 mvgd,
                 objective,
                 run_id,
-                version,
+                version_db,
                 dep=[f"min_load:add_ts_{mvgd}"],
             )
 
