@@ -28,7 +28,7 @@ def timeframe_selection_task(mvgd, run_id, version_db):
     """"""
     import_dir = cfg_o["import_dir"]
     import_path = data_dir / import_dir / str(mvgd)
-    fix = cfg_o["prepare"]["fix_version"]
+    fix = cfg_o["fix_preparation"]
 
     return {
         "name": f"timeframe_{mvgd}",
@@ -52,7 +52,7 @@ def timeframe_selection_task(mvgd, run_id, version_db):
 def feeder_extraction_task(mvgd, run_id, version_db):
     """Generator to define feeder extraction task for a mvgd"""
 
-    fix = cfg_o["prepare"]["fix_version"]
+    fix = cfg_o["fix_preparation"]
     import_path = results_dir / run_id / str(mvgd) / "timeframe"
     export_path = import_path.parent / "timeframe_feeder"
     return {
@@ -79,7 +79,7 @@ def feeder_extraction_task(mvgd, run_id, version_db):
 # def dnm_generation_task(mvgd, fix, run_id, version):
 #     """Generator to define dnm generation task for a feeder or mvgd"""
 
-#     fix = cfg_o["prepare"]["fix_version"]
+#     fix = cfg_o["fix_preparation"]
 #     import_path = results_dir / run_id / str(mvgd) / "timeframe_feeder"
 #
 #     return {

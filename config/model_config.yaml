@@ -7,8 +7,7 @@ opt:
   mvgds: [2534, 176, 177, 1056, 1690, 1811]
 #  mvgds: [2534]
   feeder: False # default and not used
-  prepare:
-    fix_version: False
+  fix_preparation: False
   solver: gurobi
   options:
     threads: 16
