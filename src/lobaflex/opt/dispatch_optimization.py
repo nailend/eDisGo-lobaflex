@@ -4,24 +4,22 @@ import re
 import shutil
 import warnings
 
-from copy import deepcopy
 from datetime import datetime
 
 import edisgo.opf.lopf as lopf
+import networkx as nx
 import numpy as np
 import pandas as pd
 
-from edisgo.edisgo import import_edisgo_from_files
-from edisgo.network.timeseries import TimeSeries
-from edisgo.tools.tools import (
-    assign_voltage_level_to_component,
-    convert_impedances_to_mv,
-)
+from edisgo.edisgo import EDisGo, import_edisgo_from_files
+from edisgo.network.topology import Topology
+from edisgo.tools.tools import convert_impedances_to_mv
 
-from lobaflex import config_dir, data_dir, logs_dir, results_dir
-from lobaflex.grids.feeder_extraction import get_flexible_loads
+from lobaflex import config_dir, logs_dir, results_dir
+from lobaflex.opt.feeder_extraction import get_flexible_loads
+from lobaflex.opt.timeframe_selection import extract_timeframe
 from lobaflex.tools.logger import setup_logging
-from lobaflex.tools.tools import dump_yaml, get_config, log_errors
+from lobaflex.tools.tools import dump_yaml, get_config, log_errors, timeit
 
 if __name__ == "__main__":
     logger = logging.getLogger("lobaflex.opt." + __name__)
@@ -29,123 +27,91 @@ else:
     logger = logging.getLogger(__name__)
 
 
-def extract_timeframe(
-    edisgo_obj,
-    timeframe=None,
-    start_datetime=None,
-    timesteps=None,
-    freq="1h",
-    ts=True,
-    emob=True,
-    hp=True,
-):
+@timeit
+def get_downstream_nodes_matrix_iterative(grid):
     """
+    Method that returns matrix M with 0 and 1 entries describing the relation
+    of buses within the network. If bus b is descendant of a (assuming the
+    station is the root of the radial network) M[a,b] = 1, otherwise M[a,b] = 0.
+    The matrix is later used to determine the power flow at the different buses
+    by multiplying with the nodal power flow. S_sum = M * s, where s is the
+    nodal power vector.
+
+    Note: only works for radial networks.
 
     Parameters
     ----------
-    edisgo_obj :
-    timeframe :
-    start_datetime :
-    timesteps :
-    freq :
-    ts :
-    emob :
-    hp :
+    grid : either Topology, MVGrid or LVGrid
 
     Returns
     -------
-
+    downstream_node_matrix : pd.DataFrame
+    Todo: Check version with networkx successor
     """
-    edisgo_obj = deepcopy(edisgo_obj)
 
-    if timeframe is None:
-        timeframe = pd.date_range(
-            start=start_datetime, periods=timesteps, freq=freq
-        )
-
-    if not (timeframe.isin(edisgo_obj.timeseries.timeindex)).all():
-        # logger.exception()
-        raise ValueError(
-            "Edisgo object does not contain all the given timeindex"
-        )
-    # adapt timeseries
-    if ts:
-        attributes = TimeSeries()._attributes
-        edisgo_obj.timeseries.timeindex = timeframe
-        for attr in attributes:
-            if not getattr(edisgo_obj.timeseries, attr).empty:
-                setattr(
-                    edisgo_obj.timeseries,
-                    attr,
-                    getattr(edisgo_obj.timeseries, attr).loc[timeframe],
+    def recursive_downstream_node_matrix_filling(
+        current_bus,
+        current_feeder,
+        downstream_node_matrix,
+        grid,
+        visited_buses,
+    ):
+        current_feeder.append(current_bus)
+        for neighbor in tree.successors(current_bus):
+            if (
+                neighbor not in visited_buses
+                and neighbor not in current_feeder
+            ):
+                recursive_downstream_node_matrix_filling(
+                    neighbor,
+                    current_feeder,
+                    downstream_node_matrix,
+                    grid,
+                    visited_buses,
                 )
-        # logger.info("")
-    if emob:
-        for key, df in edisgo_obj.electromobility.flexibility_bands.items():
-            if not df.empty:
-                df = df.loc[timeframe]
-                edisgo_obj.electromobility.flexibility_bands.update({key: df})
-    if hp:
-        for attr in ["cop_df", "heat_demand_df"]:
-            if not getattr(edisgo_obj.heat_pump, attr).empty:
-                setattr(
-                    edisgo_obj.heat_pump,
-                    attr,
-                    getattr(edisgo_obj.heat_pump, attr).loc[timeframe],
-                )
+        # current_bus = current_feeder.pop()
+        downstream_node_matrix.loc[current_feeder, current_bus] = 1
+        visited_buses.append(current_bus)
+        # if len(visited_buses) % 10 == 0:
+        #     logger.info(
+        #         "{} % of the buses have been checked".format(
+        #             len(visited_buses) / len(buses) * 100
+        #         )
+        #     )
+        current_feeder.pop()
 
-    logger.info(
-        f"Timeseries taken: {timeframe[0]} -> "
-        f"{timeframe[-1]} including {timesteps} timesteps."
+    buses = grid.buses_df.index.values
+    if isinstance(grid, Topology):
+        graph = grid.to_graph()
+        slack = grid.mv_grid.station.index[0]
+    else:
+        graph = grid.graph
+        slack = grid.transformers_df.bus1.iloc[0]
+    tree = nx.bfs_tree(graph, slack)
+
+    logger.info(f"Extract Downstream Note Matrix for {len(buses)} buses.")
+    downstream_node_matrix = pd.DataFrame(columns=buses, index=buses)
+    downstream_node_matrix.fillna(0, inplace=True)
+    visited_buses = []
+    current_feeder = []
+
+    recursive_downstream_node_matrix_filling(
+        slack, current_feeder, downstream_node_matrix, grid, visited_buses
     )
-    return edisgo_obj
+
+    return downstream_node_matrix
 
 
-def get_dnm(mvgd, feeder):
-    """
-    Get Downstream Node Matrix that describes the influence of the nodes on
-    each other
-
-    Parameters
-    ----------
-    mvgd : int
-        MVGD id
-    feeder : int
-        Feeder id
-
-    Returns
-    -------
-    pd.DataFrame
-        Downstream node matrix
-    """
-    cfd_g = get_config(path=config_dir / ".grids.yaml")
-    feeder_dir = cfd_g["dnm_generation"].get("import")
-    feeder = f"{int(feeder):02}"
-
-    import_path = data_dir / feeder_dir / str(mvgd) / "feeder" / feeder
-    # TODO dirty quick fix
-    # file_path = import_path / f"downstream_node_matrix_{mvgd}" \
-    #                           f"_{feeder}.csv"
-    file_path = import_path / f"downstream_node_matrix_{mvgd}_{feeder}.csv"
-    downstream_nodes_matrix = pd.read_csv(os.path.join(file_path), index_col=0)
-    downstream_nodes_matrix = downstream_nodes_matrix.astype(np.uint8)
-    # TODO warum hier loc? vermutlich weil anja nur eine downstream node
-    #  matrix für alle hatte
-    # downstream_nodes_matrix = downstream_nodes_matrix.loc[
-    #     edisgo_obj.topology.buses_df.index, edisgo_obj.topology.buses_df.index
-    # ]
-    return downstream_nodes_matrix
-
-
-def export_results(result_dict, result_path, timesteps, filename):
-    """
+def export_results(result_dict, export_path, timesteps, filename):
+    """Exports results to csv. Dropping all slack timesteps
+    with values < 1e-6. Dropping overlap timesteps.
 
     Parameters
     ----------
-    result_dict :
-    result_path :
-    timesteps :
-    filename :
+    result_dict : dict
+    export_path : PoxisPath
+    timesteps : pd.DatetimeIndex
+    filename : str
 
     Returns
     -------
@@ -171,7 +137,7 @@ def export_results(result_dict, result_path, timesteps, filename):
         if res.empty:
             logger.info(f"No results for {res_name}.")
         else:
-            file_path = result_path / filename.replace("$res_name$", res_name)
+            file_path = export_path / filename.replace("$res_name$", res_name)
             res.astype(np.float16).to_csv(file_path)
             logger.info(f"Saved results for {res_name}.")
 
@@ -184,12 +150,12 @@ def update_start_values(result_dict, fixed_parameters):
 
     Parameters
     ----------
-    result_dict :
-    fixed_parameters :
+    result_dict : dict
+    fixed_parameters : dict
 
     Returns
     -------
-
+    start_values : dict
     """
     cfg_o = get_config(path=config_dir / ".opt.yaml")
 
@@ -245,97 +211,117 @@ def rolling_horizon_optimization(
     edisgo_obj,
     grid_id,
     feeder_id,
-    save=False,
-    run_id=datetime.now().isoformat(),
+    objective,
+    timeframe=False,
+    export_path=None,
 ):
+    """Rolling horizon optimization for flexibilities like EVs and heat pumps.
 
-    # cfg_g = get_config(path=config_dir / ".grids.yaml")
+    Parameters
+    ----------
+    edisgo_obj : :class:`edisgo.EDisGo`
+        EDisGo object
+    grid_id : int
+        Grid id of the MVGD
+    feeder_id : str or int
+        Feeder id of the feeder of the MVGD, e.g. '01'
+    objective : str
+        Objective function to be optimized
+    timeframe : bool
+        If True, the optimization is performed for the in the config defined
+        time frame only. If False, the optimization is performed for the whole
+        time series of the edisgo object.
+    export_path :
+
+    Returns
+    -------
+
+    """
+
     cfg_o = get_config(path=config_dir / ".opt.yaml")
-    # mvgds = cfg_g["model"].get("mvgd")
     feeder_id = f"{int(feeder_id):02}"
 
-    result_path = results_dir / run_id / str(grid_id) / "feeder" / feeder_id
-    # TODO maybe add if condition/parameter
-    shutil.rmtree(result_path, ignore_errors=True)
-    os.makedirs(result_path, exist_ok=True)
-
-    # Dump opt configs to results
-    dump_yaml(yaml_file=cfg_o, save_to=result_path)
+    if export_path is not None:
+        shutil.rmtree(export_path, ignore_errors=True)
+        os.makedirs(export_path, exist_ok=True)
+        # Dump opt configs to results
+        dump_yaml(yaml_file=cfg_o, save_to=export_path)
 
     # Due to different voltage levels, impedances need to adapted
     # alternatively p.u.
     logger.info("Convert impedances to MV reference system")
     edisgo_obj = convert_impedances_to_mv(edisgo_obj)
 
-    logger.info("Import downstream node matrix")
-    downstream_nodes_matrix = get_dnm(mvgd=grid_id, feeder=int(feeder_id))
+    logger.info("Compute downstream nodes matrix")
+    downstream_nodes_matrix = get_downstream_nodes_matrix_iterative(
+        edisgo_obj.topology
+    )
 
-    cfg_flexible_loads = cfg_o["flexible_loads"]
     logger.info("Get flexible loads")
+    cfg_flexible_loads = cfg_o["flexible_loads"]
     flexible_loads = get_flexible_loads(
         edisgo_obj=edisgo_obj,
         hp=cfg_flexible_loads["hp"],
-        ev=cfg_flexible_loads["ev"],
+        bev=cfg_flexible_loads["bev"],
         bess=cfg_flexible_loads["bess"],
-        ev_flex_sectors=cfg_flexible_loads["ev_flex_sectors"],
+        bev_flex_sectors=cfg_flexible_loads["bev_flex_sectors"],
     )
 
     logger.info("Extract time-invariant parameters")
     fixed_parameters = lopf.prepare_time_invariant_parameters(
         edisgo_obj=edisgo_obj,
         downstream_nodes_matrix=downstream_nodes_matrix,
+        voltage_limits=True,
         per_unit=False,
-        optimize_bess=cfg_o["opt_bess"],
-        optimize_emob=cfg_o["opt_emob"],
-        optimize_hp=cfg_o["opt_hp"],
+        optimize_bess=cfg_flexible_loads["bess"],
+        optimize_emob=cfg_flexible_loads["bev"],
+        optimize_hp=cfg_flexible_loads["hp"],
         flexible_loads=flexible_loads,
     )
 
-    # TODO move into prepare_time_invariant_parameters
-    # get v_min, v_max per bus
-    v_minmax = pd.DataFrame(
-        data=fixed_parameters["grid_object"].buses_df.index.rename("bus"),
-    )
-    v_minmax = assign_voltage_level_to_component(
-        v_minmax, fixed_parameters["grid_object"].buses_df
-    )
-    v_minmax.loc[v_minmax["voltage_level"] == "mv", "v_min"] = 0.985
-    v_minmax.loc[v_minmax["voltage_level"] == "mv", "v_max"] = 1.05
-    v_minmax.loc[v_minmax["voltage_level"] == "lv", "v_min"] = 0.9
-    v_minmax.loc[v_minmax["voltage_level"] == "lv", "v_max"] = 1.1
-    v_minmax = v_minmax.set_index("bus")
+    if timeframe:
+        # Define optimization timeframe by config
+        start_datetime = cfg_o["start_datetime"]
+        total_timesteps = cfg_o["total_timesteps"]
 
-    # define result_dict for first iteration
-    # will be overwritten afterwards
-    result_dict = {}
-
-    # Define optimization timeframe
-    start_datetime = cfg_o["start_datetime"]
-    total_timesteps = cfg_o["total_timesteps"]
-    timesteps_per_iteration = cfg_o["timesteps_per_iteration"]
-    iterations_per_era = cfg_o["iterations_per_era"]
-
-    if start_datetime is not None:
+        # Slice timeframe
         start_index = edisgo_obj.timeseries.timeindex.slice_indexer(
             start_datetime
         ).start
         timeframe = edisgo_obj.timeseries.timeindex[
             start_index : start_index + total_timesteps
         ]
-        logger.info(
-            f"Optimized timeframe is: {timeframe[0]} -> "
-            f"{timeframe[-1]} including {total_timesteps} timesteps."
-        )
-
     else:
-        logger.info("No start_datetime given. Start with first timestep")
-        timeframe = edisgo_obj.timeseries.timeindex[:total_timesteps]
-        logger.info(
-            f"Optimized timeframe is: {timeframe[0]} -> "
-            f"{timeframe[-1]} including {total_timesteps} timesteps."
-        )
+        logger.info("Whole time series is used for optimization")
+        total_timesteps = edisgo_obj.timeseries.timeindex.shape[0]
+        timeframe = edisgo_obj.timeseries.timeindex
+
+    logger.info(
+        f"Optimized timeframe is: {timeframe[0]} -> "
+        f"{timeframe[-1]} including {total_timesteps} timesteps."
+    )
+
+    # Define rolling horizon parameters
+    timesteps_per_iteration = cfg_o["timesteps_per_iteration"]
+    iterations_per_era = cfg_o["iterations_per_era"]
+    logger.info(
+        f"Rolling horizon with {timesteps_per_iteration} timesteps "
+        f"per iteration and {iterations_per_era} iterations per era."
+    )
+
+    # else:
+    #     logger.info("No start_datetime given. Start with first timestep")
+    #     timeframe = edisgo_obj.timeseries.timeindex#[:total_timesteps]
+    #     total_timesteps = timeframe.shape[0]
+    #     logger.info(
+    #         f"Optimized timeframe is: {timeframe[0]} -> "
+    #         f"{timeframe[-1]} including {total_timesteps} timesteps."
+    #     )
 
     # ####################### Rolling Horizon ############################
+    # define result_dict for first iteration
+    # will be overwritten afterwards
+    result_dict = {}
 
     for iteration in range(0, int(len(timeframe) / timesteps_per_iteration)):
 
@@ -396,9 +382,7 @@ def rolling_horizon_optimization(
             model = lopf.setup_model(
                 fixed_parameters=fixed_parameters,
                 timesteps=timesteps,
-                objective=cfg_o["objective"],
-                v_min=v_minmax["v_min"],
-                v_max=v_minmax["v_max"],
+                objective=objective,
                 flexible_loads=flexible_loads,
                 # charging_starts={"ev": 0, "hp": 0, "tes": 0},
                 **start_values,
@@ -412,7 +396,7 @@ def rolling_horizon_optimization(
                 model=model,
                 timesteps=timesteps,
                 fixed_parameters=fixed_parameters,
-                objective=cfg_o["objective"],
+                objective=objective,
                 energy_level_end_tes=energy_level_end,
                 energy_level_end_ev=energy_level_end,
                 flexible_loads=flexible_loads,
@@ -422,7 +406,7 @@ def rolling_horizon_optimization(
 
         # lpfile
         if cfg_o["save_lp_files"]:
-            lp_filename = result_path / f"lp_file_iteration_{iteration}.lp"
+            lp_filename = export_path / f"lp_file_iteration_{iteration}.lp"
             logger.info(
                 f"LP files for iteration {iteration} are saved to:"
                 f" {lp_filename}"
@@ -456,47 +440,61 @@ def rolling_horizon_optimization(
 
         logger.info(f"Finished optimisation for iteration {iteration}.")
 
-        if save:
-            filename = (
-                f"$res_name$_{grid_id}-{feeder_id}_iteration"
-                f"_{iteration}.csv"
+        # if export_path is not None:
+        filename = (
+            f"$res_name$_{grid_id}-{feeder_id}_iteration" f"_{iteration}.csv"
+        )
+        try:
+            export_results(
+                result_dict=result_dict,
+                export_path=export_path,
+                timesteps=timesteps[:timesteps_per_iteration],
+                filename=filename,
             )
-            try:
-                export_results(
-                    result_dict=result_dict,
-                    result_path=result_path,
-                    timesteps=timesteps[:timesteps_per_iteration],
-                    filename=filename,
-                )
-            except Exception:
-                logger.info(
-                    "Optimization Error. Result's couldn't be exported."
-                )
-                raise ValueError("Results not valid")
+        except Exception:
+            logger.info("Optimization Error. Result's couldn't be exported.")
+            raise ValueError("Results not valid")
 
 
 @log_errors
 def run_dispatch_optimization(
+    obj_or_path,
     grid_id,
-    feeder_id=None,
-    edisgo_obj=None,
-    save=False,
-    doit=False,
+    feeder_id,
+    objective,
     version=None,
+    run_id=None,
 ):
+    """
+
+    Parameters
+    ----------
+    obj_or_path : :class:`edisgo.EDisGo` or PosixPath
+        edisgo object or path to edisgo dump
+    grid_id :
+        grid id of MVGD
+    feeder_id : int or str
+        feeder id, respective folder name of feeder
+    objective :
+        objective function to be used for optimization
+    run_id :
+        run id used for pydoit versioning
+    version :
+        version number of run id used for pydoit versioning
+
+    Returns
+    -------
+    If run_id and version are not None, a dictionary with these values is
+    given for the pydoit versioning.
+    """
 
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
-    cfg_o = get_config(path=config_dir / ".opt.yaml")
     feeder_id = f"{int(feeder_id):02}"
-    # get run id for export path
-    run_id = cfg_o.get("run_id", f"no_id_{datetime.now().isoformat()}")
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
 
     date = datetime.now().date().isoformat()
-    logfile = (
-        logs_dir / f"opt_{cfg_o['run_id']}_{grid_id}-{feeder_id}"
-        f"_{date}.log"
-    )
+    logfile = logs_dir / f"opt_{run_id}_{grid_id}-{feeder_id}" f"_{date}.log"
     setup_logging(file_name=logfile)
 
     logger.info(
@@ -504,36 +502,30 @@ def run_dispatch_optimization(
         f" with run id: {run_id}"
     )
 
-    if edisgo_obj is None:
-        if feeder_id is None:
-            raise NotImplementedError
-        else:
-            import_dir = cfg_o.get("import_dir")
-            import_path = (
-                data_dir
-                / import_dir
-                / str(grid_id)
-                / "feeder"
-                / str(feeder_id)
-            )
-            logger.info(f"Import Grid from file: {import_path}")
+    if isinstance(obj_or_path, EDisGo):
+        edisgo_obj = obj_or_path
+        export_path = results_dir / run_id / objective
+    else:
+
+        logger.info(f"Import Grid from file: {obj_or_path}")
 
         edisgo_obj = import_edisgo_from_files(
-            import_path,
+            obj_or_path,
             import_topology=True,
             import_timeseries=True,
             import_heat_pump=True,
             import_electromobility=True,
         )
-    else:
-        pass
+        export_path = (
+            obj_or_path.parent.parent / (objective + "_feeder") / feeder_id
+        )
 
     # TODO remove after time series decomposition
     logger.info("Extract timeframe")
     edisgo_obj = extract_timeframe(
         edisgo_obj,
         start_datetime=cfg_o["start_datetime"],
-        timesteps=cfg_o["total_timesteps"],
+        periods=cfg_o["total_timesteps"],
         freq="1h",
     )
 
@@ -551,11 +543,11 @@ def run_dispatch_optimization(
         edisgo_obj,
         grid_id,
         feeder_id,
-        save=save,
-        run_id=run_id,
+        objective=objective,
+        export_path=export_path,
     )
 
-    if doit:
+    if version is not None and run_id is not None:
         return {"version": version, "run_id": run_id}
 
 
@@ -572,15 +564,10 @@ if __name__ == "__main__":
     setup_logging(file_name=logfile)
 
     run_dispatch_optimization(
-        # grid_id=1056, feeder_id=1, edisgo_obj=False, save=True, doit=False
-        # grid_id=2534,
-        # grid_id=1056,
-        grid_id="5_bus_testgrid",
-        # feeder_id=8,
+        obj_or_path=results_dir / "debug" / "1111" / "timeframe_feeder" / "01",
+        grid_id=1111,
         feeder_id=1,
-        edisgo_obj=False,
-        save=True,
-        doit=False,
+        objective="minimize_loading",
+        version=None,
+        run_id=None,
     )
-
-    # lopf.combine_results_for_grid
