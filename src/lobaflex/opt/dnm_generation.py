@@ -3,14 +3,18 @@ import logging
 import os
 import warnings
 
+from datetime import datetime
+from pathlib import Path
+
 import networkx as nx
 import pandas as pd
 
 from edisgo.edisgo import import_edisgo_from_files
 from edisgo.network.topology import Topology
 
-from lobaflex import config_dir, data_dir
-from lobaflex.tools.tools import get_config, timeit, write_metadata
+from lobaflex import config_dir, logs_dir
+from lobaflex.tools.logger import setup_logging
+from lobaflex.tools.tools import get_config, timeit  # , write_metadata
 
 if __name__ == "__main__":
     logger = logging.getLogger("lobaflex.grids." + __name__)
@@ -90,35 +94,32 @@ def get_downstream_nodes_matrix_iterative(grid):
 
 
 @timeit
-def run_dnm_generation(path, grid_id, feeder=False, doit=False, version=None,
-                       run_id=None
-):
+def run_dnm_generation(path, grid_id, feeder=False, version=None, run_id=None):
     """
 
     Parameters
     ----------
-    path :
-    grid_id :
-    feeder :
-    doit :
-    version :
-    run_id :
+    path : PosixPath
+        Path to the grid/feeder
+    grid_id : int
+        Grid id of the MVGD
+    feeder : bool
+        If true generates dnm matrix for all feeders in path
+    run_id : str or None
+        Run id for pydoit version
+    version : int or None
+        Version number of the run id
 
     Returns
     -------
+    If run_id and version are not None, a dictionary with these values is
+    given for the pydoit versioning.
+
 
     """
 
     logger.info(f"Get Downstream Node Matrix of {grid_id}")
     warnings.simplefilter(action="ignore", category=FutureWarning)
-    cfg = get_config(path=config_dir / ".grids.yaml")
-
-    # import_dir = cfg["dnm_generation"].get("import")
-    # import_path = data_dir / import_dir / str(grid_id)
-    #
-    # logger.debug("Use export dir from config file.")
-    # export_dir = cfg["dnm_generation"].get("export")
-    # export_path = data_dir / export_dir / str(grid_id)
 
     if feeder:
         feeder_list = sorted(os.listdir(path))
@@ -126,17 +127,13 @@ def run_dnm_generation(path, grid_id, feeder=False, doit=False, version=None,
         logger.info(
             f"Getting downstream nodes matrices of {len(feeder_list)} feeder."
         )
-        grid_dirs = [path/ str(feeder) for feeder in feeder_list]
+        grid_dirs = [path / str(feeder) for feeder in feeder_list]
     else:
         grid_dirs = [path]
 
     for grid_dir in grid_dirs:
 
-        logger.info(
-            f"Generate downstream node matrix. \n"
-            f"Feeder {grid_dir.name} of grid:"
-            f" {grid_id}"
-        )
+        logger.info(f"Feeder {grid_dir.name} of grid: {grid_id}")
 
         edisgo_obj = import_edisgo_from_files(
             grid_dir,
@@ -153,7 +150,8 @@ def run_dnm_generation(path, grid_id, feeder=False, doit=False, version=None,
 
         if feeder is True:
             export_path_dnm = (
-                    grid_dir / f"downstream_node_matrix_{grid_id}_{grid_dir.name}.csv"
+                grid_dir
+                / f"downstream_node_matrix_{grid_id}_{grid_dir.name}.csv"
             )
         else:
             export_path_dnm = (
@@ -169,18 +167,14 @@ def run_dnm_generation(path, grid_id, feeder=False, doit=False, version=None,
     #         text=f"Downstream Node Matrix of {int(feeder)+1} feeder",
     #     )
 
-    if version and run_id is not None:
+    if version is not None and run_id is not None:
         return {"version": version, "run_id": run_id}
 
 
 if __name__ == "__main__":
 
-    from datetime import datetime
-
-    from lobaflex import logs_dir
-    from lobaflex.tools.logger import setup_logging
     from lobaflex.tools.tools import split_model_config_in_subconfig
-    from pathlib import Path
+
     split_model_config_in_subconfig()
 
     logger = logging.getLogger("lobaflex.__main__")
@@ -189,10 +183,12 @@ if __name__ == "__main__":
     logfile = logs_dir / f"dnm_generation{date}_local.log"
     setup_logging(file_name=logfile)
 
-    run_dnm_generation(path=Path(
-        "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/results/test/1111"),
-                       grid_id=1111,
-                       feeder=True,
-                       doit=False,
-                       version=1
+    run_dnm_generation(
+        path=Path(
+            "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/results/test/1111"
+        ),
+        grid_id=1111,
+        feeder=True,
+        doit=False,
+        version=1,
     )
