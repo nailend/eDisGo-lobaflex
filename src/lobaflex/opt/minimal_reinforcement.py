@@ -150,7 +150,8 @@ def reinforce_grid(obj_or_path, grid_id=None, run_id=None, version=None):
 
     Parameters
     ----------
-    obj_or_path :
+    obj_or_path : :class:`edisgo.EDisGo` or PosixPath
+        edisgo object or path to edisgo dump
     grid_id :
     run_id :
     version :
