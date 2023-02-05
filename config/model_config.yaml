@@ -20,13 +20,9 @@ opt:
   flexible_loads:
     bess: False
     hp: True
-    ev: True
-    ev_flex_sectors: [ work, home ]
-  opt_bess: False
-  opt_hp: True
-  opt_emob: True
-  emob_sectors: [work, home]
-  objective: minimize_loading
+    bev: True
+    bev_flex_sectors: [ work, home ]
+  objective: maximize_grid_power
   rolling_horizon: True # depricated
   load_results: False # depricated
   start_datetime: 2011-01-01 00:00:00
