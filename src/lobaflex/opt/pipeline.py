@@ -10,16 +10,18 @@ from doit import create_after
 from lobaflex import config_dir, data_dir, logs_dir, results_dir
 from lobaflex.opt.tasks import (  # dnm_generation_task,
     dispatch_integration_task,
+    dot_file_task,
     feeder_extraction_task,
     grid_reinforcement_task,
     optimization_task,
+    png_file_task,
     result_concatination_task,
     timeframe_selection_task,
 )
 from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.pydoit import opt_uptodate  # noqa: F401
 from lobaflex.tools.pydoit import task__get_opt_version  # noqa: F401
-from lobaflex.tools.pydoit import task__set_opt_version  # noqa: F401; noqa: F401
+from lobaflex.tools.pydoit import task__set_opt_version  # noqa: F401
 from lobaflex.tools.tools import (
     TelegramReporter,
     get_config,
@@ -42,6 +44,12 @@ DOIT_CONFIG = {
     "default_tasks": ["prep", "min_load"],
     "reporter": TelegramReporter,
 }
+
+
+def task__do_graph():
+    path = results_dir / "graph"
+    yield dot_file_task(path)
+    yield png_file_task(path)
 
 
 def task_update():

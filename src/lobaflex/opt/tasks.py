@@ -1,4 +1,5 @@
 import logging
+import os
 import shutil
 
 from datetime import datetime
@@ -219,4 +220,28 @@ def grid_reinforcement_task(mvgd, objective, run_id, version_db, dep):
         # results if not all opt succeeded
         "task_dep": dep,
         "uptodate": [opt_uptodate],
+    }
+
+
+def dot_file_task(path):
+
+    os.makedirs(path, exist_ok=True)
+    return {
+        "name": "dot_file",
+        "actions": [
+            f"doit graph -o {path /'tasks.dot'} " f"--show-subtasks --reverse"
+        ],
+        "doc": "per mvgd",
+    }
+
+
+def png_file_task(path):
+
+    return {
+        "name": "png_file",
+        "actions": [
+            f"dot -T png {path / 'tasks.dot'} -o {path / 'tasks.png'}"
+        ],
+        "doc": "per mvgd",
+        # "task_dep": dep,
     }

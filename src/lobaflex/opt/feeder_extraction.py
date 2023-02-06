@@ -133,7 +133,7 @@ def run_feeder_extraction(
     ----------
     obj_or_path : :class:`edisgo.EDisGo` or PosixPath
         edisgo object or path to edisgo dump
-    grid_id :
+    grid_id : int or str
         grid id of MVGD
     export_path : PosixPath or None
         Path to export feeders to, if non given feeders are not exported
@@ -229,6 +229,6 @@ if __name__ == "__main__":
     run_feeder_extraction(
         obj_or_path=path,
         grid_id=1111,
-        run_id=2,
+        run_id="test",
         export_path=results_dir / "test" / str(1111) / "feeder",
     )
