@@ -145,7 +145,9 @@ def iterative_reinforce(
 
 
 @log_errors
-def reinforce_grid(obj_or_path, grid_id=None, run_id=None, version_db=None):
+def reinforce_grid(
+    obj_or_path, grid_id=None, objective=None, run_id=None, version_db=None
+):
     """
 
     Parameters
@@ -154,6 +156,9 @@ def reinforce_grid(obj_or_path, grid_id=None, run_id=None, version_db=None):
         edisgo object or path to edisgo dump
     grid_id : int
         grid id of MVGD
+    objective : str
+        Keyword after which the grid is reinforced. This is used for logging
+        and result path purposes only
     run_id : str
         run id used for pydoit versioning
     version_db : dict
@@ -164,15 +169,18 @@ def reinforce_grid(obj_or_path, grid_id=None, run_id=None, version_db=None):
 
     """
     # Log to pipeline log file
-    logger.info(f"Run grid reinforcement of {grid_id}")
+    logger.info(f"Run grid reinforcement for {objective} of {grid_id} ")
 
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
-    logger.info(f"Start integrate and reinforce of {grid_id} in {run_id}.")
-
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"opt_minimal_reinforcement_{run_id}_{date}.log"
+
+    logfile = logs_dir / f"opt_{objective}_reinforcement_{run_id}_{date}.log"
     setup_logging(file_name=logfile)
+
+    logger.info(
+        f"Start reinforcement for {objective} of {grid_id} in {run_id}."
+    )
 
     if isinstance(obj_or_path, EDisGo):
         edisgo_obj = obj_or_path
@@ -191,7 +199,9 @@ def reinforce_grid(obj_or_path, grid_id=None, run_id=None, version_db=None):
         edisgo_obj, combined_analysis=True, mode="split", iterations=5
     )
 
-    export_path = results_dir / run_id / str(grid_id) / "min_reinforced"
+    export_path = (
+        results_dir / run_id / str(grid_id) / f"{objective}_reinforced"
+    )
     os.makedirs(export_path, exist_ok=True)
 
     logger.info("Save reinforced grid")

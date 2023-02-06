@@ -41,7 +41,7 @@ setup_logging(file_name=logfile)
 #   9. Check connection to db, maybe at beginning and raise warning
 
 DOIT_CONFIG = {
-    "default_tasks": ["prep", "min_load"],
+    "default_tasks": ["ref", "min_load"],
     "reporter": TelegramReporter,
 }
 
@@ -61,13 +61,18 @@ def task_update():
     logger.info(f"Run: {version['run_id']} - Version: {version['version']}")
 
 
-def task_prep():
-    """Prepare rolling horizon optimization
+# def task_grids():
+    # Generate grids
+
+def task_ref():
+    """Generator for reference grids
+
     Feeder extraction and dnm matrix generation"""
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
     import_dir = cfg_o["import_dir"]
+    objective = "reference"
 
     dep_manager = doit.Globals.dep_manager
     version_db = dep_manager.get_result("_set_opt_version")
@@ -85,20 +90,28 @@ def task_prep():
             # TODO observation periods
             yield timeframe_selection_task(mvgd, run_id, version_db)
 
-            yield feeder_extraction_task(mvgd, run_id, version_db)
+            yield feeder_extraction_task(mvgd, objective, run_id, version_db)
 
-            # yield dnm_generation_task(mvgd=mvgd,
-            #                           run_id=run_id,
-            #                           version=version,)
+            yield grid_reinforcement_task(
+                mvgd,
+                objective,
+                run_id,
+                version_db,
+                dep=[f"ref:timeframe_{mvgd}"],
+            )
 
 
-@create_after(executed="prep")
+@create_after(executed="ref")
 def task_min_load():
-    """Generator for optimization tasks"""
+    """Generator for minimal loading grids
+
+    Dispatch optimization, concatination, integration and reinforcement
+    """
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
     objective = "minimize_loading"
+    source = "reference_feeder"
 
     dep_manager = doit.Globals.dep_manager
     version_db = dep_manager.get_result("_set_opt_version")
@@ -111,7 +124,7 @@ def task_min_load():
         if os.path.isdir(results_dir / run_id / str(mvgd)):
 
             mvgd_path = results_dir / run_id / str(mvgd)
-            feeder_path = mvgd_path / "timeframe_feeder"
+            feeder_path = mvgd_path / source
 
             feeder_ids = [
                 f
@@ -123,7 +136,7 @@ def task_min_load():
             for feeder in sorted(feeder_ids):
 
                 yield optimization_task(
-                    mvgd, feeder, objective, run_id, version_db
+                    mvgd, feeder, objective, source, run_id, version_db
                 )
 
                 dependencies += [f"min_load:opt_{mvgd}/{int(feeder):02}"]

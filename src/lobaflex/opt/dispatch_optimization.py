@@ -519,7 +519,9 @@ def run_dispatch_optimization(
             import_electromobility=True,
         )
         export_path = (
-            obj_or_path.parent.parent / (objective + "_feeder") / feeder_id
+            obj_or_path.parent.parent
+            / (objective + "_results_feeder")
+            / feeder_id
         )
 
     # TODO remove after time series decomposition

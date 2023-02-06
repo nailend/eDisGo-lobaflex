@@ -147,7 +147,7 @@ def run_timeframe_selection(
     logger.info(
         f"Run timeframe selection for grid: {grid_id} with run id: {run_id}"
     )
-    export_path = results_dir / run_id / str(grid_id) / "timeframe"
+    export_path = results_dir / run_id / str(grid_id) / "reference_mvgd"
 
     if isinstance(obj_or_path, EDisGo):
         edisgo_obj = obj_or_path
