@@ -133,6 +133,8 @@ def run_feeder_extraction(
     ----------
     obj_or_path : :class:`edisgo.EDisGo` or PosixPath
         edisgo object or path to edisgo dump
+    grid_id :
+        grid id of MVGD
     export_path : PosixPath or None
         Path to export feeders to, if non given feeders are not exported
     run_id : str
@@ -155,7 +157,7 @@ def run_feeder_extraction(
     cfg_flexible_loads = cfg_o["flexible_loads"]
 
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"opt_{run_id}_{grid_id}_{date}.log"
+    logfile = logs_dir / f"feeder_extraction_{run_id}_{grid_id}_{date}.log"
     setup_logging(file_name=logfile)
 
     if isinstance(obj_or_path, EDisGo):
@@ -226,6 +228,7 @@ if __name__ == "__main__":
     path = "/home/local/RL-INSTITUT/julian.endres/Projekte/eDisGo-lobaflex/data/load_n_gen_n_emob_n_hp_grids/1111"
     run_feeder_extraction(
         obj_or_path=path,
+        grid_id=1111,
         run_id=2,
         export_path=results_dir / "test" / str(1111) / "feeder",
     )
