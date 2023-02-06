@@ -30,7 +30,7 @@ split_model_config_in_subconfig()
 logger = logging.getLogger("lobaflex.opt." + __name__)
 date = datetime.now().date().isoformat()
 cfg_o = get_config(path=config_dir / ".opt.yaml")
-logfile = logs_dir / f"opt_dodo_{date}.log"
+logfile = logs_dir / f"pipeline_{date}.log"
 setup_logging(file_name=logfile)
 
 # TODO

@@ -148,7 +148,7 @@ def run_feeder_extraction(
     If run_id and version are not None, a dictionary with these values is
     given for the pydoit versioning.
     """
-
+    # Log to pipeline log file
     logger.info(f"Run feeder extraction of {grid_id}")
 
     warnings.simplefilter(action="ignore", category=FutureWarning)

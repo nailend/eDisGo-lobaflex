@@ -133,6 +133,8 @@ def save_concatinated_results(grid_id, path, run_id=None, version_db=None):
     given for the pydoit versioning.
 
     """
+    # Log to pipeline log file
+    logger.info(f"Run result concatination of {grid_id}")
 
     date = datetime.now().date().isoformat()
     logfile = logs_dir / f"opt_concat_results_{run_id}_{grid_id}_{date}.log"

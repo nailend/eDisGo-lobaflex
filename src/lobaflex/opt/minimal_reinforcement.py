@@ -163,6 +163,9 @@ def reinforce_grid(obj_or_path, grid_id=None, run_id=None, version_db=None):
     -------
 
     """
+    # Log to pipeline log file
+    logger.info(f"Run grid reinforcement of {grid_id}")
+
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
     logger.info(f"Start integrate and reinforce of {grid_id} in {run_id}.")

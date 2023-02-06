@@ -133,6 +133,8 @@ def run_timeframe_selection(
     given for the pydoit versioning.
 
     """
+    # Log to pipeline log file
+    logger.info(f"Run timeframe selection of {grid_id}")
 
     warnings.simplefilter(action="ignore", category=FutureWarning)
 

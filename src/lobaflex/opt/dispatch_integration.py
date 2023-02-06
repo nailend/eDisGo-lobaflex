@@ -139,6 +139,9 @@ def integrate_dispatch(
     given for the pydoit versioning.
 
     """
+    # Log to pipeline log file
+    logger.info(f"Run dispatch integration of {grid_id}")
+
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")

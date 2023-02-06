@@ -487,6 +487,8 @@ def run_dispatch_optimization(
     If run_id and version are not None, a dictionary with these values is
     given for the pydoit versioning.
     """
+    # Log to pipeline log file
+    logger.info(f"Run dispatch optimization of {grid_id}/{feeder_id}")
 
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
