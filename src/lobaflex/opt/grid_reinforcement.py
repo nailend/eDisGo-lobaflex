@@ -26,6 +26,7 @@ def iterative_reinforce(
     timesteps=None,
     mode=None,
     iterations=10,
+    iteration_start=0.5,
     combined_analysis=False,
 ):
     """Edisgo reinforce is conducted if Value Error is raised.
@@ -47,9 +48,11 @@ def iterative_reinforce(
                 angles from the linear power flow.
             * 'iterative'
                 Reinforcement is conducted by reducing all power values of
-                generators and loads to a fraction starting from 50% to 100%,
+                generators and loads to a fraction starting from x% to 100%,
                 e.g. solving the load flow and reinforcement with 50% and then
                 60%,....
+    iteration_start : float
+        relative start value for 'iterative' mode. Default 0.5
     iterations : int
         number of iterations taken in 'iterative' mode from 50% until 100%
         gen/load is reached e.g. 5 : [0.5, 0.6, 0.7, 0.8, 0.9, 1]
@@ -137,7 +140,7 @@ def iterative_reinforce(
         elif mode == "iterative":
 
             ts_orig = deepcopy(edisgo_obj.timeseries)
-            for n in np.linspace(0.5, 1, iterations):
+            for n in np.linspace(iteration_start, 1, iterations):
 
                 logger.info(f"Fraction: {n} x load")
 
