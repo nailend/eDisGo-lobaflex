@@ -133,7 +133,7 @@ def task_min_exp():
         if os.path.isdir(mvgd_path):
 
             feeder_path = mvgd_path / source
-
+            os.makedirs(feeder_path, exist_ok=True)
             feeder_ids = [
                 f
                 for f in os.listdir(feeder_path)
@@ -216,7 +216,7 @@ def task_min_pot():
             if os.path.isdir(mvgd_path):
 
                 feeder_path = mvgd_path / source
-
+                os.makedirs(feeder_path, exist_ok=True)
                 feeder_ids = [
                     f
                     for f in os.listdir(feeder_path)
