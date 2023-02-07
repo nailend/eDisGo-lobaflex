@@ -17,6 +17,7 @@ from lobaflex.opt.tasks import (  # dnm_generation_task,
     png_file_task,
     result_concatination_task,
     timeframe_selection_task,
+    expansion_scenario_task,
 )
 from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.pydoit import opt_uptodate  # noqa: F401
@@ -35,10 +36,13 @@ cfg_o = get_config(path=config_dir / ".opt.yaml")
 logfile = logs_dir / f"pipeline_{date}.log"
 setup_logging(file_name=logfile)
 
-# TODO
-#   7. callback telegram bot
-#   8. watch param
-#   9. Check connection to db, maybe at beginning and raise warning
+# TODO NICE-T0-HAVE:
+#   - callback telegram bot
+#   - watch param
+#   - Check connection to db, maybe at beginning and raise warning
+#   - python SSH for grids generation
+#   - clean
+#   - teardown
 
 DOIT_CONFIG = {
     "default_tasks": ["ref", "min_exp", "min_pot"],
@@ -150,7 +154,7 @@ def task_min_exp():
                     source=source,
                     run_id=run_id,
                     version_db=version_db,
-                    dep=[f"ref:feeder_{mvgd}"]
+                    dep=[f"ref:reference_feeder_{mvgd}"]
                 )
 
                 dependencies += [f"min_exp:{objective}_{mvgd}/{int(feeder):02}"]
@@ -233,7 +237,7 @@ def task_min_pot():
                         source=source,
                         run_id=run_id,
                         version_db=version_db,
-                        dep=[f"ref:feeder_{mvgd}"]
+                        dep=[f"ref:reference_feeder_{mvgd}"]
                     )
 
                     dependencies += [f"min_pot:{objective}_{mvgd}"
@@ -242,6 +246,46 @@ def task_min_pot():
                 yield result_concatination_task(
                     mvgd, objective, run_id, version_db, dep=dependencies
                 )
+
+
+@create_after(executed="min_exp")
+def task_exp_scn():
+    """Generator for expansion scenario tasks"""
+
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    mvgds = sorted(cfg_o["mvgds"])
+
+    scenarios = [20, 40, 60]
+
+    # Versioning
+    dep_manager = doit.Globals.dep_manager
+    version_db = dep_manager.get_result("_set_opt_version")
+    version_db = version_db if isinstance(version_db, dict) else {"db": {}}
+    task_version = version_db.get("current", {"run_id": "None"})
+    run_id = task_version.get("run_id", "None")
+
+    # create opt task only for existing grid folders
+    for scenario in scenarios:
+        for mvgd in mvgds:
+            mvgd_path = results_dir / run_id / str(mvgd)
+            if os.path.isdir(mvgd_path):
+
+                yield expansion_scenario_task(mvgd,
+                                              percentage=scenario,
+                                              run_id=run_id,
+                                              version_db=version_db,
+                                              dep=[f"min_exp:reinforce_{mvgd}"]
+                                              )
+
+                yield feeder_extraction_task(mvgd=mvgd,
+                                             objective=f"{scenario}_pct",
+                                             source="reference_mvgd",
+                                             run_id=run_id,
+                                             version_db=version_db,
+                                             dep=[f"exp_scn:{scenario}_pct"
+                                                  f"_{mvgd}"],
+                                             )
+
 
 
 

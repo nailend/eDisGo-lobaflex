@@ -153,6 +153,7 @@ def iterative_reinforce(
                     combined_analysis=combined_analysis,
                     max_while_iterations=50,
                     timesteps_pfa=timesteps,
+                    raise_not_converge=False,
                 )
 
             logger.info("Final reinforce.")

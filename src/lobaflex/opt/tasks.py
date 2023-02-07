@@ -14,6 +14,7 @@ from lobaflex.opt.feeder_extraction import run_feeder_extraction
 from lobaflex.opt.grid_reinforcement import reinforce_grid
 from lobaflex.opt.result_concatination import save_concatinated_results
 from lobaflex.opt.timeframe_selection import run_timeframe_selection
+from lobaflex.opt.expansion_scenario import run_expansion_scenario
 from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.pydoit import opt_uptodate
 from lobaflex.tools.tools import get_config
@@ -54,11 +55,11 @@ def timeframe_selection_task(mvgd, run_id, version_db):
 def feeder_extraction_task(mvgd, objective, source, run_id, version_db, dep):
     """Generator to define feeder extraction task for a mvgd"""
 
-    fix = cfg_o["fix_preparation"]
+    # fix = cfg_o["fix_preparation"]
     import_path = results_dir / run_id / str(mvgd) / source
     export_path = import_path.parent / f"{objective}_feeder"
     return {
-        "name": f"feeder_{mvgd}",
+        "name": f"{objective}_feeder_{mvgd}",
         "actions": [
             (
                 run_feeder_extraction,
@@ -74,7 +75,8 @@ def feeder_extraction_task(mvgd, objective, source, run_id, version_db, dep):
         ],
         "doc": "per mvgd",
         "task_dep": dep,
-        "uptodate": [True] if fix else [opt_uptodate],
+        # "uptodate": [True] if fix else [opt_uptodate],
+        "uptodate": [opt_uptodate],
         "verbosity": 2,
     }
 
@@ -213,6 +215,33 @@ def grid_reinforcement_task(mvgd, objective, run_id, version_db, dep):
                     "obj_or_path": obj_path,
                     "grid_id": mvgd,
                     "objective": objective,
+                    "run_id": run_id,
+                    "version_db": version_db,
+                },
+            )
+        ],
+        "doc": "per mvgd",
+        # create dependency for every feeder in grid not only opt
+        # results if not all opt succeeded
+        "task_dep": dep,
+        "uptodate": [opt_uptodate],
+    }
+
+
+def expansion_scenario_task(mvgd, percentage, run_id, version_db, dep):
+    """"""
+    obj_path = results_dir / run_id / str(mvgd) / "minimize_loading_reinforced"
+
+    return {
+        "name": f"{percentage}_pct_{mvgd}",
+        "actions": [
+            (
+                run_expansion_scenario,
+                [],
+                {
+                    "obj_or_path": obj_path,
+                    "grid_id": mvgd,
+                    "percentage": percentage/100,
                     "run_id": run_id,
                     "version_db": version_db,
                 },
