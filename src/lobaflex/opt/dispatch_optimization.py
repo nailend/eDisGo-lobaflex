@@ -520,7 +520,7 @@ def run_dispatch_optimization(
         )
         export_path = (
             obj_or_path.parent.parent
-            / (objective + "_results_feeder")
+            / (objective + "_results")
             / feeder_id
         )
 

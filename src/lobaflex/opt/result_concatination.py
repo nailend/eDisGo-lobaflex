@@ -155,7 +155,7 @@ def save_concatinated_results(grid_id, path, run_id=None, version_db=None):
         fillna={"value": 0},
     )
 
-    export_path = Path(str(path).split("_feeder")[0] + "_concat")
+    export_path = Path(str(path).split("_results")[0] + "_concat")
     os.makedirs(export_path, exist_ok=True)
     for (grid, parameter), df in results.items():
         filename = export_path / f"{grid}_{parameter}.csv"

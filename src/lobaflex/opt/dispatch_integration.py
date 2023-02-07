@@ -152,7 +152,7 @@ def integrate_dispatch(
     logfile = logs_dir / f"dispatch_integration_{run_id}_{date}.log"
     setup_logging(file_name=logfile)
 
-    export_path = str(import_path).split("_results_concat")[0] + "_mvgd"
+    export_path = str(import_path).split("_concat")[0] + "_mvgd"
 
     if isinstance(obj_or_path, EDisGo):
         edisgo_obj = obj_or_path

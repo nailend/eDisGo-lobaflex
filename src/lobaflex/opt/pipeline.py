@@ -41,7 +41,7 @@ setup_logging(file_name=logfile)
 #   9. Check connection to db, maybe at beginning and raise warning
 
 DOIT_CONFIG = {
-    "default_tasks": ["ref", "min_load"],
+    "default_tasks": ["ref", "min_exp", "min_pot"],
     "reporter": TelegramReporter,
 }
 
@@ -74,6 +74,7 @@ def task_ref():
     import_dir = cfg_o["import_dir"]
     objective = "reference"
 
+    # Versioning
     dep_manager = doit.Globals.dep_manager
     version_db = dep_manager.get_result("_set_opt_version")
     version_db = version_db if isinstance(version_db, dict) else {"db": {}}
@@ -90,29 +91,36 @@ def task_ref():
             # TODO observation periods
             yield timeframe_selection_task(mvgd, run_id, version_db)
 
-            yield feeder_extraction_task(mvgd, objective, run_id, version_db)
+            yield feeder_extraction_task(mvgd=mvgd,
+                                         objective=objective,
+                                         source="reference_mvgd",
+                                         run_id=run_id,
+                                         version_db=version_db,
+                                         dep=[f"ref:timeframe_{mvgd}"],
+                                         )
 
             yield grid_reinforcement_task(
-                mvgd,
-                objective,
-                run_id,
-                version_db,
+                mvgd=mvgd,
+                objective=objective,
+                run_id=run_id,
+                version_db=version_db,
                 dep=[f"ref:timeframe_{mvgd}"],
             )
 
 
 @create_after(executed="ref")
-def task_min_load():
-    """Generator for minimal loading grids
+def task_min_exp():
+    """Generator for minimal grid expansion tasks
 
-    Dispatch optimization, concatination, integration and reinforcement
-    """
+    minimize loading dispatch optimization, concatination, integration,
+    reinforcement and feeder extraction"""
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
     objective = "minimize_loading"
     source = "reference_feeder"
 
+    # Versioning
     dep_manager = doit.Globals.dep_manager
     version_db = dep_manager.get_result("_set_opt_version")
     version_db = version_db if isinstance(version_db, dict) else {"db": {}}
@@ -121,9 +129,9 @@ def task_min_load():
 
     # create opt task only for existing grid folders
     for mvgd in mvgds:
-        if os.path.isdir(results_dir / run_id / str(mvgd)):
+        mvgd_path = results_dir / run_id / str(mvgd)
+        if os.path.isdir(mvgd_path):
 
-            mvgd_path = results_dir / run_id / str(mvgd)
             feeder_path = mvgd_path / source
 
             feeder_ids = [
@@ -136,30 +144,105 @@ def task_min_load():
             for feeder in sorted(feeder_ids):
 
                 yield optimization_task(
-                    mvgd, feeder, objective, source, run_id, version_db
+                    mvgd=mvgd,
+                    feeder=feeder,
+                    objective=objective,
+                    source=source,
+                    run_id=run_id,
+                    version_db=version_db,
+                    dep=[f"ref:feeder_{mvgd}"]
                 )
 
-                dependencies += [f"min_load:opt_{mvgd}/{int(feeder):02}"]
+                dependencies += [f"min_exp:{objective}_{mvgd}/{int(feeder):02}"]
 
             yield result_concatination_task(
-                mvgd, objective, run_id, version_db, dep=dependencies
+                mvgd=mvgd,
+                objective=objective,
+                run_id=run_id,
+                version_db=version_db,
+                dep=dependencies
             )
 
             yield dispatch_integration_task(
-                mvgd,
-                objective,
-                run_id,
-                version_db,
-                dep=[f"min_load:concat_{mvgd}"],
+                mvgd=mvgd,
+                objective=objective,
+                run_id=run_id,
+                version_db=version_db,
+                dep=[f"min_exp:concat_{objective}_{mvgd}"],
             )
 
             yield grid_reinforcement_task(
-                mvgd,
-                objective,
-                run_id,
-                version_db,
-                dep=[f"min_load:add_ts_{mvgd}"],
+                mvgd=mvgd,
+                objective=objective,
+                run_id=run_id,
+                version_db=version_db,
+                dep=[f"min_exp:add_ts_{mvgd}"],
             )
+
+            yield feeder_extraction_task(
+                mvgd=mvgd,
+                objective=objective,
+                source="minimize_loading_reinforced",
+                run_id=run_id,
+                version_db=version_db,
+                dep=[f"min_exp:reinforce_{mvgd}"],
+            )
+
+
+# @create_after(executed="path")
+@create_after(executed="min_exp")
+def task_min_pot():
+    """Generator for minimal load balancing potential tasks"""
+
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    mvgds = sorted(cfg_o["mvgds"])
+    objectives = ["maximize_grid_power",
+                  "maximize_energy_level",
+                  "minimize_energy_level"]
+    source = "minimize_loading_feeder"
+    # TODO add pathways
+
+    # Versioning
+    dep_manager = doit.Globals.dep_manager
+    version_db = dep_manager.get_result("_set_opt_version")
+    version_db = version_db if isinstance(version_db, dict) else {"db": {}}
+    task_version = version_db.get("current", {"run_id": "None"})
+    run_id = task_version.get("run_id", "None")
+
+    # create opt task only for existing grid folders
+    for objective in objectives:
+        for mvgd in mvgds:
+            mvgd_path = results_dir / run_id / str(mvgd)
+            if os.path.isdir(mvgd_path):
+
+                feeder_path = mvgd_path / source
+
+                feeder_ids = [
+                    f
+                    for f in os.listdir(feeder_path)
+                    if os.path.isdir(feeder_path / f)
+                ]
+
+                dependencies = []
+                for feeder in sorted(feeder_ids):
+
+                    yield optimization_task(
+                        mvgd=mvgd,
+                        feeder=feeder,
+                        objective=objective,
+                        source=source,
+                        run_id=run_id,
+                        version_db=version_db,
+                        dep=[f"ref:feeder_{mvgd}"]
+                    )
+
+                    dependencies += [f"min_pot:{objective}_{mvgd}"
+                                     f"/{int(feeder):02}"]
+
+                yield result_concatination_task(
+                    mvgd, objective, run_id, version_db, dep=dependencies
+                )
+
 
 
 if __name__ == "__main__":

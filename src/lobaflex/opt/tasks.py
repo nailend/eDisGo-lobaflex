@@ -51,11 +51,11 @@ def timeframe_selection_task(mvgd, run_id, version_db):
     }
 
 
-def feeder_extraction_task(mvgd, objective, run_id, version_db):
+def feeder_extraction_task(mvgd, objective, source, run_id, version_db, dep):
     """Generator to define feeder extraction task for a mvgd"""
 
     fix = cfg_o["fix_preparation"]
-    import_path = results_dir / run_id / str(mvgd) / f"{objective}_mvgd"
+    import_path = results_dir / run_id / str(mvgd) / source
     export_path = import_path.parent / f"{objective}_feeder"
     return {
         "name": f"feeder_{mvgd}",
@@ -73,7 +73,7 @@ def feeder_extraction_task(mvgd, objective, run_id, version_db):
             )
         ],
         "doc": "per mvgd",
-        "task_dep": [f"ref:timeframe_{mvgd}"],
+        "task_dep": dep,
         "uptodate": [True] if fix else [opt_uptodate],
         "verbosity": 2,
     }
@@ -106,7 +106,7 @@ def feeder_extraction_task(mvgd, objective, run_id, version_db):
 #     }
 
 
-def optimization_task(mvgd, feeder, objective, source, run_id, version_db):
+def optimization_task(mvgd, feeder, objective, source, run_id, version_db, dep):
     """Generator to define optimization task for a feeder"""
 
     import_path = (
@@ -114,7 +114,8 @@ def optimization_task(mvgd, feeder, objective, source, run_id, version_db):
     )
 
     return {
-        "name": f"opt_{mvgd}/{int(feeder):02}",
+        # "basename": f"min_load:{objective}_{mvgd}/{int(feeder):02}",
+        "name": f"{objective}_{mvgd}/{int(feeder):02}",
         "actions": [
             (
                 run_dispatch_optimization,
@@ -130,7 +131,7 @@ def optimization_task(mvgd, feeder, objective, source, run_id, version_db):
             )
         ],
         "doc": "per feeder",
-        "task_dep": [f"ref:feeder_{mvgd}"],
+        "task_dep": dep,
         "uptodate": [opt_uptodate],
         "verbosity": 2,
     }
@@ -143,10 +144,10 @@ def result_concatination_task(mvgd, objective, run_id, version_db, dep):
         logging.info("Remove intermediate results")
         shutil.rmtree(path)
 
-    path = results_dir / run_id / str(mvgd) / (objective + "_results_feeder")
+    path = results_dir / run_id / str(mvgd) / (objective + "_results")
 
     return {
-        "name": f"concat_{mvgd}",
+        "name": f"concat_{objective}_{mvgd}",
         "actions": [
             (
                 save_concatinated_results,
@@ -172,7 +173,7 @@ def dispatch_integration_task(mvgd, objective, run_id, version_db, dep):
     """"""
     obj_path = data_dir / cfg_o["import_dir"] / str(mvgd)
     import_path = (
-        results_dir / run_id / str(mvgd) / (objective + "_results_concat")
+        results_dir / run_id / str(mvgd) / (objective + "_concat")
     )
 
     return {
