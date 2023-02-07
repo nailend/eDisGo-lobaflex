@@ -11,7 +11,7 @@ from lobaflex.opt.dispatch_integration import integrate_dispatch
 from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
 from lobaflex.opt.dnm_generation import run_dnm_generation
 from lobaflex.opt.feeder_extraction import run_feeder_extraction
-from lobaflex.opt.minimal_reinforcement import reinforce_grid
+from lobaflex.opt.gird_reinforcement import reinforce_grid
 from lobaflex.opt.result_concatination import save_concatinated_results
 from lobaflex.opt.timeframe_selection import run_timeframe_selection
 from lobaflex.tools.logger import setup_logging
@@ -106,7 +106,9 @@ def feeder_extraction_task(mvgd, objective, source, run_id, version_db, dep):
 #     }
 
 
-def optimization_task(mvgd, feeder, objective, source, run_id, version_db, dep):
+def optimization_task(
+    mvgd, feeder, objective, source, run_id, version_db, dep
+):
     """Generator to define optimization task for a feeder"""
 
     import_path = (
@@ -172,9 +174,7 @@ def result_concatination_task(mvgd, objective, run_id, version_db, dep):
 def dispatch_integration_task(mvgd, objective, run_id, version_db, dep):
     """"""
     obj_path = data_dir / cfg_o["import_dir"] / str(mvgd)
-    import_path = (
-        results_dir / run_id / str(mvgd) / (objective + "_concat")
-    )
+    import_path = results_dir / run_id / str(mvgd) / (objective + "_concat")
 
     return {
         "name": f"add_ts_{mvgd}",
