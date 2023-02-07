@@ -11,7 +11,7 @@ from lobaflex.opt.dispatch_integration import integrate_dispatch
 from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
 from lobaflex.opt.dnm_generation import run_dnm_generation
 from lobaflex.opt.feeder_extraction import run_feeder_extraction
-from lobaflex.opt.gird_reinforcement import reinforce_grid
+from lobaflex.opt.grid_reinforcement import reinforce_grid
 from lobaflex.opt.result_concatination import save_concatinated_results
 from lobaflex.opt.timeframe_selection import run_timeframe_selection
 from lobaflex.tools.logger import setup_logging
