@@ -395,11 +395,11 @@ class TelegramReporter(object):
             statistic += f"{len(failed)} failed.\n"
             statistic += f"{len(dependency)} unmet dependencies.\n"
 
-            summary = "Summary:\n"
-            summary += str().join([f"-- {i}\n" for i in uptodate])
-            summary += str().join([f".. {i}\n" for i in success])
-            summary += str().join([f"!! {i}\n" for i in failed])
-            summary += str().join([f"-! {i}\n" for i in dependency])
+            # summary = "Summary:\n"
+            # summary += str().join([f"-- {i}\n" for i in uptodate])
+            # summary += str().join([f".. {i}\n" for i in success])
+            # summary += str().join([f"!! {i}\n" for i in failed])
+            # summary += str().join([f"-! {i}\n" for i in dependency])
 
             try:
                 run_id = self.run.pop()
@@ -413,4 +413,5 @@ class TelegramReporter(object):
                 + current_time
             )
             self.telegram(text=statistic)
-            self.telegram(text=summary)
+            # Deactivated as messages became to big
+            # self.telegram(text=summary)
