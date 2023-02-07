@@ -22,7 +22,11 @@ else:
 
 
 def iterative_reinforce(
-    edisgo_obj, mode=None, iterations=10, combined_analysis=False
+    edisgo_obj,
+    timesteps=None,
+    mode=None,
+    iterations=10,
+    combined_analysis=False,
 ):
     """Edisgo reinforce is conducted if Value Error is raised.
 
@@ -30,6 +34,9 @@ def iterative_reinforce(
     ----------
     edisgo_obj : :class:`edisgo.EDisGo`
         EDisGo object
+    timesteps : pd.DatetimeIndex, pd.Timestamp
+        Timesteps to be analyzed and reinforced. If None all timesteps are
+        taken. Default: None
     mode : str
             * 'split'
                 Catch not converged time steps from error message and rerun
@@ -56,9 +63,16 @@ def iterative_reinforce(
     -------
 
     """
-    logger.info("Start minimal reinforce")
+
+    if timesteps is None:
+        timesteps = edisgo_obj.timeseries.timeindex
+
+    logger.info(f"Start reinforce for {len(timesteps)} time steps.")
+
     try:
-        edisgo_obj.reinforce(combined_analysis=combined_analysis)
+        edisgo_obj.reinforce(
+            combined_analysis=combined_analysis, timesteps_pfa=timesteps
+        )
     except ValueError as e:
         if mode is not None:
             logger.warning(f"Reinforce failed. Restart in {mode} mode.")
@@ -110,11 +124,15 @@ def iterative_reinforce(
 
             logger.info("Final reinforce.")
             edisgo_obj.reinforce(
-                combined_analysis=combined_analysis, max_while_iterations=50
+                combined_analysis=combined_analysis,
+                max_while_iterations=50,
+                timesteps_pfa=timesteps,
             )
         elif mode == "lpf":
             edisgo_obj.reinforce(
-                combined_analysis=combined_analysis, troubleshooting_mode="lpf"
+                combined_analysis=combined_analysis,
+                troubleshooting_mode="lpf",
+                timesteps_pfa=timesteps,
             )
         elif mode == "iterative":
 
@@ -131,6 +149,7 @@ def iterative_reinforce(
                 edisgo_obj.reinforce(
                     combined_analysis=combined_analysis,
                     max_while_iterations=50,
+                    timesteps_pfa=timesteps,
                 )
 
             logger.info("Final reinforce.")
@@ -233,6 +252,7 @@ if __name__ == "__main__":
     reinforce_grid(
         obj_or_path=results_dir / "debug" / "1111" / "minimize_loading_mvgd",
         grid_id=1111,
-        run_id=None,
-        version=None,
+        objective="minimize_loading",
+        run_id="debug",
+        version_db=None,
     )
