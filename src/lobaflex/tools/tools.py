@@ -202,6 +202,7 @@ class TelegramReporter(object):
         self.start_time = {}
         self.status = {}
         self.run = set()
+        self.run_id = str()
 
     def write(self, text):
         self.outstream.write(text)
@@ -264,10 +265,13 @@ class TelegramReporter(object):
         """called when execution finishes successfully"""
 
         self.status[task.name] = "success"
+        # if task successful and not private
         if task.actions and (task.name[0] != "_"):
             try:
+                # not sure what this is for?!
                 self.run.update({task.result.get("run")})
             except AttributeError:
+                # I guess only error detection
                 self.telegram(text=task.name)
             exec_time = time.perf_counter() - self.start_time[task.name]
             exec_time = time.gmtime(exec_time)
@@ -277,7 +281,6 @@ class TelegramReporter(object):
             group = task.name.split("_")[2]
             version = task.result["current"]["version"]
             run_id = task.result["current"]["run_id"]
-            # run_id = task.result.get("run_id", None)
             if run_id is None:
                 message = f"Version of {group} set to {version}."
             else:
@@ -401,13 +404,8 @@ class TelegramReporter(object):
             # summary += str().join([f"!! {i}\n" for i in failed])
             # summary += str().join([f"-! {i}\n" for i in dependency])
 
-            try:
-                run_id = self.run.pop()
-            except KeyError:
-                run_id = "empty"
-
             self.telegram(
-                text=f"Run: {run_id} finished after {exec_time}. \n"
+                text=f"Run finished after {exec_time}. \n"
                 + "#" * 28
                 + "\n"
                 + current_time
