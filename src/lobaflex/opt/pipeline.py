@@ -45,7 +45,7 @@ setup_logging(file_name=logfile)
 #   - teardown
 
 DOIT_CONFIG = {
-    "default_tasks": ["ref", "min_exp", "min_pot"],
+    "default_tasks": ["ref", "min_exp", "min_pot", "exp_scn"],
     "reporter": TelegramReporter,
 }
 
