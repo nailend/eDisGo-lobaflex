@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 import doit
-
+from pathlib import Path
 from doit import create_after
 
 from lobaflex import config_dir, data_dir, logs_dir, results_dir
@@ -97,7 +97,7 @@ def task_ref():
 
             yield feeder_extraction_task(mvgd=mvgd,
                                          objective=objective,
-                                         source="reference_mvgd",
+                                         source=Path(objective) / "mvgd",
                                          run_id=run_id,
                                          version_db=version_db,
                                          dep=[f"ref:timeframe_{mvgd}"],
@@ -122,7 +122,7 @@ def task_min_exp():
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
     objective = "minimize_loading"
-    source = "reference_feeder"
+    source = Path("reference") / "feeder"
 
     # Versioning
     dep_manager = doit.Globals.dep_manager
@@ -162,6 +162,7 @@ def task_min_exp():
             yield result_concatination_task(
                 mvgd=mvgd,
                 objective=objective,
+                source="",
                 run_id=run_id,
                 version_db=version_db,
                 dep=dependencies
@@ -186,7 +187,7 @@ def task_min_exp():
             yield feeder_extraction_task(
                 mvgd=mvgd,
                 objective=objective,
-                source="minimize_loading_reinforced",
+                source=Path("minimize_loading") / "reinforced",
                 run_id=run_id,
                 version_db=version_db,
                 dep=[f"min_exp:reinforce_{mvgd}"],
@@ -203,7 +204,7 @@ def task_min_pot():
     objectives = ["maximize_grid_power",
                   "maximize_energy_level",
                   "minimize_energy_level"]
-    source = "minimize_loading_feeder"
+    source = Path("minimize_loading") / "feeder"
     # TODO add pathways
 
     # Versioning
@@ -244,7 +245,12 @@ def task_min_pot():
                                      f"/{int(feeder):02}"]
 
                 yield result_concatination_task(
-                    mvgd, objective, run_id, version_db, dep=dependencies
+                    mvgd=mvgd,
+                    objective=objective,
+                    source=Path("potential") / "minimize_loading",
+                    run_id=run_id,
+                    version_db=version_db,
+                    dep=dependencies
                 )
 
 
@@ -270,16 +276,21 @@ def task_exp_scn():
             mvgd_path = results_dir / run_id / str(mvgd)
             if os.path.isdir(mvgd_path):
 
-                yield expansion_scenario_task(mvgd,
+                yield expansion_scenario_task(mvgd=mvgd,
                                               percentage=scenario,
                                               run_id=run_id,
                                               version_db=version_db,
                                               dep=[f"min_exp:reinforce_{mvgd}"]
                                               )
 
+                source = (
+                        Path("scenarios")
+                        / f"{scenario}_pct_reinforced"
+                        / "mvgd"
+                )
                 yield feeder_extraction_task(mvgd=mvgd,
                                              objective=f"{scenario}_pct",
-                                             source="reference_mvgd",
+                                             source=source,
                                              run_id=run_id,
                                              version_db=version_db,
                                              dep=[f"exp_scn:{scenario}_pct"

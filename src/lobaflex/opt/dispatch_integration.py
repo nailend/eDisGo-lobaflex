@@ -1,5 +1,6 @@
 import logging
 import warnings
+import os
 
 from copy import deepcopy
 from datetime import datetime
@@ -146,13 +147,11 @@ def integrate_dispatch(
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
 
-    logger.info(f"Start integrate and reinforce of {grid_id} in {run_id}.")
+    logger.info(f"Start ts integration of {grid_id} in {run_id}.")
 
     date = datetime.now().date().isoformat()
     logfile = logs_dir / f"dispatch_integration_{run_id}_{date}.log"
     setup_logging(file_name=logfile)
-
-    export_path = str(import_path).split("_concat")[0] + "_mvgd"
 
     if isinstance(obj_or_path, EDisGo):
         edisgo_obj = obj_or_path
@@ -166,6 +165,9 @@ def integrate_dispatch(
             import_electromobility=True,
             import_heat_pump=True,
         )
+
+    export_path = import_path.parent / "mvgd"
+    os.makedirs(export_path, exist_ok=True)
 
     # TODO define via config
     selected_timeseries = []

@@ -57,7 +57,7 @@ def feeder_extraction_task(mvgd, objective, source, run_id, version_db, dep):
 
     # fix = cfg_o["fix_preparation"]
     import_path = results_dir / run_id / str(mvgd) / source
-    export_path = import_path.parent / f"{objective}_feeder"
+    export_path = import_path.parent / "feeder"
     return {
         "name": f"{objective}_feeder_{mvgd}",
         "actions": [
@@ -141,14 +141,14 @@ def optimization_task(
     }
 
 
-def result_concatination_task(mvgd, objective, run_id, version_db, dep):
+def result_concatination_task(mvgd, objective, source, run_id, version_db, dep):
     """"""
 
     def teardown(path):
         logging.info("Remove intermediate results")
         shutil.rmtree(path)
 
-    path = results_dir / run_id / str(mvgd) / (objective + "_results")
+    path = results_dir / run_id / str(mvgd) / source / objective / "results"
 
     return {
         "name": f"concat_{objective}_{mvgd}",
@@ -176,7 +176,7 @@ def result_concatination_task(mvgd, objective, run_id, version_db, dep):
 def dispatch_integration_task(mvgd, objective, run_id, version_db, dep):
     """"""
     obj_path = data_dir / cfg_o["import_dir"] / str(mvgd)
-    import_path = results_dir / run_id / str(mvgd) / (objective + "_concat")
+    import_path = results_dir / run_id / str(mvgd) / objective / "concat"
 
     return {
         "name": f"add_ts_{mvgd}",
@@ -203,7 +203,7 @@ def dispatch_integration_task(mvgd, objective, run_id, version_db, dep):
 
 def grid_reinforcement_task(mvgd, objective, run_id, version_db, dep):
     """"""
-    obj_path = results_dir / run_id / str(mvgd) / (objective + "_mvgd")
+    obj_path = results_dir / run_id / str(mvgd) / objective / "mvgd"
 
     return {
         "name": f"reinforce_{mvgd}",
@@ -230,7 +230,9 @@ def grid_reinforcement_task(mvgd, objective, run_id, version_db, dep):
 
 def expansion_scenario_task(mvgd, percentage, run_id, version_db, dep):
     """"""
-    obj_path = results_dir / run_id / str(mvgd) / "minimize_loading_reinforced"
+    obj_path = (
+            results_dir / run_id / str(mvgd) / "minimize_loading" / "reinforced"
+    )
 
     return {
         "name": f"{percentage}_pct_{mvgd}",

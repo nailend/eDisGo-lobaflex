@@ -218,14 +218,14 @@ def reinforce_grid(
             import_heat_pump=True,
         )
 
+    export_path = (
+        results_dir / run_id / str(grid_id) / objective / "reinforced"
+    )
+    os.makedirs(export_path, exist_ok=True)
+
     edisgo_obj = iterative_reinforce(
         edisgo_obj, combined_analysis=True, mode="split", iterations=5
     )
-
-    export_path = (
-        results_dir / run_id / str(grid_id) / f"{objective}_reinforced"
-    )
-    os.makedirs(export_path, exist_ok=True)
 
     logger.info("Save reinforced grid")
     edisgo_obj.save(

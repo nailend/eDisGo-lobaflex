@@ -71,6 +71,16 @@ def run_expansion_scenario(
             import_heat_pump=True,
         )
 
+    export_path = (
+        results_dir
+        / run_id
+        / str(grid_id)
+        / "scenarios"
+        / f"{int(percentage*100)}_pct_reinforced"
+        / "mvgd"
+    )
+    os.makedirs(export_path, exist_ok=True)
+
     for util in ["cp", "hp"]:
         keys = [
             key
@@ -91,13 +101,6 @@ def run_expansion_scenario(
         iteration_start=0.05,
     )
 
-    export_path = (
-        results_dir
-        / run_id
-        / str(grid_id)
-        / f"{int(percentage)*100}_pct_reinforced"
-    )
-    os.makedirs(export_path, exist_ok=True)
 
     logger.info(f"Save reinforced grid to {export_path}")
     edisgo_obj.save(

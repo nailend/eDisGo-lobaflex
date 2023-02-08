@@ -5,7 +5,7 @@ import shutil
 import warnings
 
 from datetime import datetime
-
+from pathlib import Path
 import edisgo.opf.lopf as lopf
 import networkx as nx
 import numpy as np
@@ -518,21 +518,32 @@ def run_dispatch_optimization(
             import_heat_pump=True,
             import_electromobility=True,
         )
+        if objective in ["maximize_grid_power",
+                         "maximize_energy_level",
+                         "minimize_energy_level"]:
+
+            # Add extra directory layer for potentials
+            source = obj_or_path.parent.parent.name
+            directory = Path("potential") / source / objective / "results"
+        else:
+            directory = Path(objective) / "results"
         export_path = (
-            obj_or_path.parent.parent
-            / (objective + "_results")
+            obj_or_path.parent.parent.parent
+            / directory
             / feeder_id
         )
+        os.makedirs(export_path, exist_ok=True)
 
-    # TODO remove after time series decomposition
-    logger.info("Extract timeframe")
-    edisgo_obj = extract_timeframe(
-        edisgo_obj,
-        start_datetime=cfg_o["start_datetime"],
-        periods=cfg_o["total_timesteps"],
-        freq="1h",
-    )
+    # # TODO remove after time series decomposition
+    # logger.info("Extract timeframe")
+    # edisgo_obj = extract_timeframe(
+    #     edisgo_obj,
+    #     start_datetime=cfg_o["start_datetime"],
+    #     periods=cfg_o["total_timesteps"],
+    #     freq="1h",
+    # )
 
+    # TODO Move to edisgo feeder extraction + timeseries extraction
     logger.info("Check integrity.")
     edisgo_obj.check_integrity()
 
