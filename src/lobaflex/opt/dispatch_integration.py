@@ -185,13 +185,18 @@ def integrate_dispatch(
         run_id=run_id,
     )
 
-    logger.info("Save integrated grid")
+    logger.info(f"Save integrated grid to {export_path}")
     edisgo_obj.save(
         export_path,
         save_topology=True,
         save_timeseries=True,
         save_heatpump=True,
         save_electromobility=True,
+        electromobility_attributes=[
+            "integrated_charging_parks_df",
+            "simbev_config_df",
+            "flexibility_bands",
+        ],
         save_results=True,
     )
 

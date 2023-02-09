@@ -113,7 +113,12 @@ def run_expansion_scenario(
         save_timeseries=True,
         save_heatpump=True,
         save_electromobility=True,
-        save_results=True,
+        electromobility_attributes=[
+            "integrated_charging_parks_df",
+            "simbev_config_df",
+            "flexibility_bands",
+        ],
+        save_results=True
     )
 
     if version_db is not None:

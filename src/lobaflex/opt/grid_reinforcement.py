@@ -227,13 +227,18 @@ def reinforce_grid(
         edisgo_obj, combined_analysis=True, mode="split", iterations=5
     )
 
-    logger.info("Save reinforced grid")
+    logger.info(f"Save reinforced grid to {export_path}")
     edisgo_obj.save(
         export_path,
         save_topology=True,
         save_timeseries=True,
         save_heatpump=True,
         save_electromobility=True,
+        electromobility_attributes=[
+            "integrated_charging_parks_df",
+            "simbev_config_df",
+            "flexibility_bands",
+        ],
         save_results=True,
     )
 

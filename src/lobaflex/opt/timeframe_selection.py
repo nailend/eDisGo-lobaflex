@@ -170,13 +170,18 @@ def run_timeframe_selection(
         freq="1h",
     )
 
-    logger.info("Save reduced grid")
+    logger.info(f"Save reduced grid to {export_path}")
     edisgo_obj.save(
         export_path,
         save_topology=True,
         save_timeseries=True,
         save_heatpump=True,
         save_electromobility=True,
+        electromobility_attributes=[
+            "integrated_charging_parks_df",
+            "simbev_config_df",
+            "flexibility_bands",
+        ],
         save_results=True,
     )
 
