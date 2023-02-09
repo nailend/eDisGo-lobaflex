@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 import time
+import doit
 
 from datetime import date, datetime
 from functools import wraps
@@ -173,6 +174,18 @@ def dump_yaml(yaml_file, save_to, split=False, **kwargs):
         path = save_to / f"{filename}.yaml"
         with open(path, "w") as file:
             file.write(content)
+
+
+def init_versioning():
+    """Initialize task versioning"""
+    # Versioning
+    dep_manager = doit.Globals.dep_manager
+    version_db = dep_manager.get_result("_set_opt_version")
+    version_db = version_db if isinstance(version_db, dict) else {"db": {}}
+    task_version = version_db.get("current", {"run_id": "None"})
+    run_id = task_version.get("run_id", "None")
+
+    return version_db, run_id
 
 
 def telegram_bot_sendtext(text):

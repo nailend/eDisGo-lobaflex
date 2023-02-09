@@ -12,7 +12,7 @@ from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
 from lobaflex.opt.dnm_generation import run_dnm_generation
 from lobaflex.opt.feeder_extraction import run_feeder_extraction
 from lobaflex.opt.grid_reinforcement import reinforce_grid
-from lobaflex.opt.result_concatination import save_concatinated_results
+from lobaflex.opt.result_concatination import save_concatenated_results
 from lobaflex.opt.timeframe_selection import run_timeframe_selection
 from lobaflex.opt.expansion_scenario import run_expansion_scenario
 from lobaflex.tools.logger import setup_logging
@@ -109,17 +109,21 @@ def feeder_extraction_task(mvgd, objective, source, run_id, version_db, dep):
 
 
 def optimization_task(
-    mvgd, feeder, objective, source, run_id, version_db, dep
+    mvgd, feeder, objective, directory, run_id, version_db, dep
 ):
     """Generator to define optimization task for a feeder"""
 
     import_path = (
-        results_dir / run_id / str(mvgd) / source / f"{int(feeder):02}"
+        results_dir / run_id / str(mvgd) / directory / f"{int(feeder):02}"
     )
 
+    if directory.parent.parent.name == "scenarios":
+        extra = directory.parent.name + "_"
+    else:
+        extra = ""
+
     return {
-        # "basename": f"min_load:{objective}_{mvgd}/{int(feeder):02}",
-        "name": f"{objective}_{mvgd}/{int(feeder):02}",
+        "name": extra + f"{objective}_{mvgd}/{int(feeder):02}",
         "actions": [
             (
                 run_dispatch_optimization,
@@ -141,20 +145,26 @@ def optimization_task(
     }
 
 
-def result_concatination_task(mvgd, objective, source, run_id, version_db, dep):
+def result_concatenation_task(mvgd, objective, directory, run_id, version_db,
+                              dep):
     """"""
 
     def teardown(path):
         logging.info("Remove intermediate results")
         shutil.rmtree(path)
 
-    path = results_dir / run_id / str(mvgd) / source / objective / "results"
+    path = results_dir / run_id / str(mvgd) / directory / objective / "results"
+
+    if directory.parent.name == "potential":
+        extra = directory.name + "_"
+    else:
+        extra = ""
 
     return {
-        "name": f"concat_{objective}_{mvgd}",
+        "name": extra + f"concat_{objective}_{mvgd}",
         "actions": [
             (
-                save_concatinated_results,
+                save_concatenated_results,
                 [],
                 {
                     "grid_id": mvgd,
@@ -235,7 +245,7 @@ def expansion_scenario_task(mvgd, percentage, run_id, version_db, dep):
     )
 
     return {
-        "name": f"{percentage}_pct_{mvgd}",
+        "name": f"{percentage}_pct_reinforced_{mvgd}",
         "actions": [
             (
                 run_expansion_scenario,

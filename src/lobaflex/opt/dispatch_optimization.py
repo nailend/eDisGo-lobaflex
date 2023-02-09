@@ -523,14 +523,17 @@ def run_dispatch_optimization(
                          "minimize_energy_level"]:
 
             # Add extra directory layer for potentials
-            source = obj_or_path.parent.parent.name
-            directory = Path("potential") / source / objective / "results"
+            directory = Path("potential") / obj_or_path.parent.parent.name
         else:
-            directory = Path(objective) / "results"
+            directory = ""
         export_path = (
-            obj_or_path.parent.parent.parent
-            / directory
-            / feeder_id
+                results_dir
+                / run_id
+                / str(grid_id)
+                / directory
+                / objective
+                / "results"
+                / feeder_id
         )
         os.makedirs(export_path, exist_ok=True)
 

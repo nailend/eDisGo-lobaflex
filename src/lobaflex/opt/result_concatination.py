@@ -115,8 +115,8 @@ def concat_results(path, timeframe=None, parameters=None, fillna=None):
 
 
 @log_errors
-def save_concatinated_results(grid_id, path, run_id=None, version_db=None):
-    """Concatinate all results of one grid and save them to csv.
+def save_concatenated_results(grid_id, path, run_id=None, version_db=None):
+    """Concatenate all results of one grid and save them to csv.
 
     Parameters
     ----------
@@ -134,7 +134,7 @@ def save_concatinated_results(grid_id, path, run_id=None, version_db=None):
 
     """
     # Log to pipeline log file
-    logger.info(f"Run result concatination of {grid_id}")
+    logger.info(f"Run result concatenation of {grid_id}")
 
     date = datetime.now().date().isoformat()
     logfile = logs_dir / f"opt_concat_results_{run_id}_{grid_id}_{date}.log"
@@ -158,7 +158,6 @@ def save_concatinated_results(grid_id, path, run_id=None, version_db=None):
     # export_path = Path(str(path).split("_results")[0] + "_concat")
     export_path = path.parent / "concat"
 
-
     os.makedirs(export_path, exist_ok=True)
 
     for (grid, parameter), df in results.items():
@@ -179,11 +178,11 @@ if __name__ == "__main__":
     logger = logging.getLogger("lobaflex.__main__")
     date = datetime.now().date().isoformat()
     cfg_o = get_config(path=config_dir / ".opt.yaml")
-    logfile = logs_dir / f"result_concatination_{date}_local.log"
+    logfile = logs_dir / f"result_concatenation_{date}_local.log"
     setup_logging(file_name=logfile)
 
     grid_id = 1111
-    save_concatinated_results(
+    save_concatenated_results(
         grid_id=1111,
         path=results_dir / "debug" / str(grid_id) / "minimize_loading_feeder",
         run_id=None,

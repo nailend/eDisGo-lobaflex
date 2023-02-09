@@ -3,7 +3,7 @@ import os
 import warnings
 
 from datetime import datetime
-
+from copy import deepcopy
 from edisgo.edisgo import EDisGo, import_edisgo_from_files
 
 from lobaflex import logs_dir, results_dir
@@ -90,6 +90,8 @@ def run_expansion_scenario(
         edisgo_obj.config["worst_case_scale_factor"].update(
             dict.fromkeys(keys, percentage)
         )
+    # Backup original timeseries
+    ts_orig = deepcopy(edisgo_obj.timeseries)
 
     edisgo_obj.set_time_series_worst_case_analysis("load_case")
 
@@ -101,6 +103,8 @@ def run_expansion_scenario(
         iteration_start=0.05,
     )
 
+    # Restore original timeseries
+    edisgo_obj.timeseries = ts_orig
 
     logger.info(f"Save reinforced grid to {export_path}")
     edisgo_obj.save(

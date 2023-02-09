@@ -14,10 +14,8 @@ from lobaflex.tools.tools import get_config, log_errors
 
 if __name__ == "__main__":
     logger = logging.getLogger("lobaflex.opt." + __name__)
-    logger.propagate = False
 else:
     logger = logging.getLogger(__name__)
-    logger.propagate = False
 
 
 def extract_timeframe(
