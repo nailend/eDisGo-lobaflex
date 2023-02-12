@@ -201,6 +201,7 @@ def task_min_pot():
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
     objectives = ["maximize_grid_power",
+                  "minimize_grid_power"
                   "maximize_energy_level",
                   "minimize_energy_level"]
     directory = Path("minimize_loading") / "feeder"
@@ -299,6 +300,7 @@ def task_scn_pot():
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
     objectives = ["maximize_grid_power",
+                  "minimize_grid_power",
                   "maximize_energy_level",
                   "minimize_energy_level"]
 
