@@ -189,7 +189,7 @@ def update_start_values(result_dict, fixed_parameters):
         )
 
     else:
-        logging.info("No start values for electromobility")
+        logger.warning("No start values for electromobility")
 
     if fixed_parameters["optimize_hp"]:
         start_values["charging_starts"].update(
@@ -203,7 +203,7 @@ def update_start_values(result_dict, fixed_parameters):
             {"tes": result_dict["energy_level_tes"].iloc[-overlap_iterations]}
         )
     else:
-        logging.info("No start values for heat pumps")
+        logger.warning("No start values for heat pumps")
     return start_values
 
 
@@ -325,7 +325,7 @@ def rolling_horizon_optimization(
 
     for iteration in range(0, int(len(timeframe) / timesteps_per_iteration)):
 
-        logging.info(f"Starting optimisation for iteration {iteration}.")
+        logger.info(f"Starting optimisation for iteration {iteration}.")
 
         # Defines windows of iteration with timesteps
         # if last iteration of era, no overlap is added but energy_level
@@ -503,7 +503,7 @@ def run_dispatch_optimization(
         f"Run optimization for grid: {grid_id}, feeder: {feeder_id}"
         f" with run id: {run_id}"
     )
-
+    logger.info(f"Objective: {objective}")
     if isinstance(obj_or_path, EDisGo):
         edisgo_obj = obj_or_path
         export_path = results_dir / run_id / objective
