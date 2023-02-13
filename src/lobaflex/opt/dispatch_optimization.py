@@ -359,17 +359,17 @@ def rolling_horizon_optimization(
                     "ev": None,
                     "tes": None,
                 },
-                # "charging_starts": {
-                #     "ev": None,
-                #     "tes": None,
-                #     "hp": None,
-                # },
-                # TODO workaround to fix charging in first timestep
                 "charging_starts": {
-                    "ev": 0,
-                    "tes": 0,
+                    "ev": None,
+                    "tes": None,
                     "hp": None,
                 },
+                # TODO workaround to fix charging in first timestep
+                # "charging_starts": {
+                #     "ev": 0,
+                #     "tes": 0,
+                #     "hp": None,
+                # },
             }
 
         else:
@@ -518,23 +518,25 @@ def run_dispatch_optimization(
             import_heat_pump=True,
             import_electromobility=True,
         )
-        if objective in ["maximize_grid_power",
-                         "minimize_grid_power",
-                         "maximize_energy_level",
-                         "minimize_energy_level"]:
+        if objective in [
+            "maximize_grid_power",
+            "minimize_grid_power",
+            "maximize_energy_level",
+            "minimize_energy_level",
+        ]:
 
             # Add extra directory layer for potentials
             directory = Path("potential") / obj_or_path.parent.parent.name
         else:
             directory = ""
         export_path = (
-                results_dir
-                / run_id
-                / str(grid_id)
-                / directory
-                / objective
-                / "results"
-                / feeder_id
+            results_dir
+            / run_id
+            / str(grid_id)
+            / directory
+            / objective
+            / "results"
+            / feeder_id
         )
         os.makedirs(export_path, exist_ok=True)
 
