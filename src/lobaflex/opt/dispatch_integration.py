@@ -71,6 +71,8 @@ def integrate_timeseries(
         if parameter in file
     ]
 
+    filenames = [file for file in filenames if "slack_initial" not in file]
+
     logger.info(f"Import results of {' & '.join(parameters)}.")
     df_loads_active_power = pd.concat(
         map(partial(pd.read_csv, index_col=0, parse_dates=True), filenames),
