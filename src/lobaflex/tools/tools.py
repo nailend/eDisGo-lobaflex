@@ -1,22 +1,23 @@
 """"""
+import csv
 import logging
 import os
 import sys
 import time
-import doit
 
 from datetime import date, datetime
 from functools import wraps
 from glob import glob
 from pathlib import Path
 
+import doit
 import psutil
 import requests
 import yaml
 
 from doit.exceptions import BaseFail
 
-from lobaflex import config_dir
+from lobaflex import config_dir, results_dir
 
 logger = logging.getLogger(__name__)
 
@@ -203,10 +204,11 @@ class TelegramReporter(object):
     """ """
 
     # short description, used by the help system
-    desc = "console output"
+    desc = "telegram, csv and console output"
 
     def __init__(self, outstream, options):
         # save non-successful result information (include task errors)
+        self.csv_file = datetime.now().strftime("run_%Y-%m-%d-%H-%M-%S.csv")
         self.failures = []
         self.runtime_errors = []
         self.failure_verbosity = options.get("failure_verbosity", 0)
@@ -223,6 +225,8 @@ class TelegramReporter(object):
 
     def initialize(self, tasks, selected_tasks):
         """called just after tasks have been loaded before execution starts"""
+
+        _, self.run_id = init_versioning()
 
         pipeline = str()
         # [task for task in tasks.get(group) for group in selected_tasks]
@@ -268,6 +272,7 @@ class TelegramReporter(object):
                 exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
                 self.telegram(text=f"Failed: {task.name} after {exec_time}")
                 self.status[task.name] = "fail"
+
             except KeyError:
                 self.telegram(text=f"Unmet dependency: {task.name}")
                 self.status[task.name] = "dependency"
@@ -339,8 +344,23 @@ class TelegramReporter(object):
 
     def complete_run(self):
         """called when finished running all tasks"""
+
+        # write csv logs for failed task incl traceback
+        csv_file = results_dir / self.run_id / self.csv_file
+        with open(csv_file, "w", newline="") as csvfile:
+            # Create a CSV writer object
+            writer = csv.writer(csvfile)
+            writer.writerow(["task", "error-msg"])
+            for fail in self.failures:
+                # Write the new line to the file
+                if fail["task"].executed:
+                    writer.writerow(
+                        [fail["task"].name, str(fail["exception"])]
+                    )
+
         # if test fails print output from failed task
         for result in self.failures:
+
             task = result["task"]
             # makes no sense to print output if task was not executed
             if not task.executed:
