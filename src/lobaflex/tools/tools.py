@@ -16,6 +16,7 @@ import requests
 import yaml
 
 from doit.exceptions import BaseFail
+from dotenv import dotenv_values
 
 from lobaflex import config_dir, results_dir
 
@@ -191,9 +192,9 @@ def init_versioning():
 
 def telegram_bot_sendtext(text):
     """"""
-    cfg_telegram = get_config(path=config_dir / ".telegram.yaml")
-    token = cfg_telegram.get("token")
-    chat_id = cfg_telegram.get("chat_id")
+    cfg_telegram = dotenv_values(dotenv_path=config_dir / "telegram.env")
+    token = cfg_telegram.get("TOKEN")
+    chat_id = cfg_telegram.get("CHAT_ID")
     params = {"chat_id": chat_id, "text": text}
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     message = requests.post(url, params=params)
