@@ -6,6 +6,7 @@ import warnings
 
 from datetime import datetime
 from pathlib import Path
+
 import edisgo.opf.lopf as lopf
 import networkx as nx
 import numpy as np
@@ -15,9 +16,8 @@ from edisgo.edisgo import EDisGo, import_edisgo_from_files
 from edisgo.network.topology import Topology
 from edisgo.tools.tools import convert_impedances_to_mv
 
-from lobaflex import config_dir, logs_dir, results_dir
+from lobaflex import config_dir, data_dir, logs_dir, results_dir
 from lobaflex.opt.feeder_extraction import get_flexible_loads
-from lobaflex.opt.timeframe_selection import extract_timeframe
 from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.tools import dump_yaml, get_config, log_errors, timeit
 
@@ -46,6 +46,7 @@ def get_downstream_nodes_matrix_iterative(grid):
     Returns
     -------
     downstream_node_matrix : pd.DataFrame
+
     Todo: Check version with networkx successor
     """
 
@@ -109,7 +110,7 @@ def export_results(result_dict, export_path, timesteps, filename):
     Parameters
     ----------
     result_dict : dict
-    export_path : PoxisPath
+    export_path : PosixPath
     timesteps : pd.DatetimeIndex
     filename : str
 
@@ -119,6 +120,7 @@ def export_results(result_dict, export_path, timesteps, filename):
     """
 
     iteration = re.findall(r"iteration_(\d+)", filename)[0]
+
     for res_name, res in result_dict.items():
 
         # dont export overlap
@@ -129,7 +131,7 @@ def export_results(result_dict, export_path, timesteps, filename):
             mask = res > 1e-6
             if mask.any().any():
                 logger.warning(
-                    f"Values > 1e-6 in {res_name} iteration at {iteration}"
+                    f"Values > 1e-6 in {res_name} at iteration {iteration}."
                 )
             res = res[mask]
             res = res.dropna(how="all")
@@ -207,31 +209,17 @@ def update_start_values(result_dict, fixed_parameters):
     return start_values
 
 
-def rolling_horizon_optimization(
-    edisgo_obj,
-    grid_id,
-    feeder_id,
-    objective,
-    timeframe=False,
-    export_path=None,
-):
-    """Rolling horizon optimization for flexibilities like EVs and heat pumps.
+def prepare_input_parameters(edisgo_obj, timeframe_only=False):
+    """Prepare input parameters for the LOPF.
 
     Parameters
     ----------
     edisgo_obj : :class:`edisgo.EDisGo`
         EDisGo object
-    grid_id : int
-        Grid id of the MVGD
-    feeder_id : str or int
-        Feeder id of the feeder of the MVGD, e.g. '01'
-    objective : str
-        Objective function to be optimized
-    timeframe : bool
+    timeframe_only : bool
         If True, the optimization is performed for the in the config defined
         time frame only. If False, the optimization is performed for the whole
-        time series of the edisgo object.
-    export_path :
+        time series of the edisgo object (default=False).
 
     Returns
     -------
@@ -239,18 +227,6 @@ def rolling_horizon_optimization(
     """
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
-    feeder_id = f"{int(feeder_id):02}"
-
-    if export_path is not None:
-        shutil.rmtree(export_path, ignore_errors=True)
-        os.makedirs(export_path, exist_ok=True)
-        # Dump opt configs to results
-        dump_yaml(yaml_file=cfg_o, save_to=export_path)
-
-    # Due to different voltage levels, impedances need to adapted
-    # alternatively p.u.
-    logger.info("Convert impedances to MV reference system")
-    edisgo_obj = convert_impedances_to_mv(edisgo_obj)
 
     logger.info("Compute downstream nodes matrix")
     downstream_nodes_matrix = get_downstream_nodes_matrix_iterative(
@@ -279,7 +255,7 @@ def rolling_horizon_optimization(
         flexible_loads=flexible_loads,
     )
 
-    if timeframe:
+    if timeframe_only:
         # Define optimization timeframe by config
         start_datetime = cfg_o["start_datetime"]
         total_timesteps = cfg_o["total_timesteps"]
@@ -301,6 +277,168 @@ def rolling_horizon_optimization(
         f"{timeframe[-1]} including {total_timesteps} timesteps."
     )
 
+    return fixed_parameters, flexible_loads, total_timesteps, timeframe
+
+
+def long_term_optimization(
+    edisgo_obj,
+    grid_id,
+    feeder_id,
+    objective,
+    timeframe_only=False,
+    export_path=None,
+):
+    """Rolling horizon optimization for flexibilities like EVs and heat pumps.
+
+    Parameters
+    ----------
+    edisgo_obj : :class:`edisgo.EDisGo`
+        EDisGo object
+    grid_id : int
+        Grid id of the MVGD
+    feeder_id : str or int
+        Feeder id of the feeder of the MVGD, e.g. '01'
+    objective : str
+        Objective function to be optimized
+    timeframe_only : bool
+        If True, the optimization is performed for the in the config defined
+        time frame only. If False, the optimization is performed for the whole
+        time series of the edisgo object (default=False).
+    export_path :
+
+    Returns
+    -------
+
+    """
+
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    feeder_id = f"{int(feeder_id):02}"
+
+    if export_path is not None:
+        shutil.rmtree(export_path, ignore_errors=True)
+        os.makedirs(export_path, exist_ok=True)
+        # Dump opt configs to results
+        dump_yaml(yaml_file=cfg_o, save_to=export_path)
+
+    # Due to different voltage levels, impedances need to adapted
+    # alternatively p.u.
+    logger.info("Convert impedances to MV reference system")
+    edisgo_obj = convert_impedances_to_mv(edisgo_obj)
+
+    (
+        fixed_parameters,
+        flexible_loads,
+        total_timesteps,
+        timeframe,
+    ) = prepare_input_parameters(edisgo_obj, timeframe_only)
+
+    logger.info(f"Set up model.")
+    model = lopf.setup_model(
+        fixed_parameters=fixed_parameters,
+        timesteps=timeframe,
+        objective=objective,
+        flexible_loads=flexible_loads,
+        # charging_starts={"ev": 0, "hp": 0, "tes": 0},
+        # **start_values, # might be fixed
+        # load_factor_rings=0.5 #  TODO N-1 DEACTIVATED!
+        # **kwargs,
+    )
+
+    # lpfile
+    if cfg_o["save_lp_files"]:
+        lp_filename = export_path / f"lp_file.lp"
+        logger.info(f"LP file is saved to: {lp_filename}")
+
+    else:
+        lp_filename = None
+
+    # logfile
+    if cfg_o["save_solver_logs"]:
+        date = datetime.now().date().isoformat()
+        logfile = logs_dir / f"gurobi_{date}_{grid_id}_{feeder_id}.log"
+        logger.info(
+            f"Solver log for long-term optimization are saved to: {logfile}"
+        )
+    else:
+        logfile = None
+
+    result_dict = lopf.optimize(
+        model=model,
+        solver=cfg_o["solver"],
+        tee=cfg_o["print_solver_logs"],
+        lp_filename=lp_filename,
+        logfile=logfile,
+        options=cfg_o["options"],
+    )
+
+    logger.info(f"Finished long-term optimization.")
+
+    # if export_path is not None:
+    filename = f"$res_name$_{grid_id}-{feeder_id}_iteration_0.csv"
+    try:
+        export_results(
+            result_dict=result_dict,
+            export_path=export_path,
+            timesteps=timeframe,
+            filename=filename,
+        )
+    except Exception:
+        logger.warning("Optimization Error. Result's couldn't be exported.")
+        raise ValueError("Results not valid")
+
+
+def rolling_horizon_optimization(
+    edisgo_obj,
+    grid_id,
+    feeder_id,
+    objective,
+    timeframe_only=False,
+    export_path=None,
+):
+    """Rolling horizon optimization for flexibilities like EVs and heat pumps.
+
+    Parameters
+    ----------
+    edisgo_obj : :class:`edisgo.EDisGo`
+        EDisGo object
+    grid_id : int
+        Grid id of the MVGD
+    feeder_id : str or int
+        Feeder id of the feeder of the MVGD, e.g. '01'
+    objective : str
+        Objective function to be optimized
+    timeframe_only : bool
+        If True, the optimization is performed for the in the config defined
+        time frame only. If False, the optimization is performed for the whole
+        time series of the edisgo object (default=False).
+    export_path :
+
+    Returns
+    -------
+
+    """
+
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    feeder_id = f"{int(feeder_id):02}"
+
+    if export_path is not None:
+        shutil.rmtree(export_path, ignore_errors=True)
+        os.makedirs(export_path, exist_ok=True)
+        # Dump opt configs to results
+        dump_yaml(yaml_file=cfg_o, save_to=export_path)
+
+    # Due to different voltage levels, impedances need to adapted
+    # alternatively p.u.
+    logger.info("Convert impedances to MV reference system")
+    edisgo_obj = convert_impedances_to_mv(edisgo_obj)
+
+    (
+        fixed_parameters,
+        flexible_loads,
+        total_timesteps,
+        timeframe,
+    ) = prepare_input_parameters(edisgo_obj, timeframe_only)
+
     # Define rolling horizon parameters
     timesteps_per_iteration = cfg_o["timesteps_per_iteration"]
     iterations_per_era = cfg_o["iterations_per_era"]
@@ -308,15 +446,6 @@ def rolling_horizon_optimization(
         f"Rolling horizon with {timesteps_per_iteration} timesteps "
         f"per iteration and {iterations_per_era} iterations per era."
     )
-
-    # else:
-    #     logger.info("No start_datetime given. Start with first timestep")
-    #     timeframe = edisgo_obj.timeseries.timeindex#[:total_timesteps]
-    #     total_timesteps = timeframe.shape[0]
-    #     logger.info(
-    #         f"Optimized timeframe is: {timeframe[0]} -> "
-    #         f"{timeframe[-1]} including {total_timesteps} timesteps."
-    #     )
 
     # ####################### Rolling Horizon ############################
     # define result_dict for first iteration
@@ -386,7 +515,7 @@ def rolling_horizon_optimization(
                 flexible_loads=flexible_loads,
                 # charging_starts={"ev": 0, "hp": 0, "tes": 0},
                 **start_values,
-                load_factor_rings=0.5
+                # load_factor_rings=0.5 # TODO N-1 DEACTIVATED!
                 # **kwargs,
             )
         else:
@@ -442,7 +571,7 @@ def rolling_horizon_optimization(
 
         # if export_path is not None:
         filename = (
-            f"$res_name$_{grid_id}-{feeder_id}_iteration" f"_{iteration}.csv"
+            f"$res_name$_{grid_id}-{feeder_id}_iteration_{iteration}.csv"
         )
         try:
             export_results(
@@ -452,7 +581,9 @@ def rolling_horizon_optimization(
                 filename=filename,
             )
         except Exception:
-            logger.info("Optimization Error. Result's couldn't be exported.")
+            logger.warning(
+                "Optimization Error. Result's couldn't be exported."
+            )
             raise ValueError("Results not valid")
 
 
@@ -462,6 +593,7 @@ def run_dispatch_optimization(
     grid_id,
     feeder_id,
     objective,
+    rolling_horizon=False,
     run_id=None,
     version_db=None,
 ):
@@ -477,9 +609,12 @@ def run_dispatch_optimization(
         feeder id, respective folder name of feeder
     objective :
         objective function to be used for optimization
-    run_id : str
+    rolling_horizon : bool
+        If True, rolling horizon optimization is performed else long-term
+        optimization (default = False).
+    run_id : str or None
         run id used for pydoit versioning
-    version_db : dict
+    version_db : dict or None
         Dictionary with version information for pydoit versioning
 
     Returns
@@ -493,7 +628,6 @@ def run_dispatch_optimization(
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
     feeder_id = f"{int(feeder_id):02}"
-    cfg_o = get_config(path=config_dir / ".opt.yaml")
 
     date = datetime.now().date().isoformat()
     logfile = logs_dir / f"opt_{run_id}_{grid_id}-{feeder_id}" f"_{date}.log"
@@ -540,15 +674,6 @@ def run_dispatch_optimization(
         )
         os.makedirs(export_path, exist_ok=True)
 
-    # # TODO remove after time series decomposition
-    # logger.info("Extract timeframe")
-    # edisgo_obj = extract_timeframe(
-    #     edisgo_obj,
-    #     start_datetime=cfg_o["start_datetime"],
-    #     periods=cfg_o["total_timesteps"],
-    #     freq="1h",
-    # )
-
     # TODO Move to edisgo feeder extraction + timeseries extraction
     logger.info("Check integrity.")
     edisgo_obj.check_integrity()
@@ -560,13 +685,26 @@ def run_dispatch_optimization(
         logger.warning("Powerflow not successfull.")
         logger.warning(e)
 
-    rolling_horizon_optimization(
-        edisgo_obj,
-        grid_id,
-        feeder_id,
-        objective=objective,
-        export_path=export_path,
-    )
+    if rolling_horizon:
+        logger.info("Run rolling horizon optimization.")
+        rolling_horizon_optimization(
+            edisgo_obj,
+            grid_id,
+            feeder_id,
+            objective=objective,
+            timeframe_only=False,
+            export_path=export_path,
+        )
+    else:
+        logger.info("Run long-term optimization.")
+        long_term_optimization(
+            edisgo_obj,
+            grid_id,
+            feeder_id,
+            objective=objective,
+            timeframe_only=False,
+            export_path=export_path,
+        )
 
     if version_db is not None:
         return version_db["db"]
@@ -584,11 +722,14 @@ if __name__ == "__main__":
     logfile = logs_dir / f"dispatch_optimization_{date}_local.log"
     setup_logging(file_name=logfile)
 
+    grid_id = 1111
     run_dispatch_optimization(
-        obj_or_path=results_dir / "debug" / "1111" / "timeframe_feeder" / "01",
-        grid_id=1111,
+        # obj_or_path=results_dir / "debug" / "1111" / "timeframe_feeder" / "01",
+        obj_or_path=data_dir / cfg_o["import_dir"] / str(grid_id),
+        grid_id=grid_id,
         feeder_id=1,
         objective="minimize_loading",
-        version=None,
-        run_id=None,
+        rolling_horizon=False,
+        run_id="long_term",
+        version_db=None,
     )
