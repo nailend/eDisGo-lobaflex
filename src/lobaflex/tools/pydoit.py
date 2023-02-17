@@ -196,7 +196,15 @@ def task__get_opt_version():
         dataset_results = dep_manager.get_result("_set_opt_version")
         if dataset_results is None:
             raise ValueError("Run '_doit _set_opt_version' first!")
-        return {"version": dataset_results["version"]}
+
+        print(10 * "-----------")
+        print("version: run_id")
+        print(10 * "-----------")
+        for run_id, version in dataset_results["db"].items():
+            print(f"{version: 6d}: {run_id}")
+        print(10 * "-----------")
+
+        return None
 
     return {
         "actions": [get_dataset_version],
