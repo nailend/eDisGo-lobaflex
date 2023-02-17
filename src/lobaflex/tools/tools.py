@@ -346,18 +346,20 @@ class TelegramReporter(object):
     def complete_run(self):
         """called when finished running all tasks"""
 
-        # write csv logs for failed task incl traceback
-        csv_file = results_dir / self.run_id / self.csv_file
-        with open(csv_file, "w", newline="") as csvfile:
-            # Create a CSV writer object
-            writer = csv.writer(csvfile)
-            writer.writerow(["task", "error-msg"])
-            for fail in self.failures:
-                # Write the new line to the file
-                if fail["task"].executed:
-                    writer.writerow(
-                        [fail["task"].name, str(fail["exception"])]
-                    )
+        # if _set_opt_version task is run, no logfile needs to be printed
+        if not self.status.get("_set_opt_version", None) == "success":
+            # write csv logs for failed task incl traceback
+            csv_file = results_dir / self.run_id / self.csv_file
+            with open(csv_file, "w", newline="") as csvfile:
+                # Create a CSV writer object
+                writer = csv.writer(csvfile)
+                writer.writerow(["task", "error-msg"])
+                for fail in self.failures:
+                    # Write the new line to the file
+                    if fail["task"].executed:
+                        writer.writerow(
+                            [fail["task"].name, str(fail["exception"])]
+                        )
 
         # if test fails print output from failed task
         for result in self.failures:
