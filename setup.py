@@ -5,11 +5,12 @@ https://packaging.python.org/guides/distributing-packages-using-setuptools/
 https://github.com/pypa/sampleproject
 """
 
-# Always prefer setuptools over distutils
-from setuptools import setup, find_packages
-from os import path
 from glob import glob
+from os import path
 from os.path import basename, splitext
+
+# Always prefer setuptools over distutils
+from setuptools import find_packages, setup
 
 here = path.abspath(path.dirname(__file__))
 
@@ -106,8 +107,8 @@ setup(
     # keywords="",  # Optional
     # When your source code is in a subdirectory under the project root, e.g.
     # `src/`, it is necessary to specify the `package_dir` argument.
-    packages=["lobaflex"] + ["lobaflex." + p for p in find_packages(
-        "src/lobaflex")],
+    packages=["lobaflex"]
+    + ["lobaflex." + p for p in find_packages("src/lobaflex")],
     package_dir={"": "src"},
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     # package_dir={"": "src/"},  # Optional
@@ -133,7 +134,13 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=["edisgo", "saio", "doit", "loguru"],  # Optional
+    install_requires=[
+        "edisgo",
+        "saio",
+        "doit",
+        "kaleido",
+        "papermill",
+    ],  # Optional
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
     # syntax, for example:
