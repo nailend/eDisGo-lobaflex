@@ -4,12 +4,10 @@ import shutil
 
 from datetime import datetime
 
-import doit
 
 from lobaflex import config_dir, data_dir, logs_dir, results_dir
 from lobaflex.opt.dispatch_integration import integrate_dispatch
 from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
-from lobaflex.opt.dnm_generation import run_dnm_generation
 from lobaflex.opt.feeder_extraction import run_feeder_extraction
 from lobaflex.opt.grid_reinforcement import reinforce_grid
 from lobaflex.opt.result_concatination import save_concatenated_results
@@ -18,6 +16,7 @@ from lobaflex.opt.expansion_scenario import run_expansion_scenario
 from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.pydoit import opt_uptodate
 from lobaflex.tools.tools import get_config
+from lobaflex.analysis.grid_analysis import create_grids_notebook
 
 logger = logging.getLogger("lobaflex.opt." + __name__)
 date = datetime.now().date().isoformat()
@@ -256,6 +255,35 @@ def expansion_scenario_task(mvgd, percentage, run_id, version_db, dep):
                     "percentage": percentage/100,
                     "run_id": run_id,
                     "version_db": version_db,
+                },
+            )
+        ],
+        "doc": "per mvgd",
+        # create dependency for every feeder in grid not only opt
+        # results if not all opt succeeded
+        "task_dep": dep,
+        "uptodate": [opt_uptodate],
+    }
+
+
+def papermill_task(mvgd, template, import_dir, run_id, version_db, dep):
+    """"""
+
+    task_name = template.rstrip(".ipynb")
+
+    return {
+        "name": f"{task_name}_{mvgd}",
+        "actions": [
+            (
+                create_grids_notebook,
+                [],
+                {
+                    "template": template,
+                    "grid_id": mvgd,
+                    "import_dir": str(import_dir),
+                    "run_id": run_id,
+                    "version_db": version_db,
+                    "kernel_name": os.path.basename(os.environ.get('VIRTUAL_ENV')),
                 },
             )
         ],

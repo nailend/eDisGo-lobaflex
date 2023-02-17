@@ -18,11 +18,13 @@ from lobaflex.opt.tasks import (  # dnm_generation_task,
     result_concatenation_task,
     timeframe_selection_task,
     expansion_scenario_task,
+    papermill_task,
 )
 from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.pydoit import opt_uptodate  # noqa: F401
 from lobaflex.tools.pydoit import task__get_opt_version  # noqa: F401
 from lobaflex.tools.pydoit import task__set_opt_version  # noqa: F401
+from lobaflex.tools.pydoit import task__get_version  # noqa: F401
 from lobaflex.tools.tools import (
     TelegramReporter,
     get_config,
@@ -250,6 +252,16 @@ def task_min_pot():
                     dep=dependencies
                 )
 
+            yield papermill_task(
+                mvgd=mvgd,
+                template="analyse_potential.ipynb",
+                import_dir=mvgd_path / "minimize_loading",
+                run_id=run_id,
+                version_db=version_db,
+                dep=[f"min_pot:minimize_loading_concat_{i}_{mvgd}" for i in
+                     objectives]
+            )
+
 
 @create_after(executed="min_exp")
 def task_exp_scn():
@@ -313,6 +325,7 @@ def task_scn_pot():
         if os.path.isdir(mvgd_path):
 
             scenario_path = mvgd_path / "scenarios"
+            os.makedirs(scenario_path, exist_ok=True)
             scenarios = sorted([i for i in os.listdir(scenario_path)])
             for scenario in scenarios:
 
