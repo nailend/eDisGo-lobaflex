@@ -332,6 +332,8 @@ def long_term_optimization(
         timeframe,
     ) = prepare_input_parameters(edisgo_obj, timeframe_only)
 
+    # TODO loop over era
+
     logger.info(f"Set up model.")
     model = lopf.setup_model(
         fixed_parameters=fixed_parameters,
@@ -340,7 +342,7 @@ def long_term_optimization(
         flexible_loads=flexible_loads,
         # charging_starts={"ev": 0, "hp": 0, "tes": 0},
         # **start_values, # might be fixed
-        # load_factor_rings=0.5 #  TODO N-1 DEACTIVATED!
+        load_factor_rings=0.5 if cfg_o["n-1"] else None  # TODO N-1 DEACTIVATED!
         # **kwargs,
     )
 
@@ -515,7 +517,7 @@ def rolling_horizon_optimization(
                 flexible_loads=flexible_loads,
                 # charging_starts={"ev": 0, "hp": 0, "tes": 0},
                 **start_values,
-                # load_factor_rings=0.5 # TODO N-1 DEACTIVATED!
+                load_factor_rings=0.5 if cfg_o["n-1"] else None  # TODO N-1 DEACTIVATED!
                 # **kwargs,
             )
         else:
@@ -567,6 +569,8 @@ def rolling_horizon_optimization(
             options=cfg_o["options"],
         )
 
+        if result_dict is None:
+            raise ValueError("Optimization failed for iteration {iteration}.")
         logger.info(f"Finished optimisation for iteration {iteration}.")
 
         # if export_path is not None:
@@ -658,10 +662,17 @@ def run_dispatch_optimization(
             "maximize_energy_level",
             "minimize_energy_level",
         ]:
-
+            # Use long-term optimization for these objectives
+            rolling_horizon = False
             # Add extra directory layer for potentials
             directory = Path("potential") / obj_or_path.parent.parent.name
+
+
         else:
+
+            # use rolling horizon optimization for all other objectives
+            rolling_horizon = True
+
             directory = ""
         export_path = (
             results_dir
@@ -722,13 +733,14 @@ if __name__ == "__main__":
     logfile = logs_dir / f"dispatch_optimization_{date}_local.log"
     setup_logging(file_name=logfile)
 
-    grid_id = 1111
+    grid_id = 9999
     run_dispatch_optimization(
         # obj_or_path=results_dir / "debug" / "1111" / "timeframe_feeder" / "01",
         obj_or_path=data_dir / cfg_o["import_dir"] / str(grid_id),
         grid_id=grid_id,
-        feeder_id=1,
-        objective="minimize_loading",
+        feeder_id=2,
+        # objective="minimize_loading",
+        objective="maximize_grid_power",
         rolling_horizon=False,
         run_id="long_term",
         version_db=None,

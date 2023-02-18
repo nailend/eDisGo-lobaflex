@@ -18,6 +18,7 @@ opt:
   save_lp_files: False
   save_solver_logs: False
   print_solver_logs: False
+  n-1: False
   flexible_loads:
     bess: False
     hp: True
