@@ -2,29 +2,30 @@ import logging
 import os
 
 from datetime import datetime
+from pathlib import Path
 
 import doit
-from pathlib import Path
+
 from doit import create_after
 
 from lobaflex import config_dir, data_dir, logs_dir, results_dir
 from lobaflex.opt.tasks import (  # dnm_generation_task,
     dispatch_integration_task,
     dot_file_task,
+    expansion_scenario_task,
     feeder_extraction_task,
     grid_reinforcement_task,
     optimization_task,
+    papermill_task,
     png_file_task,
     result_concatenation_task,
     timeframe_selection_task,
-    expansion_scenario_task,
-    papermill_task,
 )
 from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.pydoit import opt_uptodate  # noqa: F401
 from lobaflex.tools.pydoit import task__get_opt_version  # noqa: F401
-from lobaflex.tools.pydoit import task__set_opt_version  # noqa: F401
 from lobaflex.tools.pydoit import task__get_version  # noqa: F401
+from lobaflex.tools.pydoit import task__set_opt_version  # noqa: F401
 from lobaflex.tools.tools import (
     TelegramReporter,
     get_config,
@@ -49,8 +50,7 @@ setup_logging(file_name=logfile)
 #   - teardown
 
 DOIT_CONFIG = {
-    "default_tasks": ["ref", "min_exp", "min_pot", "exp_scn",
-                      "scn_pot", "trust_ipynb"],
+    "default_tasks": ["ref", "min_exp", "min_pot", "exp_scn", "scn_pot"],
     "reporter": TelegramReporter,
 }
 
@@ -101,13 +101,14 @@ def task_ref():
             # TODO observation periods
             yield timeframe_selection_task(mvgd, run_id, version_db)
 
-            yield feeder_extraction_task(mvgd=mvgd,
-                                         objective=objective,
-                                         source=Path(objective) / "mvgd",
-                                         run_id=run_id,
-                                         version_db=version_db,
-                                         dep=[f"ref:timeframe_{mvgd}"],
-                                         )
+            yield feeder_extraction_task(
+                mvgd=mvgd,
+                objective=objective,
+                source=Path(objective) / "mvgd",
+                run_id=run_id,
+                version_db=version_db,
+                dep=[f"ref:timeframe_{mvgd}"],
+            )
 
             yield grid_reinforcement_task(
                 mvgd=mvgd,
@@ -169,7 +170,7 @@ def task_min_exp():
                 directory=Path(""),
                 run_id=run_id,
                 version_db=version_db,
-                dep=dependencies
+                dep=dependencies,
             )
 
             yield dispatch_integration_task(
@@ -204,10 +205,12 @@ def task_min_pot():
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
-    objectives = ["maximize_grid_power",
-                  "minimize_grid_power",
-                  "maximize_energy_level",
-                  "minimize_energy_level"]
+    objectives = [
+        "maximize_grid_power",
+        "minimize_grid_power",
+        "maximize_energy_level",
+        "minimize_energy_level",
+    ]
     directory = Path("minimize_loading") / "feeder"
     # TODO add pathways
 
@@ -251,7 +254,7 @@ def task_min_pot():
                     directory=Path("potential") / "minimize_loading",
                     run_id=run_id,
                     version_db=version_db,
-                    dep=dependencies
+                    dep=dependencies,
                 )
 
             yield papermill_task(
@@ -260,8 +263,10 @@ def task_min_pot():
                 import_dir=mvgd_path / "minimize_loading",
                 run_id=run_id,
                 version_db=version_db,
-                dep=[f"min_pot:minimize_loading_concat_{i}_{mvgd}" for i in
-                     objectives]
+                dep=[
+                    f"min_pot:minimize_loading_concat_{i}_{mvgd}"
+                    for i in objectives
+                ],
             )
 
 
@@ -289,13 +294,11 @@ def task_exp_scn():
                     percentage=scenario,
                     run_id=run_id,
                     version_db=version_db,
-                    dep=[f"min_exp:reinforce_{mvgd}"]
-                                              )
+                    dep=[f"min_exp:reinforce_{mvgd}"],
+                )
 
                 source = (
-                        Path("scenarios")
-                        / f"{scenario}_pct_reinforced"
-                        / "mvgd"
+                    Path("scenarios") / f"{scenario}_pct_reinforced" / "mvgd"
                 )
                 yield feeder_extraction_task(
                     mvgd=mvgd,
@@ -304,7 +307,7 @@ def task_exp_scn():
                     run_id=run_id,
                     version_db=version_db,
                     dep=[f"exp_scn:{scenario}_pct_reinforced_{mvgd}"],
-                                             )
+                )
 
 
 @create_after(executed="exp_scn")
@@ -313,10 +316,12 @@ def task_scn_pot():
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
-    objectives = ["maximize_grid_power",
-                  "minimize_grid_power",
-                  "maximize_energy_level",
-                  "minimize_energy_level"]
+    objectives = [
+        "maximize_grid_power",
+        "minimize_grid_power",
+        "maximize_energy_level",
+        "minimize_energy_level",
+    ]
 
     # TODO add pathways
 
@@ -349,11 +354,13 @@ def task_scn_pot():
                             directory=Path("scenarios") / scenario / "feeder",
                             run_id=run_id,
                             version_db=version_db,
-                            dep=[f"exp_scn:{scenario}_feeder_{mvgd}"]
+                            dep=[f"exp_scn:{scenario}_feeder_{mvgd}"],
                         )
 
-                        dependencies += [f"scn_pot:{scenario}_{objective}"
-                                         f"_{mvgd}/{int(feeder):02}"]
+                        dependencies += [
+                            f"scn_pot:{scenario}_{objective}"
+                            f"_{mvgd}/{int(feeder):02}"
+                        ]
 
                     yield result_concatenation_task(
                         mvgd=mvgd,
@@ -361,14 +368,14 @@ def task_scn_pot():
                         directory=Path("potential") / scenario,
                         run_id=run_id,
                         version_db=version_db,
-                        dep=dependencies
+                        dep=dependencies,
                     )
 
 
 @create_after(executed="min_pot")
 def task_trust_ipynb():
-    """Trust all ipynb files in results directory. This is potentially
-    dangerous. Remove this task from default task config if you don't
+    """Trust all ipynb files in results directory. POTTENTIALY DANGEROUS!
+    Remove this task from default task config if you don't
     trust your result directory."""
 
     version_db, run_id = init_versioning()
@@ -379,4 +386,5 @@ def task_trust_ipynb():
 
 
 if __name__ == "__main__":
+
     doit.run(globals())
