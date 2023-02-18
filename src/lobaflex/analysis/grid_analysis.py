@@ -28,7 +28,7 @@ def create_grids_notebook(
     version_db=None,
 ):
 
-    cfg_a = get_config(path=config_dir / ".analysis.yaml")
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
 
     date = datetime.now().date().isoformat()
     logfile = logs_dir / f"analysis_grids_ynb_{run_id}_{date}.log"
@@ -38,7 +38,7 @@ def create_grids_notebook(
     input_template = os.path.join(analysis_path[0], "templates", template)
 
     if import_dir is None:
-        import_dir = cfg_a["import_dir"]
+        import_dir = cfg_o["import_dir"]
     if export_dir is None:
         export_dir = run_id
     export_path = results_dir / export_dir / str(grid_id) / "analysis"
@@ -52,7 +52,6 @@ def create_grids_notebook(
     parameters = {
         "run_id": run_id,
         "grid_id": grid_id,
-        "parameters": cfg_a["parameters"],
         "start_datetime": None,
         "period": None,
         "import_dir": import_dir,
