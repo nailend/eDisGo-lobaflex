@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 
 import papermill as pm
+import nbformat as nb
 
 from lobaflex import config_dir, logs_dir, results_dir
 from lobaflex.analysis import __path__ as analysis_path
@@ -14,6 +15,26 @@ if __name__ == "__main__":
     logger = logging.getLogger("lobaflex.analysis." + __name__)
 else:
     logger = logging.getLogger(__name__)
+
+
+def remove_taged_cell(path, tag):
+    """Remove cell with specific tag from notebook"""
+
+    with open(path, "r") as f:
+        noteboob = nb.read(f, nb.NO_CONVERT)
+
+    # Iterate over the cells of the notebook
+    for cell in noteboob.cells:
+        # Check if the cell has the specified tag
+        if tag in cell.metadata.get("tags", []):
+            # Delete the cell
+            noteboob.cells.remove(cell)
+            logger.info(f"Cell {cell['execution_count']} with tag "
+                        "'delete_me' removed.")
+    # Write the executed notebook without the deleted cell
+    with open(path, "w") as f:
+        nb.write(noteboob, f)
+    logger.info("Notebook saved without deleted cell.")
 
 
 @log_errors
@@ -45,7 +66,7 @@ def create_grids_notebook(
     os.makedirs(export_path, exist_ok=True)
 
     if name is None:
-        name = datetime.now().strftime("%Y%m%d_%H%M%S")
+        name = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     export_name = f"{template.strip('.ipynb')}_{name}.ipynb"
     export_notebook = export_path / export_name
 
@@ -78,6 +99,9 @@ def create_grids_notebook(
         )
     else:
         logger.info(f"Notebook created for Grid {grid_id} of run {run_id}.")
+
+        remove_taged_cell(export_notebook, tag="delete_me")
+
         if version_db is not None:
             return version_db["db"]
 
