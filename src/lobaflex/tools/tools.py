@@ -239,7 +239,7 @@ class TelegramReporter(object):
                 pipeline += pipeline.join([f"- {task}\n"])
         self.start_time["total"] = time.perf_counter()
         current_time = datetime.now().strftime("%A %d-%m-%Y, %H:%M:%S")
-        if "_set" not in pipeline:
+        if "_set_" not in pipeline and "_get_" not in pipeline:
             self.telegram(
                 text="Pipeline started\n"
                 + "-" * 28
@@ -389,10 +389,10 @@ class TelegramReporter(object):
             self.write("\n".join(self.runtime_errors))
             self.write("\n")
 
-        # Don't send if any task with _set included
-        # this should only happen if _set is executed individually
-        # TODO doesnt work yet
-        if "_set_" not in str().join(self.status.keys()):
+        # Don't send if any task with _set_ or _get_ included
+        # this should only happen if _set and _get is executed individually
+        tasklist = str().join(self.status.keys())
+        if "_set_" not in tasklist and "_get_" not in tasklist:
 
             exec_time = time.perf_counter() - self.start_time["total"]
             exec_time = time.gmtime(exec_time)
