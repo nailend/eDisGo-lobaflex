@@ -30,6 +30,7 @@ from lobaflex.tools.tools import (
     get_config,
     init_versioning,
     split_model_config_in_subconfig,
+    get_files_in_subdirs,
 )
 
 split_model_config_in_subconfig()
@@ -48,7 +49,8 @@ setup_logging(file_name=logfile)
 #   - teardown
 
 DOIT_CONFIG = {
-    "default_tasks": ["ref", "min_exp", "min_pot", "exp_scn", "scn_pot"],
+    "default_tasks": ["ref", "min_exp", "min_pot", "exp_scn",
+                      "scn_pot", "trust_ipynb"],
     "reporter": TelegramReporter,
 }
 
@@ -363,6 +365,18 @@ def task_scn_pot():
                     )
 
 
-if __name__ == "__main__":
+@create_after(executed="min_pot")
+def task_trust_ipynb():
+    """Trust all ipynb files in results directory. This is potentially
+    dangerous. Remove this task from default task config if you don't
+    trust your result directory."""
 
+    version_db, run_id = init_versioning()
+    path = results_dir / run_id
+    list_of_ipynbs = get_files_in_subdirs(path, pattern="*.ipynb")
+    action = [f"jupyter trust {ipynb}" for ipynb in list_of_ipynbs]
+    return {"actions": action}
+
+
+if __name__ == "__main__":
     doit.run(globals())
