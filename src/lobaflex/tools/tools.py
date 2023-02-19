@@ -130,12 +130,15 @@ def timeit(func):
     """
 
     def measure_time(*args, **kw):
-        start_time = time.time()
+        start_time = time.perf_counter()
         result = func(*args, **kw)
-        logger.info(
-            "Processing time of %s(): %.2f seconds."
-            % (func.__qualname__, time.time() - start_time)
-        )
+        exec_time = time.perf_counter() - start_time
+        if exec_time > 2:
+            exec_time = time.gmtime(exec_time)
+            exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
+        else:
+            exec_time = str(int(exec_time * 100)) + "ms"
+        logger.info(f"Processing time of {func.__qualname__}(): {exec_time}.")
         return result
 
     return measure_time
