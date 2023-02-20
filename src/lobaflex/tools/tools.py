@@ -350,7 +350,12 @@ class TelegramReporter(object):
         """called when finished running all tasks"""
 
         # if _set_opt_version task is run, no logfile needs to be printed
-        if not self.status.get("_set_opt_version", None) == "success":
+        if (
+            self.status.get("_set_opt_version", None) == "success"
+            or self.status.get("_get_opt_version", None) == "success"
+        ):
+            pass
+        else:
             # write csv logs for failed task incl traceback
             csv_file = results_dir / self.run_id / self.csv_file
             with open(csv_file, "w", newline="") as csvfile:
