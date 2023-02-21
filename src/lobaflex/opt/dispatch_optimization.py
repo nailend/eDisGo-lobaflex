@@ -662,16 +662,22 @@ def run_dispatch_optimization(
             "maximize_energy_level",
             "minimize_energy_level",
         ]:
-            # Use long-term optimization for these objectives
-            rolling_horizon = False
+            if cfg_o["rolling_horizon"]["pot"]:
+                # Use long-term optimization for these objectives
+                rolling_horizon = True
+            else:
+                rolling_horizon = False
+
             # Add extra directory layer for potentials
             directory = Path("potential") / obj_or_path.parent.parent.name
 
-
         else:
 
-            # use rolling horizon optimization for all other objectives
-            rolling_horizon = True
+            if cfg_o["rolling_horizon"]["load"]:
+                # use rolling horizon optimization for all other objectives
+                rolling_horizon = True
+            else:
+                rolling_horizon = False
 
             directory = ""
         export_path = (
