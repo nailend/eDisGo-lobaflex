@@ -630,7 +630,7 @@ def run_dispatch_optimization(
     logger.info(f"Run dispatch optimization of {grid_id}/{feeder_id}")
 
     warnings.simplefilter(action="ignore", category=FutureWarning)
-
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
     feeder_id = f"{int(feeder_id):02}"
 
     date = datetime.now().date().isoformat()
