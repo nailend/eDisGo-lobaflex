@@ -615,7 +615,7 @@ def run_dispatch_optimization(
         objective function to be used for optimization
     rolling_horizon : bool
         If True, rolling horizon optimization is performed else long-term
-        optimization (default = False).
+        optimization (default = False). !NOTE Currently fixed to objectives!
     run_id : str or None
         run id used for pydoit versioning
     version_db : dict or None
@@ -662,9 +662,10 @@ def run_dispatch_optimization(
             "maximize_energy_level",
             "minimize_energy_level",
         ]:
+
             if cfg_o["rolling_horizon"]["pot"]:
                 # Use long-term optimization for these objectives
-                rolling_horizon = True
+                rolling_horizon = False
             else:
                 rolling_horizon = False
 
@@ -673,13 +674,12 @@ def run_dispatch_optimization(
 
         else:
 
-            if cfg_o["rolling_horizon"]["load"]:
-                # use rolling horizon optimization for all other objectives
-                rolling_horizon = True
-            else:
-                rolling_horizon = False
+            # use rolling horizon optimization for all other objectives
+            rolling_horizon = True
 
+            # No extra directory layer needed
             directory = ""
+
         export_path = (
             results_dir
             / run_id
