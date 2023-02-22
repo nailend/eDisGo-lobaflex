@@ -665,7 +665,7 @@ def run_dispatch_optimization(
 
             if cfg_o["rolling_horizon"]["pot"]:
                 # Use long-term optimization for these objectives
-                rolling_horizon = False
+                rolling_horizon = True
             else:
                 rolling_horizon = False
 

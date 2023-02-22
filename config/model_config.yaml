@@ -28,8 +28,7 @@ opt:
 #  total_timesteps: 168
   total_timesteps: 48
   rolling_horizon:
-    load: True
-    pot: False
+    pot: True
   timesteps_per_iteration: 24 # number of timesteps which are optimized in one bulk
   overlap_iterations: 2
 #  overlap_iterations: 6 # overlapping timesteps at the end of each iteration
