@@ -381,11 +381,12 @@ def long_term_optimization(
         logger.info("Tuning Gurobi parameters.")
         options = cfg_o["options"]
         options = options.update(
-            {"OptimalityTol": 1e-5},
-            {"FeasibilityTol": 1e-5},
-            {"BarConvTol": 1e-5},
-            {"NumericFocus": 3},
-            {"BarHomogeneous": 1},
+            {"OptimalityTol": 1e-5,
+             "FeasibilityTol": 1e-5,
+             "BarConvTol": 1e-5,
+             "NumericFocus": 3,
+             "BarHomogeneous": 1,
+             }
         )
 
         result_dict = lopf.optimize(
@@ -605,11 +606,12 @@ def rolling_horizon_optimization(
             logger.info("Tuning Gurobi parameters.")
             options = cfg_o["options"]
             options = options.update(
-                {"OptimalityTol": 1e-5},
-                {"FeasibilityTol": 1e-5},
-                {"BarConvTol": 1e-5},
-                {"NumericFocus": 3},
-                {"BarHomogeneous": 1},
+                {"OptimalityTol": 1e-5,
+                 "FeasibilityTol": 1e-5,
+                 "BarConvTol": 1e-5,
+                 "NumericFocus": 3,
+                 "BarHomogeneous": 1,
+                 }
             )
 
             result_dict = lopf.optimize(
