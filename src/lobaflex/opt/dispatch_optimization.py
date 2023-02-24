@@ -380,7 +380,7 @@ def long_term_optimization(
         logger.warning(e)
         logger.info("Tuning Gurobi parameters.")
         options = cfg_o["options"]
-        options = options.update(
+        options.update(
             {"OptimalityTol": 1e-5,
              "FeasibilityTol": 1e-5,
              "BarConvTol": 1e-5,
@@ -605,7 +605,7 @@ def rolling_horizon_optimization(
             logger.warning(e)
             logger.info("Tuning Gurobi parameters.")
             options = cfg_o["options"]
-            options = options.update(
+            options.update(
                 {"OptimalityTol": 1e-5,
                  "FeasibilityTol": 1e-5,
                  "BarConvTol": 1e-5,
