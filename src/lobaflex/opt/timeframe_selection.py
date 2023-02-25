@@ -191,7 +191,7 @@ def run_timeframe_selection(
     export_path = results_dir / run_id / str(grid_id) / "reference" / "mvgd"
 
     timeframe = determine_observation_periods(
-        edisgo_obj, window_days=7, idx="max", var=True
+        edisgo_obj, window_days=7, idx="min", var=False
     )
 
     logger.info("Extract timeframe")
