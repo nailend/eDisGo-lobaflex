@@ -1,9 +1,17 @@
 import logging
+import os
+
+from datetime import datetime
 
 import doit
 
-from lobaflex import config_dir
-from lobaflex.tools.tools import get_config, log_errors, split_model_config_in_subconfig
+from lobaflex import config_dir, results_dir
+from lobaflex.tools.tools import (
+    dump_yaml,
+    get_config,
+    log_errors,
+    split_model_config_in_subconfig,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +97,16 @@ def task__set_opt_version():
                 "current": {"run_id": run_id, "version": version},
                 "db": version_db["db"],
             }
+
+        # save config for run_id and version
+        run_id_path = results_dir / run_id
+        os.makedirs(run_id_path, exist_ok=True)
+
+        filename = datetime.now().strftime(
+            f"config_version_{version}_%Y-%m-%d-%H-%M-%S"
+        )
+        dump_yaml(yaml_file=cfg_o, save_to=run_id_path, filename=filename)
+        logger.debug("Config saved.")
 
         return version_db
 
