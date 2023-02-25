@@ -8,7 +8,7 @@ import pandas as pd
 from edisgo.edisgo import EDisGo, import_edisgo_from_files
 from edisgo.network.timeseries import TimeSeries
 
-from lobaflex import config_dir, logs_dir, results_dir
+from lobaflex import config_dir, data_dir, logs_dir, results_dir
 from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.tools import get_config, log_errors
 
@@ -16,6 +16,34 @@ if __name__ == "__main__":
     logger = logging.getLogger("lobaflex.opt." + __name__)
 else:
     logger = logging.getLogger(__name__)
+
+
+def determine_observation_periods(
+    edisgo_obj, window_days, idx="min", var=False
+):
+    if var:
+        residual_load = edisgo_obj.timeseries.residual_load.resample("D").var()
+        residual_load = residual_load.rolling(window=window_days).var()
+    else:
+        residual_load = edisgo_obj.timeseries.residual_load.resample(
+            "D"
+        ).mean()
+        residual_load = residual_load.rolling(window=window_days).mean()
+
+    if idx == "min":
+        timestep = residual_load.idxmin()
+    elif idx == "max":
+        timestep = residual_load.idxmax()
+    else:
+        raise NotImplementedError
+
+    timestep = timestep - pd.DateOffset(days=window_days)
+
+    timeframe = pd.date_range(
+        start=timestep, periods=window_days * 24, freq="h"
+    )
+
+    return timeframe
 
 
 def extract_timeframe(
@@ -162,12 +190,17 @@ def run_timeframe_selection(
 
     export_path = results_dir / run_id / str(grid_id) / "reference" / "mvgd"
 
+    timeframe = determine_observation_periods(
+        edisgo_obj, window_days=7, idx="max", var=True
+    )
+
     logger.info("Extract timeframe")
     edisgo_obj = extract_timeframe(
         edisgo_obj,
-        start_datetime=cfg_o["start_datetime"],
-        periods=cfg_o["total_timesteps"],
-        freq="1h",
+        timeframe=timeframe,
+        # start_datetime=cfg_o["start_datetime"],
+        # periods=cfg_o["total_timesteps"],
+        # freq="1h",
     )
 
     logger.info(f"Save reduced grid to {export_path}")
@@ -187,3 +220,24 @@ def run_timeframe_selection(
 
     if version_db is not None:
         return version_db["db"]
+
+
+if __name__ == "__main__":
+
+    from lobaflex.tools.tools import split_model_config_in_subconfig
+
+    split_model_config_in_subconfig()
+
+    logger = logging.getLogger("lobaflex.__main__")
+    date = datetime.now().date().isoformat()
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    logfile = logs_dir / f"timeframe_selection_{date}_local.log"
+    setup_logging(file_name=logfile)
+
+    grid_id = 1111
+    run_timeframe_selection(
+        obj_or_path=data_dir / "load_n_gen_n_emob_n_hp_grids" / str(grid_id),
+        grid_id=grid_id,
+        run_id="debug",
+        version_db=None,
+    )
