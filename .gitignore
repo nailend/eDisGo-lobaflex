@@ -3,6 +3,7 @@
 
 # exclude environments
 .virtualenvs/
+*.env
 
 # exclude certain types of files
 *.doctree

@@ -1,72 +1,38 @@
 opt:
-  version: 1
-  run_id: "emob_hp_no_end_lines_n_lines_less_1m"
-  log_to_stream: "info"
-  log_to_files: "info"
-  import_dir: "load_n_gen_n_emob_n_hp_grids_extracted"
-  mvgds: [2534, 176, 177, 1056, 1690, 1811]
-#  mvgds: [2534]
-  feeder: False # default and not used
+  version: 0
+#  run_id: emob_hp_egon2035_nep_range_min_energy_level
+#  run_id: emob_hp_egon2035_nep_range
+  run_id: long_term
+  log_to_stream: info
+  log_to_files: info
+  import_dir: load_n_gen_n_emob_n_hp_grids
+  mvgds: [9999]
+#  mvgds: [2534, 176, 177, 1056, 1690, 1811]
+#  mvgds: [1056]
+  fix_preparation: False
   solver: gurobi
   options:
     threads: 16
     OptimalityTol: 1e-5
     BarHomogeneous: 1
-  save_lp_files: True
-  save_solver_logs: True
-  print_solver_logs: True
-  opt_bess: False
-  opt_hp: True
-  opt_emob: True
-  emob_sectors: [work, home]
-  objective: minimize_loading
-  rolling_horizon: True # depricated
-  load_results: False # depricated
+  save_lp_files: False
+  save_solver_logs: False
+  print_solver_logs: False
+  n-1: False
+  flexible_loads:
+    bess: False
+    hp: True
+    bev: True
+    bev_flex_sectors: [ work, home ]
   start_datetime: 2011-01-01 00:00:00
-  total_timesteps: 336 # 2 * 7 * 24h
-  timesteps_per_iteration: 24 # number of timesteps which are optimized in one
-#  bulk
-  overlap_iterations: 6 # overlapping timesteps at the end of each iteration
+#  total_timesteps: 168
+  total_timesteps: 48
+  rolling_horizon:
+    pot: True
+  timesteps_per_iteration: 24 # number of timesteps which are optimized in one bulk
+  overlap_iterations: 2
+#  overlap_iterations: 6 # overlapping timesteps at the end of each iteration
 #  is added to the iteration for optimization but results are dropped
-  iterations_per_era: 14 # an era defines a closed timeframe for optimization
+#  iterations_per_era: 4
+  iterations_per_era: 7 # an era defines a closed timeframe for optimization
 #  in the last iteration of an era, the overlapping time steps are invented
-grids:
-  version: 0
-  mvgds: [2534, 176, 177, 1056, 1690, 1811]
-#  mvgds: [1056]
-  load_integration:
-    fix_version: True
-    generator_scenario: ego100
-    import: elia_ding0_grids
-    export: load_n_gen_grids
-  emob_integration:
-    fix_version: True
-    import: load_n_gen_grids
-    export: load_n_gen_n_emob_grids
-    to_freq: 1h
-    flexbands: null
-  hp_integration:
-    fix_version: False 
-    import: load_n_gen_n_emob_grids
-    export: load_n_gen_n_emob_n_hp_grids
-    scenario: eGon2035
-    hp_penetration: NEP2035
-    tes_size: 4 # covers x highest consecutive days
-  feeder_extraction:
-    fix_version: False
-    import: load_n_gen_n_emob_n_hp_grids
-    export: load_n_gen_n_emob_n_hp_grids_extracted
-    flexible_loads:
-      hp: True
-      bess: False
-      emob: True
-      emob_flex_sectors: [work, home]
-    only_flex_ev: False
-  dnm_generation:
-    fix_version: False
-    feeder: True
-    import: load_n_gen_n_emob_n_hp_grids_extracted
-    export: load_n_gen_n_emob_n_hp_grids_extracted
-telegram:
-  token:
-  chat_id:

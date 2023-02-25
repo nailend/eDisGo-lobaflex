@@ -1,4 +1,5 @@
 """"""
+import csv
 import logging
 import os
 import sys
@@ -9,13 +10,15 @@ from functools import wraps
 from glob import glob
 from pathlib import Path
 
+import doit
 import psutil
 import requests
 import yaml
 
 from doit.exceptions import BaseFail
+from dotenv import dotenv_values
 
-from lobaflex import config_dir
+from lobaflex import config_dir, results_dir
 
 logger = logging.getLogger(__name__)
 
@@ -127,12 +130,15 @@ def timeit(func):
     """
 
     def measure_time(*args, **kw):
-        start_time = time.time()
+        start_time = time.perf_counter()
         result = func(*args, **kw)
-        logger.info(
-            "Processing time of %s(): %.2f seconds."
-            % (func.__qualname__, time.time() - start_time)
-        )
+        exec_time = time.perf_counter() - start_time
+        if exec_time > 2:
+            exec_time = time.gmtime(exec_time)
+            exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
+        else:
+            exec_time = str(int(exec_time * 100)) + "ms"
+        logger.info(f"Processing time of {func.__qualname__}(): {exec_time}.")
         return result
 
     return measure_time
@@ -175,11 +181,23 @@ def dump_yaml(yaml_file, save_to, split=False, **kwargs):
             file.write(content)
 
 
+def init_versioning():
+    """Initialize task versioning"""
+    # Versioning
+    dep_manager = doit.Globals.dep_manager
+    version_db = dep_manager.get_result("_set_opt_version")
+    version_db = version_db if isinstance(version_db, dict) else {"db": {}}
+    task_version = version_db.get("current", {"run_id": "None"})
+    run_id = task_version.get("run_id", "None")
+
+    return version_db, run_id
+
+
 def telegram_bot_sendtext(text):
     """"""
-    cfg_telegram = get_config(path=config_dir / ".telegram.yaml")
-    token = cfg_telegram.get("token")
-    chat_id = cfg_telegram.get("chat_id")
+    cfg_telegram = dotenv_values(dotenv_path=config_dir / "telegram.env")
+    token = cfg_telegram.get("TOKEN")
+    chat_id = cfg_telegram.get("CHAT_ID")
     params = {"chat_id": chat_id, "text": text}
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     message = requests.post(url, params=params)
@@ -190,10 +208,11 @@ class TelegramReporter(object):
     """ """
 
     # short description, used by the help system
-    desc = "console output"
+    desc = "telegram, csv and console output"
 
     def __init__(self, outstream, options):
         # save non-successful result information (include task errors)
+        self.csv_file = datetime.now().strftime("run_%Y-%m-%d-%H-%M-%S.csv")
         self.failures = []
         self.runtime_errors = []
         self.failure_verbosity = options.get("failure_verbosity", 0)
@@ -202,6 +221,7 @@ class TelegramReporter(object):
         self.start_time = {}
         self.status = {}
         self.run = set()
+        self.run_id = str()
 
     def write(self, text):
         self.outstream.write(text)
@@ -209,6 +229,8 @@ class TelegramReporter(object):
 
     def initialize(self, tasks, selected_tasks):
         """called just after tasks have been loaded before execution starts"""
+
+        _, self.run_id = init_versioning()
 
         pipeline = str()
         # [task for task in tasks.get(group) for group in selected_tasks]
@@ -220,7 +242,7 @@ class TelegramReporter(object):
                 pipeline += pipeline.join([f"- {task}\n"])
         self.start_time["total"] = time.perf_counter()
         current_time = datetime.now().strftime("%A %d-%m-%Y, %H:%M:%S")
-        if "_set" not in pipeline:
+        if "_set_" not in pipeline and "_get_" not in pipeline:
             self.telegram(
                 text="Pipeline started\n"
                 + "-" * 28
@@ -254,6 +276,7 @@ class TelegramReporter(object):
                 exec_time = time.strftime("%Hh:%Mm:%Ss", exec_time)
                 self.telegram(text=f"Failed: {task.name} after {exec_time}")
                 self.status[task.name] = "fail"
+
             except KeyError:
                 self.telegram(text=f"Unmet dependency: {task.name}")
                 self.status[task.name] = "dependency"
@@ -264,10 +287,13 @@ class TelegramReporter(object):
         """called when execution finishes successfully"""
 
         self.status[task.name] = "success"
+        # if task successful and not private
         if task.actions and (task.name[0] != "_"):
             try:
+                # not sure what this is for?!
                 self.run.update({task.result.get("run")})
             except AttributeError:
+                # I guess only error detection
                 self.telegram(text=task.name)
             exec_time = time.perf_counter() - self.start_time[task.name]
             exec_time = time.gmtime(exec_time)
@@ -275,8 +301,8 @@ class TelegramReporter(object):
             # self.telegram(text=f"Success: {task.title()}\n in {exec_time}")
         if "_set" in task.name:
             group = task.name.split("_")[2]
-            version = task.result["version"]
-            run_id = task.result.get("run_id", None)
+            version = task.result["current"]["version"]
+            run_id = task.result["current"]["run_id"]
             if run_id is None:
                 message = f"Version of {group} set to {version}."
             else:
@@ -322,8 +348,30 @@ class TelegramReporter(object):
 
     def complete_run(self):
         """called when finished running all tasks"""
+
+        # if _set_opt_version task is run, no logfile needs to be printed
+        if (
+            self.status.get("_set_opt_version", None) == "success"
+            or self.status.get("_get_opt_version", None) == "success"
+        ):
+            pass
+        else:
+            # write csv logs for failed task incl traceback
+            csv_file = results_dir / self.run_id / self.csv_file
+            with open(csv_file, "w", newline="") as csvfile:
+                # Create a CSV writer object
+                writer = csv.writer(csvfile)
+                writer.writerow(["task", "error-msg"])
+                for fail in self.failures:
+                    # Write the new line to the file
+                    if fail["task"].executed:
+                        writer.writerow(
+                            [fail["task"].name, str(fail["exception"])]
+                        )
+
         # if test fails print output from failed task
         for result in self.failures:
+
             task = result["task"]
             # makes no sense to print output if task was not executed
             if not task.executed:
@@ -349,10 +397,10 @@ class TelegramReporter(object):
             self.write("\n".join(self.runtime_errors))
             self.write("\n")
 
-        # Don't send if any task with _set included
-        # this should only happen if _set is executed individually
-        # TODO doesnt work yet
-        if "_set_" not in str().join(self.status.keys()):
+        # Don't send if any task with _set_ or _get_ included
+        # this should only happen if _set and _get is executed individually
+        tasklist = str().join(self.status.keys())
+        if "_set_" not in tasklist and "_get_" not in tasklist:
 
             exec_time = time.perf_counter() - self.start_time["total"]
             exec_time = time.gmtime(exec_time)
@@ -394,22 +442,18 @@ class TelegramReporter(object):
             statistic += f"{len(failed)} failed.\n"
             statistic += f"{len(dependency)} unmet dependencies.\n"
 
-            summary = "Summary:\n"
-            summary += str().join([f"-- {i}\n" for i in uptodate])
-            summary += str().join([f".. {i}\n" for i in success])
-            summary += str().join([f"!! {i}\n" for i in failed])
-            summary += str().join([f"-! {i}\n" for i in dependency])
-
-            try:
-                run_id = self.run.pop()
-            except KeyError:
-                run_id = "empty"
+            # summary = "Summary:\n"
+            # summary += str().join([f"-- {i}\n" for i in uptodate])
+            # summary += str().join([f".. {i}\n" for i in success])
+            # summary += str().join([f"!! {i}\n" for i in failed])
+            # summary += str().join([f"-! {i}\n" for i in dependency])
 
             self.telegram(
-                text=f"Run: {run_id} finished after {exec_time}. \n"
+                text=f"Run finished after {exec_time}. \n"
                 + "#" * 28
                 + "\n"
                 + current_time
             )
             self.telegram(text=statistic)
-            self.telegram(text=summary)
+            # Deactivated as messages became to big
+            # self.telegram(text=summary)

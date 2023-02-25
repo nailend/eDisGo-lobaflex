@@ -5,18 +5,15 @@ import warnings
 
 from copy import deepcopy
 from datetime import datetime
-from functools import partial
 
 import numpy as np
 import pandas as pd
 
-from edisgo.edisgo import import_edisgo_from_files
+from edisgo.edisgo import EDisGo, import_edisgo_from_files
 
-from lobaflex import config_dir, data_dir, logs_dir, results_dir
-from lobaflex.grids.feeder_extraction import get_flexible_loads
-from lobaflex.opt.dispatch_optimization import extract_timeframe
+from lobaflex import config_dir, logs_dir, results_dir
 from lobaflex.tools.logger import setup_logging
-from lobaflex.tools.tools import get_config, get_files_in_subdirs, log_errors
+from lobaflex.tools.tools import get_config, log_errors
 
 if __name__ == "__main__":
     logger = logging.getLogger("lobaflex.opt." + __name__)
@@ -24,101 +21,23 @@ else:
     logger = logging.getLogger(__name__)
 
 
-def integrate_opt_results(
+def iterative_reinforce(
     edisgo_obj,
-    parameters,
-    start_datetime=None,
-    periods=None,
-    run_id=None,
-    grid_id=None,
+    timesteps=None,
+    mode=None,
+    iterations=10,
+    iteration_start=0.5,
+    combined_analysis=False,
 ):
-    """
-
-    Parameters
-    ----------
-    edisgo_obj :
-    parameters :
-    start_datetime :
-    periods :
-    run_id :
-    grid_id :
-
-    Returns
-    -------
-
-    """
-    edisgo_obj = deepcopy(edisgo_obj)
-
-    cfg_o = get_config(path=config_dir / ".opt.yaml")
-    if grid_id is None:
-        grid_id = edisgo_obj.topology.mv_grid.id
-    if run_id is None:
-        run_id = cfg_o["run_id"]
-
-    logger.info(f"Start result integration of {grid_id} in {run_id}.")
-
-    results_path = results_dir / run_id / str(grid_id) / "mvgd"
-
-    list_of_files = get_files_in_subdirs(results_path, pattern="*.csv")
-
-    filenames = [
-        file
-        for file in list_of_files
-        for parameter in parameters
-        if parameter in file
-    ]
-
-    logger.info(f"Import results of {' & '.join(parameters)}.")
-    df_loads_active_power = pd.concat(
-        map(partial(pd.read_csv, index_col=0, parse_dates=True), filenames),
-        axis=1,
-    )
-
-    # mark all optimised loads
-    edisgo_obj.topology.loads_df.loc[:, "opt"] = False
-    edisgo_obj.topology.loads_df.loc[
-        df_loads_active_power.columns, "opt"
-    ] = True
-    # define timeframe to concat
-    if start_datetime and periods is not None:
-        timeframe = pd.date_range(
-            start=cfg_o["start_datetime"],
-            periods=cfg_o["total_timesteps"],
-            freq="1h",
-        )
-        df_loads_active_power = df_loads_active_power.loc[timeframe]
-    else:
-        timeframe = df_loads_active_power.index
-
-    logger.info("Reduce timeseries to selected timeframe.")
-    edisgo_obj = extract_timeframe(edisgo_obj=edisgo_obj, timeframe=timeframe)
-
-    logger.info("Drop former timeseries of flexible loads.")
-    edisgo_obj.timeseries.loads_active_power = (
-        edisgo_obj.timeseries.loads_active_power.drop(
-            columns=df_loads_active_power.columns, errors="ignore"
-        )
-    )
-
-    logger.info("Concatinate optimized loads.")
-    edisgo_obj.timeseries.loads_active_power = pd.concat(
-        [edisgo_obj.timeseries.loads_active_power, df_loads_active_power],
-        axis=1,
-    )
-
-    logger.info("Set reactive power")
-    edisgo_obj.set_time_series_reactive_power_control()
-
-    return edisgo_obj
-
-
-def reinforce(edisgo_obj, mode=None, iterations=10, combined_analysis=False):
     """Edisgo reinforce is conducted if Value Error is raised.
 
     Parameters
     ----------
-    edisgo_obj : :class:`~.EDisGo`
+    edisgo_obj : :class:`edisgo.EDisGo`
         EDisGo object
+    timesteps : pd.DatetimeIndex, pd.Timestamp
+        Timesteps to be analyzed and reinforced. If None all timesteps are
+        taken. Default: None
     mode : str
             * 'split'
                 Catch not converged time steps from error message and rerun
@@ -129,9 +48,11 @@ def reinforce(edisgo_obj, mode=None, iterations=10, combined_analysis=False):
                 angles from the linear power flow.
             * 'iterative'
                 Reinforcement is conducted by reducing all power values of
-                generators and loads to a fraction starting from 50% to 100%,
+                generators and loads to a fraction starting from x% to 100%,
                 e.g. solving the load flow and reinforcement with 50% and then
                 60%,....
+    iteration_start : float
+        relative start value for 'iterative' mode. Default 0.5
     iterations : int
         number of iterations taken in 'iterative' mode from 50% until 100%
         gen/load is reached e.g. 5 : [0.5, 0.6, 0.7, 0.8, 0.9, 1]
@@ -145,9 +66,16 @@ def reinforce(edisgo_obj, mode=None, iterations=10, combined_analysis=False):
     -------
 
     """
-    logger.info("Start minimal reinforce")
+
+    if timesteps is None:
+        timesteps = edisgo_obj.timeseries.timeindex
+
+    logger.info(f"Start reinforce for {len(timesteps)} time steps.")
+
     try:
-        edisgo_obj.reinforce(combined_analysis=combined_analysis)
+        edisgo_obj.reinforce(
+            combined_analysis=combined_analysis, timesteps_pfa=timesteps
+        )
     except ValueError as e:
         if mode is not None:
             logger.warning(f"Reinforce failed. Restart in {mode} mode.")
@@ -180,7 +108,8 @@ def reinforce(edisgo_obj, mode=None, iterations=10, combined_analysis=False):
             edisgo_obj.reinforce(
                 reduced_timesteps,
                 combined_analysis=combined_analysis,
-                troubleshooting_mode="lpf",
+                # troubleshooting_mode="lpf", # said to be only useful in
+                # case of non-convergence, mostly bad seed
                 raise_not_converged=False,
                 max_while_iterations=50,
             )
@@ -191,23 +120,27 @@ def reinforce(edisgo_obj, mode=None, iterations=10, combined_analysis=False):
             edisgo_obj.reinforce(
                 exluded_timesteps,
                 combined_analysis=combined_analysis,
-                troubleshooting_mode="lpf",
+                # troubleshooting_mode="lpf",
                 raise_not_converge=False,
                 max_while_iterations=50,
             )
 
             logger.info("Final reinforce.")
             edisgo_obj.reinforce(
-                combined_analysis=combined_analysis, max_while_iterations=50
+                combined_analysis=combined_analysis,
+                max_while_iterations=50,
+                timesteps_pfa=timesteps,
             )
         elif mode == "lpf":
             edisgo_obj.reinforce(
-                combined_analysis=combined_analysis, troubleshooting_mode="lpf"
+                combined_analysis=combined_analysis,
+                troubleshooting_mode="lpf",
+                timesteps_pfa=timesteps,
             )
         elif mode == "iterative":
 
             ts_orig = deepcopy(edisgo_obj.timeseries)
-            for n in np.linspace(0.5, 1, iterations):
+            for n in np.linspace(iteration_start, 1, iterations):
 
                 logger.info(f"Fraction: {n} x load")
 
@@ -219,6 +152,8 @@ def reinforce(edisgo_obj, mode=None, iterations=10, combined_analysis=False):
                 edisgo_obj.reinforce(
                     combined_analysis=combined_analysis,
                     max_while_iterations=50,
+                    timesteps_pfa=timesteps,
+                    raise_not_converge=False,
                 )
 
             logger.info("Final reinforce.")
@@ -233,84 +168,82 @@ def reinforce(edisgo_obj, mode=None, iterations=10, combined_analysis=False):
 
 
 @log_errors
-def integrate_and_reinforce(
-    edisgo_obj=None, grid_id=None, doit=False, version=None
+def reinforce_grid(
+    obj_or_path, grid_id=None, objective=None, run_id=None, version_db=None
 ):
     """
 
     Parameters
     ----------
-    edisgo_obj :
-    grid_id :
-    doit :
-    version :
+    obj_or_path : :class:`edisgo.EDisGo` or PosixPath
+        edisgo object or path to edisgo dump
+    grid_id : int
+        grid id of MVGD
+    objective : str
+        Keyword after which the grid is reinforced. This is used for logging
+        and result path purposes only
+    run_id : str
+        run id used for pydoit versioning
+    version_db : dict
+        Dictionary with version information for pydoit versioning
 
     Returns
     -------
 
     """
+    # Log to pipeline log file
+    logger.info(f"Run grid reinforcement for {objective} of {grid_id} ")
+
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
-    cfg_o = get_config(path=config_dir / ".opt.yaml")
-    cfg_g = get_config(path=config_dir / ".grids.yaml")
-    run_id = cfg_o["run_id"]
-
-    logger.info(f"Start integrate and reinforce of {grid_id} in {run_id}.")
-
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"opt_minimal_reinforcement_{run_id}_{date}.log"
+
+    logfile = logs_dir / f"opt_{objective}_reinforcement_{run_id}_{date}.log"
     setup_logging(file_name=logfile)
 
-    date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"reinforcement_{grid_id}_{date}.log"
-    setup_logging(file_name=logfile)
+    logger.info(
+        f"Start reinforcement for {objective} of {grid_id} in {run_id}."
+    )
 
-    if edisgo_obj and grid_id is None:
-        raise ValueError("Either edisgo_object or grid_id has to be given.")
-    if edisgo_obj is None:
-        import_dir = cfg_g["feeder_extraction"].get("import")
-        import_path = data_dir / import_dir / str(grid_id)
-        logger.info(f"Import Grid from file: {import_path}")
+    if isinstance(obj_or_path, EDisGo):
+        edisgo_obj = obj_or_path
+    else:
+        logger.info(f"Import Grid from file: {obj_or_path}")
 
         edisgo_obj = import_edisgo_from_files(
-            import_path,
+            obj_or_path,
             import_topology=True,
             import_timeseries=True,
             import_electromobility=True,
             import_heat_pump=True,
         )
 
-    # TODO define via config
-    selected_parameters = []
-    if cfg_o["opt_hp"]:
-        selected_parameters += ["charging_hp_el"]
-    if cfg_o["opt_emob"]:
-        selected_parameters += ["charging_ev"]
-
-    logger.info(f"Selected parameters: {'& '.join(selected_parameters)}")
-    edisgo_obj = integrate_opt_results(
-        edisgo_obj, parameters=selected_parameters
+    export_path = (
+        results_dir / run_id / str(grid_id) / objective / "reinforced"
     )
-
-    edisgo_obj = reinforce(
-        edisgo_obj, combined_analysis=True, mode="split", iterations=5
-    )
-
-    export_path = results_dir / run_id / str(grid_id) / "min_reinforce"
     os.makedirs(export_path, exist_ok=True)
 
-    logger.info("Save reinforced grid")
+    edisgo_obj = iterative_reinforce(
+        edisgo_obj, combined_analysis=False, mode="split", iterations=5
+    )
+
+    logger.info(f"Save reinforced grid to {export_path}")
     edisgo_obj.save(
         export_path,
         save_topology=True,
         save_timeseries=True,
         save_heatpump=True,
         save_electromobility=True,
+        electromobility_attributes=[
+            "integrated_charging_parks_df",
+            "simbev_config_df",
+            "flexibility_bands",
+        ],
         save_results=True,
     )
 
-    if doit:
-        return {"version": version, "run_id": run_id}
+    if version_db is not None:
+        return version_db["db"]
 
 
 if __name__ == "__main__":
@@ -325,13 +258,10 @@ if __name__ == "__main__":
     logfile = logs_dir / f"minimal_reinforcement_{date}_local.log"
     setup_logging(file_name=logfile)
 
-    integrate_and_reinforce(
-        # grid_id=1056, feeder_id=1, edisgo_obj=False, save=True, doit=False
-        # grid_id=176,
-        # grid_id=1056,
+    reinforce_grid(
+        obj_or_path=results_dir / "debug" / "1111" / "minimize_loading_mvgd",
         grid_id=1111,
-        # feeder_id=8,
-        doit=False,
+        objective="minimize_loading",
+        run_id="debug",
+        version_db=None,
     )
-
-    # lopf.combine_results_for_grid

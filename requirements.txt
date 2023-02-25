@@ -1,2 +1,5 @@
 edisgo[dev]
 saio
+doit
+kaleido
+papermill

@@ -167,7 +167,7 @@ def feeder_extraction_task(mvgd):
 def dnm_generation_task(mvgd):
     """Generator to define dnm generation task for a feeder or mvgd"""
     cfg = get_config(path=config_dir / ".grids.yaml")
-    fix = cfg["hp_integration"]["fix_version"]
+    fix = cfg["dnm_generation"]["fix_version"]
     dep_manager = doit.Globals.dep_manager
     grids_version = dep_manager.get_result("_set_grids_version")["version"]
 
