@@ -21,14 +21,19 @@ else:
 def determine_observation_periods(
     edisgo_obj, window_days, idx="min", var=False
 ):
-    if var:
-        residual_load = edisgo_obj.timeseries.residual_load.resample("D").var()
-        residual_load = residual_load.rolling(window=window_days).var()
-    else:
-        residual_load = edisgo_obj.timeseries.residual_load.resample(
-            "D"
-        ).mean()
-        residual_load = residual_load.rolling(window=window_days).mean()
+    # if var:
+    #     residual_load = edisgo_obj.timeseries.residual_load.resample("D").var()
+    #     residual_load = residual_load.rolling(window=window_days).var()
+    # else:
+    #     residual_load = edisgo_obj.timeseries.residual_load.resample(
+    #         "D"
+    #     ).mean()
+    #     residual_load = residual_load.rolling(window=window_days).mean()
+
+    residual_load = edisgo_obj.timeseries.residual_load.abs().resample(
+        "D"
+    ).mean()
+    residual_load = residual_load.rolling(window=window_days).mean()
 
     if idx == "min":
         timestep = residual_load.idxmin()
