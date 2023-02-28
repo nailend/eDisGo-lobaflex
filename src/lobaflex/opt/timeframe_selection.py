@@ -19,21 +19,16 @@ else:
 
 
 def determine_observation_periods(
-    edisgo_obj, window_days, idx="min", var=False
+    edisgo_obj, window_days, idx="min", absolute=False
 ):
-    # if var:
-    #     residual_load = edisgo_obj.timeseries.residual_load.resample("D").var()
-    #     residual_load = residual_load.rolling(window=window_days).var()
-    # else:
-    #     residual_load = edisgo_obj.timeseries.residual_load.resample(
-    #         "D"
-    #     ).mean()
-    #     residual_load = residual_load.rolling(window=window_days).mean()
-
-    residual_load = edisgo_obj.timeseries.residual_load.abs().resample(
-        "D"
+    if absolute:
+        residual_load = edisgo_obj.timeseries.residual_load.abs()
+    else:
+        residual_load = edisgo_obj.timeseries.residual_load
+    residual_load = residual_load.rolling(
+        window=window_days * 24, closed="both"
     ).mean()
-    residual_load = residual_load.rolling(window=window_days).mean()
+    residual_load = residual_load.loc[::24]
 
     if idx == "min":
         timestep = residual_load.idxmin()
@@ -62,7 +57,7 @@ def extract_timeframe(
     hp=True,
 ):
     """Extracts a given time frame from the edisgo object for all time series
-    which are defined in the edisgo object and flaged.
+    which are defined in the edisgo object and flagged.
 
     Parameters
     ----------
@@ -129,10 +124,10 @@ def extract_timeframe(
                     getattr(edisgo_obj.heat_pump, attr).loc[timeframe],
                 )
 
-    logger.info(
-        f"Timeseries taken: {timeframe[0]} -> "
-        f"{timeframe[-1]} including {periods} timesteps."
-    )
+    # logger.info(
+    #     f"Timeseries taken: {timeframe[0]} -> "
+    #     f"{timeframe[-1]} including {periods} timesteps."
+    # )
     return edisgo_obj
 
 
@@ -195,8 +190,30 @@ def run_timeframe_selection(
 
     export_path = results_dir / run_id / str(grid_id) / "reference" / "mvgd"
 
-    timeframe = determine_observation_periods(
-        edisgo_obj, window_days=7, idx="max", var=False
+    # timeframe for load intensive areas
+    # max residual load
+    if int(grid_id) in [2534, 177]:
+        timeframe = determine_observation_periods(
+            edisgo_obj, window_days=7, idx="max", absolute=False
+        )
+
+    # timeframe for pv or wind intensive areas
+    # min residual load
+    elif int(grid_id) in [1056, 176, 1690, 1811]:
+
+        timeframe = determine_observation_periods(
+            edisgo_obj, window_days=7, idx="min", absolute=False
+        )
+
+    else:
+        raise NotImplementedError
+
+    # timeframe for potential analysis
+    # min absolute residual load
+    timeframe = timeframe.append(
+        determine_observation_periods(
+            edisgo_obj, window_days=7, idx="min", absolute=True
+        )
     )
 
     logger.info("Extract timeframe")
