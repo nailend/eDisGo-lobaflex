@@ -789,8 +789,8 @@ def run_dispatch_optimization(
         os.makedirs(export_path, exist_ok=True)
 
     # TODO Move to edisgo feeder extraction + timeseries extraction
-    logger.info("Check integrity.")
-    edisgo_obj.check_integrity()
+    # logger.info("Check integrity.")
+    # edisgo_obj.check_integrity()
 
     logger.info("Run Powerflow for first timestep")
     try:
