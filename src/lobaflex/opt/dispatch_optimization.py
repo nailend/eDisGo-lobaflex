@@ -349,7 +349,7 @@ def long_term_optimization(
             logger.info("Set up model.")
             model = lopf.setup_model(
                 fixed_parameters=fixed_parameters,
-                timesteps=timeframe,
+                timesteps=window,
                 objective=objective,
                 flexible_loads=flexible_loads,
                 # charging_starts={"ev": 0, "hp": 0, "tes": 0},
