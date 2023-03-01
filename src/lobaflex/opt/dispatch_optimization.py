@@ -349,7 +349,11 @@ def long_term_optimization(
     windows = np.split(edisgo_obj.timeseries.timeindex, equal_splits)
 
     for iteration, window in enumerate(windows):
-
+        window.freq = pd.infer_freq(windows)
+        logger.info(
+            f"Timeframe of iteration {iteration}: {window[0]} -> "
+            f"{window[-1]} including {len(window)} timesteps."
+        )
         if iteration == 0:
             logger.info("Set up model.")
             model = lopf.setup_model(
