@@ -350,11 +350,7 @@ def long_term_optimization(
                        equal_splits)
 
     for iteration, window in enumerate(windows):
-
-        # TODO Adhoc fix as infer_freq doesnt work on the sever
-        # window.freq = pd.infer_freq(window)
-        window.freq = 'H'
-
+        window.freq = pd.infer_freq(window)
         logger.info(
             f"Timeframe of iteration {iteration}: {window[0]} -> "
             f"{window[-1]} including {len(window)} timesteps."
