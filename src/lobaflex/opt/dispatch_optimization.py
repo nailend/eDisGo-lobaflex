@@ -272,16 +272,21 @@ def prepare_input_parameters(edisgo_obj, timeframe_only=False):
         total_timesteps = edisgo_obj.timeseries.timeindex.shape[0]
         timeframe = edisgo_obj.timeseries.timeindex
 
-    theretical_total_timesteps = len(
-        pd.date_range(start=timeframe[0], end=timeframe[-1])
-    )
-    if total_timesteps < theretical_total_timesteps:
-        logger.warning("You might have a splitted time series. Please check!")
+    if timeframe.inferred_freq == None:
+        logger.warning("You might have a splitted time series. BE AWARE!")
+        theoretical_timesteps = pd.date_range(
+            start=timeframe.min(), end=timeframe.max(), freq="h"
+        )
+        logger.warning(
+            f"You timeframe has {len(timeframe)} timesteps but "
+            f"theoretical could have {len(theoretical_timesteps)}"
+        )
 
-    logger.info(
-        f"Optimized timeframe is: {timeframe[0]} -> "
-        f"{timeframe[-1]} including {total_timesteps} timesteps."
-    )
+    else:
+        logger.info(
+            f"Whole timeframe is: {timeframe[0]} -> "
+            f"{timeframe[-1]} including {total_timesteps} timesteps."
+        )
 
     return fixed_parameters, flexible_loads, total_timesteps, timeframe
 
