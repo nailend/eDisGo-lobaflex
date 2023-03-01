@@ -346,7 +346,8 @@ def long_term_optimization(
     equal_splits = len(edisgo_obj.timeseries.timeindex) / (
         cfg_o["timesteps_per_iteration"] * cfg_o["iterations_per_era"]
     )
-    windows = np.split(edisgo_obj.timeseries.timeindex, equal_splits)
+    windows = np.split(edisgo_obj.timeseries.timeindex.sort_values(),
+                       equal_splits)
 
     for iteration, window in enumerate(windows):
 
