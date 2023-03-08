@@ -36,10 +36,10 @@ setup_logging(file_name=logfile)
 #   8. watch param
 #   9. Check connection to db, maybe at beginning and raise warning
 
-# DOIT_CONFIG = {"default_tasks": ["grids"], "reporter": TelegramReporter}
+DOIT_CONFIG = {"default_tasks": ["grids"]}#, "reporter": TelegramReporter}
 
-DOIT_CONFIG = {"default_tasks": ["_set_grids_version"]}#, "reporter":
-    # TelegramReporter}
+# DOIT_CONFIG = {"default_tasks": ["_set_grids_version"]}#, "reporter":
+#     # TelegramReporter}
 
 # def task__init_dataset_version():
 #     cfg = get_config(path=config_dir / ".grids.yaml")
