@@ -43,11 +43,12 @@ def get_hps_mvgd(penetration, residentials_mvgd):
         elif penetration == "NEP2035":
 
             number_of_hps_germany = 7 * 1e6
-            number_of_residential_buildings_germany_2035 = 42 * 1e6
-
+            # TODO Gebäudebestand 2021 20Mio
+            # number_of_residential_buildings_germany_2035 = 42 * 1e6
+            number_of_residential_buildings_germany_2021 = 19375911
             penetration = (
                 number_of_hps_germany
-                / number_of_residential_buildings_germany_2035
+                / number_of_residential_buildings_germany_2021
             )
             number_of_hps_mvgd = int(residentials_mvgd * penetration)
 
