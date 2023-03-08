@@ -92,7 +92,7 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
     # Overhead of profiles is needed as only profiles in range 8-20MWh are
     # selected.
     if penetration == "NEP2035":
-        overhead_factor = 1
+        overhead_factor = 2
     elif penetration < 0.3:
         overhead_factor = 1
     elif penetration < 0.7:
