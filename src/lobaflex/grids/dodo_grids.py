@@ -255,27 +255,27 @@ def task_grids():
 #             yield optimization(mvgd=mvgd, feeder=feeder)
 
 
-def task_grids_group():
-    """Groups grid tasks"""
-    cfg = get_config(path=config_dir / ".grids.yaml")
-    mvgds = sorted(cfg.pop("mvgds"))
-    cfg.pop("version", None)
-    tasks = [i for i in cfg.keys() if "mvgds" not in i]
-    for mvgd in mvgds:
-        yield {
-            "actions": None,
-            "name": str(mvgd),
-            "doc": "per mvgd",
-            "task_dep": [f"grids:{mvgd}_{i}" for i in tasks],
-        }
-
-    for task in tasks:
-        yield {
-            "actions": None,
-            "name": str(task),
-            "doc": "per task",
-            "task_dep": [f"grids:{i}_{task}" for i in mvgds],
-        }
+# def task_grids_group():
+#     """Groups grid tasks"""
+#     cfg = get_config(path=config_dir / ".grids.yaml")
+#     mvgds = sorted(cfg.pop("mvgds"))
+#     cfg.pop("version", None)
+#     tasks = [i for i in cfg.keys() if "mvgds" not in i]
+#     for mvgd in mvgds:
+#         yield {
+#             "actions": None,
+#             "name": str(mvgd),
+#             "doc": "per mvgd",
+#             "task_dep": [f"grids:{mvgd}_{i}" for i in tasks],
+#         }
+#
+#     for task in tasks:
+#         yield {
+#             "actions": None,
+#             "name": str(task),
+#             "doc": "per task",
+#             "task_dep": [f"grids:{i}_{task}" for i in mvgds],
+#         }
 
 
 # def task_opt_group():
