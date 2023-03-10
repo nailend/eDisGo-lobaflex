@@ -394,6 +394,7 @@ class TelegramReporter(object):
         if self.runtime_errors:
             self.write("#" * 40 + "\n")
             self.write("Execution aborted.\n")
+            self.telegram(text="Execution aborted.")
             self.write("\n".join(self.runtime_errors))
             self.write("\n")
 
