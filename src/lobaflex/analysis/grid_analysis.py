@@ -42,6 +42,7 @@ def create_grids_notebook(
     grid_id,
     run_id,
     template="grid_analysis_template.ipynb",
+    period=None,
     name=None,
     import_dir=None,
     export_dir=None,
@@ -73,8 +74,7 @@ def create_grids_notebook(
     parameters = {
         "run_id": run_id,
         "grid_id": grid_id,
-        "start_datetime": None,
-        "period": None,
+        "period": period,
         "import_dir": import_dir,
     }
 

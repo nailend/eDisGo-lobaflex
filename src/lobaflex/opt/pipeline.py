@@ -260,13 +260,12 @@ def task_min_pot():
             yield papermill_task(
                 mvgd=mvgd,
                 template="analyse_potential.ipynb",
+                period="potential",
                 import_dir=mvgd_path / "minimize_loading",
                 run_id=run_id,
                 version_db=version_db,
-                dep=[
-                    f"min_pot:minimize_loading_concat_{i}_{mvgd}"
-                    for i in objectives
-                ],
+                dep=[f"min_pot:minimize_loading_concat_{i}_{mvgd}" for i in
+                     objectives]
             )
 
 
@@ -372,7 +371,7 @@ def task_scn_pot():
 
 @create_after(executed="min_pot")
 def task_trust_ipynb():
-    """Trust all ipynb files in results directory. POTTENTIALY DANGEROUS!
+    """Trust all ipynb files in results directory. POTENTIALLY DANGEROUS!
     Remove this task from default task config if you don't
     trust your result directory."""
 

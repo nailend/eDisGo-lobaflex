@@ -350,6 +350,7 @@ def long_term_optimization(
                        equal_splits)
 
     for iteration, window in enumerate(windows):
+
         window.freq = pd.infer_freq(window)
         logger.info(
             f"Timeframe of iteration {iteration}: {window[0]} -> "
