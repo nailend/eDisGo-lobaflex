@@ -91,11 +91,16 @@ def extract_timeframe(
             start=start_datetime, periods=periods, freq=freq
         )
 
+    timeframe = timeframe.sort_values()
+    if timeframe.duplicated().any():
+        raise ValueError("There are duplicated timeindex!")
+
     if not (timeframe.isin(edisgo_obj.timeseries.timeindex)).all():
         # logger.exception()
         raise ValueError(
             "Edisgo object does not contain all the given timeindex"
         )
+
     # adapt timeseries
     if ts:
         attributes = TimeSeries()._attributes
@@ -215,6 +220,10 @@ def run_timeframe_selection(
             edisgo_obj, window_days=7, idx="min", absolute=True
         )
     )
+    timeframe = timeframe.sort_values()
+
+    if any(timeframe.duplicated()):
+        raise ValueError("There is a duplicated timeindex!")
 
     logger.info("Extract timeframe")
     edisgo_obj = extract_timeframe(
