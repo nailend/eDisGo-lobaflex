@@ -385,17 +385,17 @@ def task_scn_pot():
                         dep=dependencies
                     )
 
-            yield papermill_task(
-                mvgd=mvgd,
-                name=scenario,
-                template="analyse_potential.ipynb",
-                period="potential",
-                import_dir=mvgd_path / "minimize_loading",
-                run_id=run_id,
-                version_db=version_db,
-                dep=[f"min_pot:minimize_loading_concat_{i}_{mvgd}" for i in
-                     objectives]
-            )
+        yield papermill_task(
+            mvgd=mvgd,
+            name=scenario,
+            template="analyse_potential.ipynb",
+            period="potential",
+            import_dir=mvgd_path / "minimize_loading",
+            run_id=run_id,
+            version_db=version_db,
+            dep=[f"min_pot:minimize_loading_concat_{i}_{mvgd}" for i in
+                 objectives]
+        )
 
 
 
