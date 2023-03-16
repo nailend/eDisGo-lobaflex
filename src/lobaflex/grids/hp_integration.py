@@ -115,7 +115,7 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
         values="demand_ts",
     )
     heat_demand_df = heat_demand_df.sort_index().reset_index(drop=True)
-
+    check_nans(heat_demand_df)
     # define number of hp in the grid
     number_of_hps_mvgd = get_hps_mvgd(
         penetration=penetration, residentials_mvgd=residential_loads.shape[0]
@@ -192,15 +192,13 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
     # identify cop value at timestep with max heat demand
     max_peak_id_per_hp = list(
         zip(
-            edisgo_obj.heat_pump.heat_demand_df.columns,
-            edisgo_obj.heat_pump.heat_demand_df.idxmax().values,
+            heat_demand_df.columns,
+            heat_demand_df.idxmax().values,
         )
     )
-    max_peak_cop = edisgo_obj.heat_pump.cop_df.T.stack().loc[
-        max_peak_id_per_hp
-    ]
+    max_peak_cop = cop_df.T.stack().loc[max_peak_id_per_hp]
     hp_p_set = determine_minimum_hp_capacity_per_building(
-        edisgo_obj.heat_pump.heat_demand_df.max(), cop=max_peak_cop.values
+        heat_demand_df.max(), cop=max_peak_cop.values
     )
     # round to next kW
     hp_stepsize = 0.001
