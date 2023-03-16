@@ -184,8 +184,24 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
     logger.info(f"Heat pump time series cut adapted to year {year}")
 
     # Minimum hp capacity is determined by peak load
-    logger.info("Determine minimum hp capacity by peak load")
-    hp_p_set = determine_minimum_hp_capacity_per_building(heat_demand_df.max())
+    # logger.info("Determine minimum hp capacity by peak load")
+    # hp_p_set = determine_minimum_hp_capacity_per_building(heat_demand_df.max())
+    logger.info(
+        "Determine minimum hp capacity by peak load and respective COP"
+    )
+    # identify cop value at timestep with max heat demand
+    max_peak_id_per_hp = list(
+        zip(
+            edisgo_obj.heat_pump.heat_demand_df.columns,
+            edisgo_obj.heat_pump.heat_demand_df.idxmax().values,
+        )
+    )
+    max_peak_cop = edisgo_obj.heat_pump.cop_df.T.stack().loc[
+        max_peak_id_per_hp
+    ]
+    hp_p_set = determine_minimum_hp_capacity_per_building(
+        edisgo_obj.heat_pump.heat_demand_df.max(), cop=max_peak_cop.values
+    )
     # round to next kW
     hp_stepsize = 0.001
     logger.info(
@@ -206,7 +222,7 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
     tes_size = cfg_g["hp_integration"].get("tes_size", 4)
     logger.info(
         f"Storage size will cover the heat demand of {tes_size} "
-        f"highest consecutive days."
+        f"highest consecutive hours."
     )
     tes_capacity = heat_demand_df.rolling(window=tes_size).sum().max()
 
