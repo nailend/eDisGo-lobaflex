@@ -120,15 +120,17 @@ if __name__ == "__main__":
     logfile = logs_dir / f"analysis_grids_ynb_{date}_local.log"
     setup_logging(file_name=logfile)
 
+    grid_id = 1056
+    run_id = "rolling_horizon_only_load_unbound_2weeks"
     create_grids_notebook(
-        grid_id=9999,
-        run_id="long_term",
+        grid_id=grid_id,
+        run_id=run_id,
         # template="grid_analysis_template.ipynb",
         template="analyse_potential.ipynb",
-        import_dir=str(
-            results_dir / "long_term" / str(9999) / "minimize_loading"
-        ),
+        period="potential",
+        import_dir=None,
         export_dir=None,
+        name="local",
         # kernel_name="lobaflex",
         # kernel_name="d_py3.8_edisgo-lobaflex",
         kernel_name=os.path.basename(os.environ.get("VIRTUAL_ENV")),
