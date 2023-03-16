@@ -56,6 +56,18 @@ DOIT_CONFIG = {
                       "scn_pot", "trust_ipynb"],
     "reporter": TelegramReporter,
 }
+# DOIT_CONFIG = {
+#     "default_tasks": ["_set_opt_version"],
+#     "reporter": TelegramReporter,
+# }
+DOIT_CONFIG = {
+    "default_tasks": ["_get_opt_version"],
+    "reporter": TelegramReporter,
+}
+# DOIT_CONFIG = {
+#     "default_tasks": ["trust_ipynb"],
+#     "reporter": TelegramReporter,
+# }
 
 
 def task__do_graph():
@@ -119,6 +131,10 @@ def task_ref():
                 version_db=version_db,
                 dep=[f"ref:timeframe_{mvgd}"],
             )
+
+# def task_clear_min_exp():
+#     """Clears the results of the minimal grid expansion tasks"""
+#       This might be necessary as tasks are generated dynamically
 
 
 @create_after(executed="ref")
@@ -259,6 +275,7 @@ def task_min_pot():
 
             yield papermill_task(
                 mvgd=mvgd,
+                name="minimize_loading",
                 template="analyse_potential.ipynb",
                 period="potential",
                 import_dir=mvgd_path / "minimize_loading",
@@ -368,6 +385,19 @@ def task_scn_pot():
                         dep=dependencies
                     )
 
+                yield papermill_task(
+                    mvgd=mvgd,
+                    name=scenario,
+                    template="analyse_potential.ipynb",
+                    period="potential",
+                    import_dir=mvgd_path / "minimize_loading",
+                    run_id=run_id,
+                    version_db=version_db,
+                    dep=[f"min_pot:minimize_loading_concat_{i}_{mvgd}" for i in
+                         objectives]
+                )
+
+
 
 @create_after(executed="min_pot")
 def task_trust_ipynb():
@@ -383,5 +413,6 @@ def task_trust_ipynb():
 
 
 if __name__ == "__main__":
-
+    # globals()["task_ref2"] = partial(globals()["task_ref"], mvgd=1111)
+    # # globals().pop("task_ref")
     doit.run(globals())
