@@ -305,7 +305,7 @@ def task_exp_scn():
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
 
-    scenarios = [20, 40, 60]
+    scenarios = [20, 40, 60, 80, 100]
 
     # Versioning
     version_db, run_id = init_versioning()
