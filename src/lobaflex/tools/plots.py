@@ -640,16 +640,12 @@ def plot_scenario_potential(
                 .loc[timeframe]
                 .sum(axis=1)
             )
-            lower_limit = lower_limit - lower_limit.iloc[0]
 
             upper_limit = (
                 edisgo_obj.electromobility.flexibility_bands["upper_energy"]
                 .loc[timeframe]
                 .sum(axis=1)
             )
-            upper_limit = upper_limit - lower_limit.iloc[0]
-
-
 
     elif technology == "hp_el":
         upper_limit = edisgo_obj.topology.loads_df.groupby("type")[
