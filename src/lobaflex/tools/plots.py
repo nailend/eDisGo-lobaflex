@@ -510,8 +510,7 @@ def plot_optimized_dispatch(edisgo_obj, timeframe, title=None):
 
 
 def plot_scenario_potential(
-    potential_path, objectives, keyword, technology, timeframe,
-    title=None
+    potential_path, objectives, keyword, technology, timeframe, title=None
 ):
     """
 
@@ -555,12 +554,12 @@ def plot_scenario_potential(
         import_heat_pump=True,
         import_electromobility=True,
     )
-    # flexible_loads = edisgo_obj.topology.loads_df.loc[
-    # edisgo_obj.topology.loads_df["opt"] == True
-    # ].index
-    #
-    # flexible_hp = [i for i in flexible_loads if "HP" in i]
-    # flexible_cp = [i for i in flexible_loads if "Charging_Point" in i]
+    flexible_loads = edisgo_obj.topology.loads_df.loc[
+        edisgo_obj.topology.loads_df["opt"] == True
+    ].index
+
+    flexible_hp = [i for i in flexible_loads if "HP" in i]
+    flexible_cp = [i for i in flexible_loads if "Charging_Point" in i]
     #
     # heta_demand = (
     #     edisgo_obj.heat_pump.heat_demand_df.loc[timeframe, flexible_hp]
@@ -606,6 +605,9 @@ def plot_scenario_potential(
             df = df.sum(axis=1).rename(f"{keyword} {attr} [MW]")
             df = df.loc[timeframe]
 
+            if "energy" in keyword and technology == "ev":
+                df = df - df.iloc[0]
+
             fig.add_trace(
                 go.Scatter(
                     mode="lines",
@@ -622,39 +624,58 @@ def plot_scenario_potential(
                     legendgroup=scenario,
                 )
             )
-
     if technology == "ev":
-        upper_power = (
-            edisgo_obj.electromobility.flexibility_bands["upper_power"]
-            .loc[timeframe]
-            .sum(axis=1)
-        )
-    elif technology == "hp_el":
-        upper_power = (
-            edisgo_obj.topology.loads_df.loc[
-            edisgo_obj.topology.loads_df["type"] == "heat_pump"
-        ]
-        .groupby("type")["p_set"]
-        .sum()
-        )
-        upper_power = len(timeframe) * [upper_power["heat_pump"]]
-        # print(upper_power)
-    fig.add_trace(
-        go.Scatter(
-            mode="lines",
-            #             opacity=0.3,
-            #             fill='tozeroy',
-            #             fill="tonexty",
-            # fill=None if i == 0 else "tonexty",
-            name="upper_power",
-            x=timeframe,
-            y=upper_power,
-            # line=dict(color=colors[i + 1]),
-            # showlegend=True if not subplot else False,
-            # showlegend=True if legend == 0 else False,
-            # legendgroup=scenario,
-        ))
+        if "charging" in keyword:
+            upper_limit = (
+                edisgo_obj.electromobility.flexibility_bands["upper_power"]
+                .loc[timeframe]
+                .sum(axis=1)
+            )
+        elif "energy" in keyword:
+            upper_limit = (
+                edisgo_obj.electromobility.flexibility_bands["upper_energy"]
+                .loc[timeframe]
+                .sum(axis=1)
+            )
+            upper_limit = upper_limit - upper_limit.iloc[0]
 
+            lower_limit = (
+                edisgo_obj.electromobility.flexibility_bands["lower_energy"]
+                .loc[timeframe]
+                .sum(axis=1)
+            )
+            lower_limit = lower_limit - lower_limit.iloc[0]
+
+    elif technology == "hp_el":
+        upper_limit = edisgo_obj.topology.loads_df.groupby("type")[
+            "p_set"
+        ].sum()["heat_pump"]
+        upper_limit = len(timeframe) * [upper_limit]
+
+    elif technology == "tes":
+        upper_limit = edisgo_obj.heat_pump.thermal_storage_units_df.loc[
+            :, "capacity"
+        ].sum()
+        upper_limit = len(timeframe) * [upper_limit]
+
+    if upper_limit is not None:
+        fig.add_trace(
+            go.Scatter(
+                mode="lines",
+                name="upper limit",
+                x=timeframe,
+                y=upper_limit,
+            )
+        )
+    if lower_limit is not None:
+        fig.add_trace(
+            go.Scatter(
+                mode="lines",
+                name="lower limit",
+                x=timeframe,
+                y=lower_limit,
+            )
+        )
 
     fig.update_layout(
         # title=f"{keyword}: {run_id} - {grid_id}",
