@@ -60,7 +60,7 @@ def create_grids_notebook(
     input_template = os.path.join(analysis_path[0], "templates", template)
 
     if import_dir is None:
-        import_dir = cfg_o["import_dir"]
+        grid_path = results_dir / run_id / str(grid_id)
     if export_dir is None:
         export_dir = run_id
     export_path = results_dir / export_dir / str(grid_id) / "analysis"
@@ -68,6 +68,8 @@ def create_grids_notebook(
 
     if name is None:
         name = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    # else:
+    #     name = name + "_" + datetime.now().strftime("%Y-%m-%d_%H%M%S")
     export_name = f"{template.strip('.ipynb')}_{name}.ipynb"
     export_notebook = export_path / export_name
 
@@ -75,7 +77,7 @@ def create_grids_notebook(
         "run_id": run_id,
         "grid_id": grid_id,
         "period": period,
-        "import_dir": import_dir,
+        "grid_path": str(grid_path),
     }
 
     # execute notebook with specific parameter
