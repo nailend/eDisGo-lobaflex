@@ -401,7 +401,7 @@ def task_scn_pot():
 
             yield papermill_task(
                 mvgd=mvgd,
-                # name=scenario,
+                name=mvgd,
                 template="analyse_potential.ipynb",
                 period="potential",
                 # import_dir=mvgd_path / "minimize_loading",

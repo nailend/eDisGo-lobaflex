@@ -266,7 +266,7 @@ def expansion_scenario_task(mvgd, percentage, run_id, version_db, dep):
     }
 
 
-def papermill_task(mvgd, template, period, run_id, version_db, dep):
+def papermill_task(mvgd,name, template, period, run_id, version_db, dep):
     """"""
 
     task_name = template.rstrip(".ipynb")
@@ -281,7 +281,7 @@ def papermill_task(mvgd, template, period, run_id, version_db, dep):
                     "template": template,
                     "period": period,
                     "grid_id": mvgd,
-                    "name": f"{task_name}_{mvgd}",
+                    "name": name,
                     # "import_dir": str(import_dir),
                     "run_id": run_id,
                     "version_db": version_db,
