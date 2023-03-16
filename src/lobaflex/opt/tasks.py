@@ -266,7 +266,7 @@ def expansion_scenario_task(mvgd, percentage, run_id, version_db, dep):
     }
 
 
-def papermill_task(mvgd, name, template, period, import_dir, run_id,
+def papermill_task(mvgd, template, period, run_id,
                    version_db, dep):
     """"""
 
@@ -282,7 +282,7 @@ def papermill_task(mvgd, name, template, period, import_dir, run_id,
                     "template": template,
                     "period": period,
                     "grid_id": mvgd,
-                    "import_dir": str(import_dir),
+                    # "import_dir": str(import_dir),
                     "run_id": run_id,
                     "version_db": version_db,
                     "kernel_name": os.path.basename(os.environ.get('VIRTUAL_ENV')),
