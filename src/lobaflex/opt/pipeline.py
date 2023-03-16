@@ -285,6 +285,67 @@ def task_min_pot():
                     dep=dependencies,
                 )
 
+
+@create_after(executed="min_exp")
+def task_min_pot_grid():
+    """Generator for minimal load balancing potential tasks"""
+
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    mvgds = sorted(cfg_o["mvgds"])
+    objectives = [
+        "maximize_grid_power",
+        "minimize_grid_power",
+        "maximize_energy_level",
+        "minimize_energy_level",
+    ]
+    directory = Path("minimize_loading") / "feeder"
+    # TODO add pathways
+
+    # Versioning
+    version_db, run_id = init_versioning()
+
+    # create opt task only for existing grid folders
+    for mvgd in mvgds:
+        mvgd_path = results_dir / run_id / str(mvgd)
+        if os.path.isdir(mvgd_path):
+
+            feeder_path = mvgd_path / directory
+            os.makedirs(feeder_path, exist_ok=True)
+
+            # Get all existing feeder_ids is in directory
+            feeder_ids = [
+                f
+                for f in os.listdir(feeder_path)
+                if os.path.isdir(feeder_path / f)
+            ]
+            for objective in objectives:
+
+                dependencies = []
+                for feeder in sorted(feeder_ids):
+                    yield optimization_task(
+                        mvgd=mvgd,
+                        feeder=feeder,
+                        objective=objective,
+                        directory=directory,
+                        run_id=run_id,
+                        version_db=version_db,
+                        dep=[f"ref:reference_feeder_{mvgd}"],
+                    )
+
+                    dependencies += [
+                        f"min_pot:{objective}_{mvgd}" f"/{int(feeder):02}"
+                    ]
+
+                yield result_concatenation_task(
+                    mvgd=mvgd,
+                    objective=objective,
+                    directory=Path(
+                        "potential") / "minimize_loading",
+                    run_id=run_id,
+                    version_db=version_db,
+                    dep=dependencies,
+                )
+
             # yield papermill_task(
             #     mvgd=mvgd,
             #     name="minimize_loading",
