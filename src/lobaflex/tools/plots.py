@@ -624,6 +624,9 @@ def plot_scenario_potential(
                     legendgroup=scenario,
                 )
             )
+
+    upper_limit = None
+    lower_limit = None
     if technology == "ev":
         if "charging" in keyword:
             upper_limit = (
