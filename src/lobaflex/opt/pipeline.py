@@ -60,10 +60,10 @@ DOIT_CONFIG = {
 #     "default_tasks": ["_set_opt_version"],
 #     "reporter": TelegramReporter,
 # }
-DOIT_CONFIG = {
-    "default_tasks": ["_get_opt_version"],
-    "reporter": TelegramReporter,
-}
+# DOIT_CONFIG = {
+#     "default_tasks": ["_get_opt_version"],
+#     "reporter": TelegramReporter,
+# }
 # DOIT_CONFIG = {
 #     "default_tasks": ["trust_ipynb"],
 #     "reporter": TelegramReporter,
