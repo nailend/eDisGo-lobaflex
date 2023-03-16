@@ -605,8 +605,8 @@ def plot_scenario_potential(
             df = df.sum(axis=1).rename(f"{keyword} {attr} [MW]")
             df = df.loc[timeframe]
 
-            if "energy" in keyword and technology == "ev":
-                df = df - df.iloc[0]
+            # if "energy" in keyword and technology == "ev":
+            #     df = df - df.iloc[0]
 
             fig.add_trace(
                 go.Scatter(
