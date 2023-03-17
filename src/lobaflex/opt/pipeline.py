@@ -411,19 +411,25 @@ def task_scn_pot():
                 ],
             )
 
+            filename = f"analyse_potential_{mvgd}.ipynb"
+            filepath = results_dir / "analyse" / filename
+            yield {"name": f"trust_{filename}",
+                   "actions": [f"jupyter trust {filepath}"],
+                   "task_dep": [f"scn_pot:analyse_potential_{mvgd}"]
+                   }
 
-@create_after(executed="min_pot")
-def task_trust_ipynb():
-    """Trust all ipynb files in results directory. POTENTIALLY DANGEROUS!
-    Remove this task from default task config if you don't
-    trust your result directory."""
 
-    version_db, run_id = init_versioning()
-    path = results_dir / run_id
-    list_of_ipynbs = get_files_in_subdirs(path, pattern="*.ipynb")
-    action = [f"jupyter trust {ipynb}" for ipynb in list_of_ipynbs]
-    return {"actions": action,
-            "task_dep": ["__last__"]}
+# @create_after(executed="min_pot")
+# def task_trust_ipynb():
+#     """Trust all ipynb files in results directory. POTENTIALLY DANGEROUS!
+#     Remove this task from default task config if you don't
+#     trust your result directory."""
+#
+#     version_db, run_id = init_versioning()
+#     path = results_dir / run_id
+#     list_of_ipynbs = get_files_in_subdirs(path, pattern="*.ipynb")
+#     action = [f"jupyter trust {ipynb}" for ipynb in list_of_ipynbs]
+#     return {"actions": action, "task_dep": ["__last__"]}
 
 
 if __name__ == "__main__":
