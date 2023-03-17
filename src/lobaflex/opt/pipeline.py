@@ -485,7 +485,8 @@ def task_trust_ipynb():
     path = results_dir / run_id
     list_of_ipynbs = get_files_in_subdirs(path, pattern="*.ipynb")
     action = [f"jupyter trust {ipynb}" for ipynb in list_of_ipynbs]
-    return {"actions": action}
+    return {"actions": action,
+            "task_dep": ["__last__"]}
 
 
 if __name__ == "__main__":
