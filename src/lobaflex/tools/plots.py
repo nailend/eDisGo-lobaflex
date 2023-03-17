@@ -1,3 +1,4 @@
+import os
 import re
 
 import numpy as np
@@ -12,6 +13,32 @@ from lobaflex.tools.tools import get_files_in_subdirs
 
 # comment to make plots interactive
 # pio.renderers.default = "svg"
+
+
+colors_dict = {
+    "load": "#db3b3c",  # red
+    "reactive_load": "#951b1c",  # darkred
+    "feedin": "#4bce4b",  # green
+    "reactive_feedin": "#1c641c",  # darkgreen
+    "hp": "#8c564b",  # brown
+    "ev": "#1f77b4",  # blue
+    "tes": "#d6aa27",  # orange
+    "hp_el": "#8c564b",  # brown
+    "p_cum_neg": "#ffc0cb",  # pink
+    "v_neg": "#41ffde",  # lightcyan
+    "hp_opt": "#8B4513",
+    "hp_reference": "#D2691E",
+    "ev_opt": "#0071C5",
+    "ev_reference": "#1E90FF",
+    "residual_load": "grey",
+    "PV": "#e2c319",
+    "electric vehicles": "#1f77b4",
+    "conventional load": "#8c564b",
+    "heat pump": "#ff0800",
+    "biomass": "#2ca02c",
+    "hydropower": "#4a19e5",
+    "wind": "#73baec",
+}
 
 
 def custom_round(x, base=0.001):
@@ -48,18 +75,18 @@ def get_all_attribute_values_for_keyword(results_path, keyword):
         "minimize_energy_level",
     ]
 
-    colors_dict = {
-        "load": "#db3b3c",  # red
-        "reactive_load": "#951b1c",  # darkred
-        "feedin": "#4bce4b",  # green
-        "reactive_feedin": "#1c641c",  # darkgreen
-        "hp": "#8c564b",  # brown
-        "ev": "#1f77b4",  # blue
-        "tes": "#d6aa27",  # orange
-        "hp_el": "#8c564b",  # brown
-        "p_cum_neg": "#ffc0cb",  # pink
-        "v_neg": "#41ffde",  # lightcyan
-    }
+    # colors_dict = {
+    #     "load": "#db3b3c",  # red
+    #     "reactive_load": "#951b1c",  # darkred
+    #     "feedin": "#4bce4b",  # green
+    #     "reactive_feedin": "#1c641c",  # darkgreen
+    #     "hp": "#8c564b",  # brown
+    #     "ev": "#1f77b4",  # blue
+    #     "tes": "#d6aa27",  # orange
+    #     "hp_el": "#8c564b",  # brown
+    #     "p_cum_neg": "#ffc0cb",  # pink
+    #     "v_neg": "#41ffde",  # lightcyan
+    # }
 
     data = dict().fromkeys(objectives)
 
@@ -155,18 +182,18 @@ def plot_all_attributes_for_keyword(
                 "minimize_energy_level",
             ]
 
-    colors_dict = {
-        "load": "#db3b3c",  # red
-        "reactive_load": "#951b1c",  # darkred
-        "feedin": "#4bce4b",  # green
-        "reactive_feedin": "#1c641c",  # darkgreen
-        "hp": "#8c564b",  # brown
-        "ev": "#1f77b4",  # blue
-        "tes": "#d6aa27",  # orange
-        "hp_el": "#8c564b",  # brown
-        "p_cum_neg": "#ffc0cb",  # pink
-        "v_neg": "#41ffde",  # lightcyan
-    }
+    # colors_dict = {
+    #     "load": "#db3b3c",  # red
+    #     "reactive_load": "#951b1c",  # darkred
+    #     "feedin": "#4bce4b",  # green
+    #     "reactive_feedin": "#1c641c",  # darkgreen
+    #     "hp": "#8c564b",  # brown
+    #     "ev": "#1f77b4",  # blue
+    #     "tes": "#d6aa27",  # orange
+    #     "hp_el": "#8c564b",  # brown
+    #     "p_cum_neg": "#ffc0cb",  # pink
+    #     "v_neg": "#41ffde",  # lightcyan
+    # }
 
     keyword_files = [
         i for i in selected_list if keyword in i and "slack_initial" not in i
@@ -428,9 +455,10 @@ def plot_optimized_dispatch(edisgo_obj, timeframe, title=None):
     fig.add_trace(
         go.Scatter(
             mode="lines",
-            name="Heat pumps",
+            name="Electric Vehicles",
             x=timeframe,
-            y=df_hp,
+            y=df_ev,
+            marker=dict(color=colors_dict["ev_reference"]),
             stackgroup="one",
             yaxis="y1",
         )
@@ -439,9 +467,10 @@ def plot_optimized_dispatch(edisgo_obj, timeframe, title=None):
     fig.add_trace(
         go.Scatter(
             mode="lines",
-            name="Electric Vehicles",
+            name="Heat pumps",
             x=timeframe,
-            y=df_ev,
+            y=df_hp,
+            marker=dict(color=colors_dict["hp_reference"]),
             stackgroup="one",
             yaxis="y1",
         )
@@ -454,6 +483,7 @@ def plot_optimized_dispatch(edisgo_obj, timeframe, title=None):
             name="Residual load",
             x=timeframe,
             y=df_residual,
+            marker=dict(color=colors_dict["residual_load"]),
             #     stackgroup='two',
             yaxis="y2",
         )
@@ -535,7 +565,10 @@ def plot_scenario_potential(
     # colors = [f'rgb({int(255 - i*50)}, {int(255 - i*50)}, {255})' for i in range(num_traces)]
     colors = [f"rgb({i}, {i}, {255})" for i in np.linspace(0, 255, num_traces)]
 
+    # TODO Add 80+100 scenario
     scenarios = [
+        "100_pct_reinforced",
+        "80_pct_reinforced",
         "60_pct_reinforced",
         "40_pct_reinforced",
         "20_pct_reinforced",
@@ -588,42 +621,45 @@ def plot_scenario_potential(
         # add max power per scenario
         for i, scenario in enumerate(scenarios):
             scenario_path = potential_path / scenario / objective / "concat"
-            files_in_path = get_files_in_subdirs(
-                path=scenario_path, pattern="*.csv"
-            )
-
-            keyword_files = [
-                i
-                for i in files_in_path
-                if keyword in i and "slack_initial" not in i
-            ]
-
-            file = [i for i in keyword_files if technology in i]
-            file = file[0]
-            attr = re.findall(rf"{keyword}_(.*).csv", file)[0]
-            df = pd.read_csv(file, index_col=0, parse_dates=True)
-            df = df.sum(axis=1).rename(f"{keyword} {attr} [MW]")
-            df = df.loc[timeframe]
-
-            # if "energy" in keyword and technology == "ev":
-            #     df = df - df.iloc[0]
-
-            fig.add_trace(
-                go.Scatter(
-                    mode="lines",
-                    #             opacity=0.3,
-                    #             fill='tozeroy',
-                    #             fill="tonexty",
-                    fill=None if i == 0 else "tonexty",
-                    name=scenario,
-                    x=timeframe,
-                    y=df,
-                    line=dict(color=colors[i + 1]),
-                    # showlegend=True if not subplot else False,
-                    showlegend=True if legend == 0 else False,
-                    legendgroup=scenario,
+            if os.path.isdir(scenario_path):
+                files_in_path = get_files_in_subdirs(
+                    path=scenario_path, pattern="*.csv"
                 )
-            )
+
+                keyword_files = [
+                    i
+                    for i in files_in_path
+                    if keyword in i and "slack_initial" not in i
+                ]
+
+                file = [i for i in keyword_files if technology in i]
+                file = file[0]
+                attr = re.findall(rf"{keyword}_(.*).csv", file)[0]
+                df = pd.read_csv(file, index_col=0, parse_dates=True)
+                df = df.sum(axis=1).rename(f"{keyword} {attr} [MW]")
+                df = df.loc[timeframe]
+
+                # if "energy" in keyword and technology == "ev":
+                #     df = df - df.iloc[0]
+
+                fig.add_trace(
+                    go.Scatter(
+                        mode="lines",
+                        #             opacity=0.3,
+                        #             fill='tozeroy',
+                        #             fill="tonexty",
+                        fill=None if i == 0 else "tonexty",
+                        name=scenario,
+                        x=timeframe,
+                        y=df,
+                        line=dict(color=colors[i + 1]),
+                        # showlegend=True if not subplot else False,
+                        showlegend=True if legend == 0 else False,
+                        legendgroup=scenario,
+                    )
+                )
+            else:
+                continue
 
     upper_limit = None
     lower_limit = None
@@ -780,13 +816,13 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
         axis=1,
     )
 
-    colordict = {
-        "hp_opt": "#8B4513",
-        "hp_reference": "#D2691E",
-        "ev_opt": "#0071C5",
-        "ev_reference": "#1E90FF",
-        "residual_load": "grey",
-    }
+    # colordict = {
+    #     "hp_opt": "#8B4513",
+    #     "hp_reference": "#D2691E",
+    #     "ev_opt": "#0071C5",
+    #     "ev_reference": "#1E90FF",
+    #     "residual_load": "grey",
+    # }
 
     filldict = {
         "hp_opt": "tozeroy",
@@ -811,7 +847,7 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
         fig.add_trace(
             go.Scatter(
                 mode="lines",
-                line=dict(color=colordict[name]),
+                line=dict(color=colors_dict[name]),
                 # fill= "tozeroy" if name == "residual_load" else None,
                 fill=filldict[name],
                 #             opacity=0.3,
@@ -874,15 +910,38 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
 
 
 def plot_flex_capacities(edisgo_obj):
+    """
+
+    Parameters
+    ----------
+    edisgo_obj :
+
+    Returns
+    -------
+
+    """
+    flexible_loads = edisgo_obj.topology.loads_df.loc[
+        edisgo_obj.topology.loads_df["opt"] == True
+    ].index
+    inflexible_loads = edisgo_obj.topology.loads_df.loc[
+        edisgo_obj.topology.loads_df["opt"] == False
+    ].index
+
+    flexible_hp = [i for i in flexible_loads if "HP" in i]
+    flexible_cp = [i for i in flexible_loads if "Charging_Point" in i]
+    inflexible_cp = [i for i in inflexible_loads if "Charging_Point" in i]
+
     df_cap_hp = (
         edisgo_obj.topology.loads_df.loc[
             edisgo_obj.topology.loads_df["type"] == "heat_pump"
         ]["p_set"]
         * 1e3
     )
+
     df_cap_tes = (
         edisgo_obj.heat_pump.thermal_storage_units_df["capacity"] * 1e3
     )
+
     df_cap_ev = (
         edisgo_obj.topology.loads_df.loc[
             edisgo_obj.topology.loads_df["type"] == "charging_point"
@@ -895,15 +954,57 @@ def plot_flex_capacities(edisgo_obj):
         cols=3,
         subplot_titles=subplot_titles,
         vertical_spacing=0.2,
+        specs=[[{}, {}, {"secondary_y": True}]],
     )
 
     fig.add_trace(
-        go.Violin(y=df_cap_hp, name=""),
+        go.Violin(
+            y=df_cap_hp,
+            name="",
+            fillcolor=colors_dict["hp"],
+            line_color="black",
+            box_visible=True,
+        ),
         col=1,
         row=1,
     )
-    fig.add_trace(go.Violin(y=df_cap_tes, name=""), col=2, row=1)
-    fig.add_trace(go.Violin(y=df_cap_ev, name=""), col=3, row=1)
+    fig.add_trace(
+        go.Violin(
+            y=df_cap_tes,
+            name="",
+            hoverinfo="y+name",
+            fillcolor=colors_dict["tes"],
+            line_color="black",
+            box_visible=True,
+        ),
+        col=2,
+        row=1,
+    )
+    fig.add_trace(
+        go.Violin(
+            y=df_cap_ev.loc[flexible_cp],
+            name="home+work",
+            hoverinfo="y+name",
+            fillcolor=colors_dict["ev"],
+            line_color="black",
+            box_visible=True,
+        ),
+        col=3,
+        row=1,
+    )
+    fig.add_trace(
+        go.Violin(
+            y=df_cap_ev.loc[inflexible_cp],
+            name="public+hpc",
+            hoverinfo="y+name",
+            fillcolor=colors_dict["ev"],
+            line_color="black",
+            box_visible=True,
+        ),
+        col=3,
+        row=1,
+        secondary_y=True,
+    )
 
     fig.update_layout(
         width=1000,
@@ -912,5 +1013,6 @@ def plot_flex_capacities(edisgo_obj):
         yaxis=dict(title="kW"),
         yaxis2=dict(title="kWh"),
         yaxis3=dict(title="kWh"),
+        yaxis4=dict(title="kWh", overlaying="y3", side="right"),
     )
     fig.show()
