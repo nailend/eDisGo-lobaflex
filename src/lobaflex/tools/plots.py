@@ -1117,3 +1117,91 @@ def identify_cop_bug(results_path, edisgo_obj, timeframe):
         ),
     )
     fig.show()
+
+
+def get_all_reinforcement_measures(grid_path):
+    """
+
+    Parameters
+    ----------
+    grid_path :
+
+    Returns
+    -------
+
+    """
+
+    edisgo_paths = [grid_path / "reference" / "reinforced"]
+    edisgo_paths += [grid_path / "minimize_loading" / "reinforced"]
+    scenarios = [f"{i}_pct_reinforced" for i in [20, 40, 60, 80, 100]]
+    edisgo_paths += [
+        grid_path / "scenarios" / scenario / "mvgd" for scenario in scenarios
+    ]
+
+    df_costs = []
+    scenarios = []
+    for edisgo_path in edisgo_paths:
+        edisgo_obj = import_edisgo_from_files(
+            edisgo_path,
+            import_topology=False,
+            import_timeseries=False,
+            import_heat_pump=False,
+            import_electromobility=False,
+            import_results=True,
+        )
+
+        #     costs += edisgo_obj.results.grid_expansion_costs['total_costs'].sum()
+        costs = pd.concat(
+            [
+                edisgo_obj.results.grid_expansion_costs.groupby(
+                    "voltage_level"
+                )["quantity"]
+                .sum()
+                .to_frame(),
+                edisgo_obj.results.grid_expansion_costs.groupby(
+                    "voltage_level"
+                )["total_costs"]
+                .sum()
+                .to_frame(),
+            ],
+            axis=1,
+        )  # .T.stack().round()
+
+        df_costs += [
+            pd.concat(
+                [
+                    costs,
+                    pd.Series(
+                        [
+                            edisgo_obj.results.grid_expansion_costs[
+                                "quantity"
+                            ].sum(),
+                            edisgo_obj.results.grid_expansion_costs[
+                                "total_costs"
+                            ].sum(),
+                        ],
+                        index=["quantity", "total_costs"],
+                        name="all",
+                    )
+                    .to_frame()
+                    .T,
+                ]
+            )
+            .T.astype(int)
+            .T
+        ]
+        scenarios += [edisgo_path.parent.name]
+    df = pd.concat(df_costs, keys=scenarios).sort_index().T
+    #     print(f"{edisgo_path.parent.name}: {costs/1e3:.2f} Mio €")
+
+    order = [
+        "minimize_loading",
+        "reference",
+        "20_pct_reinforced",
+        "40_pct_reinforced",
+        "60_pct_reinforced",
+        "80_pct_reinforced",
+        "100_pct_reinforced",
+    ]
+
+    return df.T.loc[order]
