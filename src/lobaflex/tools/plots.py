@@ -575,8 +575,6 @@ def plot_scenario_potential(
     # colors = [f'rgb({int(255 - i*50)}, {int(255 - i*50)}, {255})' for i in range(num_traces)]
     colors = [f"rgb({i}, {i}, {255})" for i in np.linspace(0, 255, num_traces)]
 
-
-
     fig = go.Figure()
 
     # #     # add opt disptach
@@ -1015,5 +1013,107 @@ def plot_flex_capacities(edisgo_obj):
         yaxis2=dict(title="kWh"),
         yaxis3=dict(title="kWh"),
         yaxis4=dict(title="kWh", overlaying="y3", side="right"),
+    )
+    fig.show()
+
+
+def identify_cop_bug(results_path, edisgo_obj, timeframe):
+    """
+
+    Parameters
+    ----------
+    results_path :
+    edisgo_obj :
+    timeframe :
+
+    Returns
+    -------
+
+    """
+    grid_id = edisgo_obj.topology.mv_grid.id
+
+    df = get_all_attribute_values_for_keyword(
+        results_path=results_path,
+        keyword=f"{grid_id}_energy_level",
+    )
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            mode="lines",
+            y=edisgo_obj.heat_pump.cop_df.mean(axis=1).loc[timeframe],
+            x=timeframe,
+            yaxis="y1",
+            name="COP",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            mode="lines",
+            y=edisgo_obj.timeseries.residual_load.loc[timeframe],
+            x=timeframe,
+            yaxis="y2",
+            name="residual load",
+        )
+    )
+
+    df = get_all_attribute_values_for_keyword(
+        results_path=results_path,
+        keyword=f"{grid_id}_energy_level",
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            mode="lines",
+            y=df["maximize_energy_level"]["tes"].loc[timeframe],
+            x=timeframe,
+            yaxis="y2",
+            name="tes energy level",
+        )
+    )
+
+    df = get_all_attribute_values_for_keyword(
+        results_path=results_path,
+        keyword=f"1056_grid_power",
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            mode="lines",
+            y=df["maximize_energy_level"]["flexible"].loc[timeframe],
+            x=timeframe,
+            yaxis="y2",
+            name="grid_power_flexible",
+        )
+    )
+
+    df = get_all_attribute_values_for_keyword(
+        results_path=results_path,
+        keyword=f"1056_grid_cumulated",
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            mode="lines",
+            y=df["maximize_energy_level"]["energy"].loc[timeframe],
+            x=timeframe,
+            yaxis="y2",
+            name="grid_cumulated energy",
+        )
+    )
+
+    fig.update_layout(
+        title=f"maximize energy level - period: {timeframe.name}",
+        width=1000,
+        height=600,
+        yaxis1=dict(title="COP"),
+        yaxis2=dict(
+            zeroline=True,
+            zerolinecolor="black",
+            zerolinewidth=1,
+            title="Alles andere in MW MWH",
+            overlaying="y1",
+            side="right",
+        ),
     )
     fig.show()

@@ -48,4 +48,5 @@ def setup_logging(file_name):
         stream_formatter=stream_formatter,
         reset_loggers=True,
         file_name=file_name,
+
     )
