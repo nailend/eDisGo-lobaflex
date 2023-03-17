@@ -347,11 +347,9 @@ def task_scn_pot():
     objectives = [
         "maximize_grid_power",
         "minimize_grid_power",
-        "maximize_energy_level",
-        "minimize_energy_level",
+        # "maximize_energy_level",
+        # "minimize_energy_level",
     ]
-
-    # TODO add pathways
 
     version_db, run_id = init_versioning()
 
