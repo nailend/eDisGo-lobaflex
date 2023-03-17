@@ -1032,11 +1032,6 @@ def identify_cop_bug(results_path, edisgo_obj, timeframe):
     """
     grid_id = edisgo_obj.topology.mv_grid.id
 
-    df = get_all_attribute_values_for_keyword(
-        results_path=results_path,
-        keyword=f"{grid_id}_energy_level",
-    )
-
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
@@ -1074,7 +1069,7 @@ def identify_cop_bug(results_path, edisgo_obj, timeframe):
 
     df = get_all_attribute_values_for_keyword(
         results_path=results_path,
-        keyword=f"1056_grid_power",
+        keyword=f"{grid_id}_grid_power",
     )
 
     fig.add_trace(
