@@ -569,7 +569,7 @@ def plot_scenario_potential(
 
     # Define the base color and the number of traces
     base_color = "rgb(0, 0, 255)"
-    num_traces = len(scenarios)
+    num_traces = len(scenarios) + 1
 
     # Create a list of colors with decreasing brightness
     # colors = [f'rgb({int(255 - i*50)}, {int(255 - i*50)}, {255})' for i in range(num_traces)]
