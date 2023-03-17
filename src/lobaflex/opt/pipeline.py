@@ -20,6 +20,7 @@ from lobaflex.opt.tasks import (  # dnm_generation_task,
     png_file_task,
     result_concatenation_task,
     timeframe_selection_task,
+    trust_ipynb,
 )
 from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.pydoit import opt_uptodate  # noqa: F401
@@ -411,12 +412,9 @@ def task_scn_pot():
                 ],
             )
 
-            filename = f"analyse_potential_{mvgd}.ipynb"
-            filepath = results_dir / "analyse" / filename
-            yield {"name": f"trust_{filename}",
-                   "actions": [f"jupyter trust {filepath}"],
-                   "task_dep": [f"scn_pot:analyse_potential_{mvgd}"]
-                   }
+            yield trust_ipynb(
+                mvgd=mvgd, run_id=run_id, template="analyse_potential.ipynb"
+            )
 
 
 # @create_after(executed="min_pot")

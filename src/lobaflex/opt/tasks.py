@@ -144,8 +144,9 @@ def optimization_task(
     }
 
 
-def result_concatenation_task(mvgd, objective, directory, run_id, version_db,
-                              dep):
+def result_concatenation_task(
+    mvgd, objective, directory, run_id, version_db, dep
+):
     """"""
 
     def teardown(path):
@@ -240,7 +241,7 @@ def grid_reinforcement_task(mvgd, objective, run_id, version_db, dep):
 def expansion_scenario_task(mvgd, percentage, run_id, version_db, dep):
     """"""
     obj_path = (
-            results_dir / run_id / str(mvgd) / "minimize_loading" / "reinforced"
+        results_dir / run_id / str(mvgd) / "minimize_loading" / "reinforced"
     )
 
     return {
@@ -252,7 +253,7 @@ def expansion_scenario_task(mvgd, percentage, run_id, version_db, dep):
                 {
                     "obj_or_path": obj_path,
                     "grid_id": mvgd,
-                    "percentage": percentage/100,
+                    "percentage": percentage / 100,
                     "run_id": run_id,
                     "version_db": version_db,
                 },
@@ -266,7 +267,7 @@ def expansion_scenario_task(mvgd, percentage, run_id, version_db, dep):
     }
 
 
-def papermill_task(mvgd,name, template, period, run_id, version_db, dep):
+def papermill_task(mvgd, name, template, period, run_id, version_db, dep):
     """"""
 
     task_name = template.rstrip(".ipynb")
@@ -285,7 +286,9 @@ def papermill_task(mvgd,name, template, period, run_id, version_db, dep):
                     # "import_dir": str(import_dir),
                     "run_id": run_id,
                     "version_db": version_db,
-                    "kernel_name": os.path.basename(os.environ.get('VIRTUAL_ENV')),
+                    "kernel_name": os.path.basename(
+                        os.environ.get("VIRTUAL_ENV")
+                    ),
                 },
             )
         ],
@@ -294,6 +297,17 @@ def papermill_task(mvgd,name, template, period, run_id, version_db, dep):
         # results if not all opt succeeded
         "task_dep": dep,
         "uptodate": [opt_uptodate],
+    }
+
+
+def trust_ipynb(mvgd, run_id, template):
+    """"""
+    filename = f"{template.rstrip('ipynb')}_{mvgd}.ipynb"
+    filepath = results_dir / run_id / str(mvgd) / "analyse" / filename
+    return {
+        "name": f"trust_{filename}",
+        "actions": [f"jupyter trust {filepath}"],
+        "task_dep": [f"scn_pot:analyse_potential_{mvgd}"],
     }
 
 
