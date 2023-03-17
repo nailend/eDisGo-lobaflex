@@ -557,15 +557,6 @@ def plot_scenario_potential(
     -------
 
     """
-    # Define the base color and the number of traces
-    base_color = "rgb(0, 0, 255)"
-    num_traces = 5
-
-    # Create a list of colors with decreasing brightness
-    # colors = [f'rgb({int(255 - i*50)}, {int(255 - i*50)}, {255})' for i in range(num_traces)]
-    colors = [f"rgb({i}, {i}, {255})" for i in np.linspace(0, 255, num_traces)]
-
-    # TODO Add 80+100 scenario
     scenarios = [
         "100_pct_reinforced",
         "80_pct_reinforced",
@@ -575,6 +566,16 @@ def plot_scenario_potential(
         "minimize_loading",
     ]
     scenarios.reverse()
+
+    # Define the base color and the number of traces
+    base_color = "rgb(0, 0, 255)"
+    num_traces = len(scenarios)
+
+    # Create a list of colors with decreasing brightness
+    # colors = [f'rgb({int(255 - i*50)}, {int(255 - i*50)}, {255})' for i in range(num_traces)]
+    colors = [f"rgb({i}, {i}, {255})" for i in np.linspace(0, 255, num_traces)]
+
+
 
     fig = go.Figure()
 
