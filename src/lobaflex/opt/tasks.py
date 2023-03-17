@@ -303,7 +303,7 @@ def papermill_task(mvgd, name, template, period, run_id, version_db, dep):
 def trust_ipynb(mvgd, run_id, template):
     """"""
     filename = f"{template.rstrip('.ipynb')}_{mvgd}.ipynb"
-    filepath = results_dir / run_id / str(mvgd) / "analyse" / filename
+    filepath = results_dir / run_id / str(mvgd) / "analysis" / filename
     return {
         "name": f"trust_{filename}",
         "actions": [f"jupyter trust {filepath}"],
