@@ -1084,7 +1084,7 @@ def identify_cop_bug(results_path, edisgo_obj, timeframe):
 
     df = get_all_attribute_values_for_keyword(
         results_path=results_path,
-        keyword=f"1056_grid_cumulated",
+        keyword=f"{grid_id}_grid_cumulated",
     )
 
     fig.add_trace(
@@ -1093,7 +1093,7 @@ def identify_cop_bug(results_path, edisgo_obj, timeframe):
             y=df["maximize_energy_level"]["energy"].loc[timeframe],
             x=timeframe,
             yaxis="y2",
-            name="grid_cumulated energy",
+            name="grid_cumulated_energy",
         )
     )
 
