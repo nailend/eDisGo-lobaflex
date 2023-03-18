@@ -726,9 +726,9 @@ def run_dispatch_optimization(
         feeder id, respective folder name of feeder
     objective :
         objective function to be used for optimization
-    rolling_horizon : bool
+    rolling_horizon : {"pot": False, "load":False}
         If True, rolling horizon optimization is performed else long-term
-        optimization (default = False). !NOTE Currently fixed to objectives!
+        optimization (default = False).
     run_id : str or None
         run id used for pydoit versioning
     version_db : dict or None
@@ -776,11 +776,7 @@ def run_dispatch_optimization(
             "minimize_energy_level",
         ]:
 
-            # Use long-term optimization for these objectives if false
-            if cfg_o["rolling_horizon"]["pot"]:
-                rolling_horizon = True
-            else:
-                rolling_horizon = False
+            rolling_horizon = rolling_horizon["pot"]
 
             # Add extra directory layer for potentials
             directory = Path("potential") / obj_or_path.parent.parent.name
@@ -788,7 +784,7 @@ def run_dispatch_optimization(
         else:
 
             # use rolling horizon optimization for all other objectives
-            rolling_horizon = True
+            rolling_horizon = rolling_horizon["load"]
 
             # No extra directory layer needed
             directory = ""
@@ -803,10 +799,6 @@ def run_dispatch_optimization(
             / feeder_id
         )
         os.makedirs(export_path, exist_ok=True)
-
-    # TODO Move to edisgo feeder extraction + timeseries extraction
-    # logger.info("Check integrity.")
-    # edisgo_obj.check_integrity()
 
     logger.info("Run Powerflow for first timestep")
     try:

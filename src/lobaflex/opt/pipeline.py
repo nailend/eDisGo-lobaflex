@@ -158,7 +158,7 @@ def task_min_exp():
     mvgds = sorted(cfg_o["mvgds"])
     objective = "minimize_loading"
     directory = Path("reference") / "feeder"
-
+    rolling_horizon = cfg_o["rolling_horizon"]
     # Versioning
     version_db, run_id = init_versioning()
 
@@ -183,6 +183,7 @@ def task_min_exp():
                     mvgd=mvgd,
                     feeder=feeder,
                     objective=objective,
+                    rolling_horizon=rolling_horizon,
                     directory=directory,
                     run_id=run_id,
                     version_db=version_db,
@@ -239,6 +240,7 @@ def task_min_pot():
         "maximize_energy_level",
         "minimize_energy_level",
     ]
+    rolling_horizon = cfg_o["rolling_horizon"]
     directory = Path("minimize_loading") / "feeder"
     # TODO add pathways
 
@@ -267,6 +269,7 @@ def task_min_pot():
                         mvgd=mvgd,
                         feeder=feeder,
                         objective=objective,
+                        rolling_horizon=rolling_horizon,
                         directory=directory,
                         run_id=run_id,
                         version_db=version_db,
@@ -351,6 +354,7 @@ def task_scn_pot():
         # "maximize_energy_level",
         # "minimize_energy_level",
     ]
+    rolling_horizon = cfg_o["rolling_horizon"]
 
     version_db, run_id = init_versioning()
 
@@ -378,6 +382,7 @@ def task_scn_pot():
                             mvgd=mvgd,
                             feeder=feeder,
                             objective=objective,
+                            rolling_horizon=rolling_horizon,
                             directory=Path("scenarios") / scenario / "feeder",
                             run_id=run_id,
                             version_db=version_db,

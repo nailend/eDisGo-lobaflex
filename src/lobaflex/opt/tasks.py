@@ -108,7 +108,7 @@ def feeder_extraction_task(mvgd, objective, source, run_id, version_db, dep):
 
 
 def optimization_task(
-    mvgd, feeder, objective, directory, run_id, version_db, dep
+    mvgd, feeder, objective, rolling_horizon, directory, run_id, version_db, dep
 ):
     """Generator to define optimization task for a feeder"""
 
@@ -132,6 +132,7 @@ def optimization_task(
                     "grid_id": mvgd,
                     "feeder_id": feeder,
                     "objective": objective,
+                    "rolling_horizon": rolling_horizon,
                     "version_db": version_db,
                     "run_id": run_id,
                 },
