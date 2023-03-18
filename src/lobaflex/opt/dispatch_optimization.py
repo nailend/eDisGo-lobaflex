@@ -346,8 +346,9 @@ def long_term_optimization(
     equal_splits = len(edisgo_obj.timeseries.timeindex) / (
         cfg_o["timesteps_per_iteration"] * cfg_o["iterations_per_era"]
     )
-    windows = np.split(edisgo_obj.timeseries.timeindex.sort_values(),
-                       equal_splits)
+    windows = np.split(
+        edisgo_obj.timeseries.timeindex.sort_values(), equal_splits
+    )
 
     for iteration, window in enumerate(windows):
 
@@ -363,10 +364,10 @@ def long_term_optimization(
                 timesteps=window,
                 objective=objective,
                 flexible_loads=flexible_loads,
-                energy_level_end_tes=0.5,
-                energy_level_end_ev=0.5,
-                # charging_starts={"ev": 0, "hp": 0, "tes": 0},
-                # **start_values, # TODO not needed?
+                # TODO: if ev end level True, sometimes infeasable
+                # energy_level_ends={"ev": True, "tes": None},
+                energy_level_ends={"ev": True, "tes": True},
+                # **start_values, # TODO not needed anymore @Anya?
                 load_factor_rings=0.5 if cfg_o["n-1"] else None  # TODO N-1
                 # DEACTIVATED!
                 # **kwargs,
@@ -379,10 +380,9 @@ def long_term_optimization(
                 timesteps=window,
                 fixed_parameters=fixed_parameters,
                 objective=objective,
-                flexible_loads=flexible_loads,
+                # flexible_loads=flexible_loads,
                 energy_level_starts={"ev": 0.5, "tes": 0.5},
-                energy_level_end_tes=0.5,
-                energy_level_end_ev=0.5,
+                energy_level_ends={"ev": True, "tes": True},
                 # **start_values,
                 # **kwargs,
             )
