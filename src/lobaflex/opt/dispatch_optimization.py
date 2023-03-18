@@ -364,9 +364,9 @@ def long_term_optimization(
                 timesteps=window,
                 objective=objective,
                 flexible_loads=flexible_loads,
-                # TODO: if ev end level True, sometimes infeasable
-                # energy_level_ends={"ev": True, "tes": None},
-                energy_level_ends={"ev": True, "tes": True},
+                # TODO: if ev end level True infeasable
+                # energy_level_ends={"ev": True, "tes": True},
+                energy_level_ends={"ev": None, "tes": True},
                 # **start_values, # TODO not needed anymore @Anya?
                 load_factor_rings=0.5 if cfg_o["n-1"] else None  # TODO N-1
                 # DEACTIVATED!
