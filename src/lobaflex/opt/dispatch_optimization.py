@@ -343,12 +343,10 @@ def long_term_optimization(
         timeframe,
     ) = prepare_input_parameters(edisgo_obj, timeframe_only)
 
-    equal_splits = len(edisgo_obj.timeseries.timeindex) / (
+    equal_splits = len(timeframe) / (
         cfg_o["timesteps_per_iteration"] * cfg_o["iterations_per_era"]
     )
-    windows = np.split(
-        edisgo_obj.timeseries.timeindex.sort_values(), equal_splits
-    )
+    windows = np.split(timeframe.sort_values(), equal_splits)
 
     for iteration, window in enumerate(windows):
 
@@ -548,7 +546,7 @@ def rolling_horizon_optimization(
         # if last iteration of era, no overlap is added but energy_level
         # at the end needs to be reached
         if iteration % iterations_per_era == iterations_per_era - 1:
-            timesteps = edisgo_obj.timeseries.timeindex[
+            timesteps = timeframe[
                 iteration
                 * timesteps_per_iteration : (iteration + 1)
                 * timesteps_per_iteration
@@ -559,7 +557,7 @@ def rolling_horizon_optimization(
 
         # in all other iterations overlap is added to the timeframe
         else:
-            timesteps = edisgo_obj.timeseries.timeindex[
+            timesteps = timeframe[
                 iteration
                 * timesteps_per_iteration : (iteration + 1)
                 * timesteps_per_iteration
