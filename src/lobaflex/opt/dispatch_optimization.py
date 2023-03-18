@@ -363,6 +363,8 @@ def long_term_optimization(
                 timesteps=window,
                 objective=objective,
                 flexible_loads=flexible_loads,
+                energy_level_end_tes=0.5,
+                energy_level_end_ev=0.5,
                 # charging_starts={"ev": 0, "hp": 0, "tes": 0},
                 # **start_values, # TODO not needed?
                 load_factor_rings=0.5 if cfg_o["n-1"] else None  # TODO N-1
@@ -378,6 +380,9 @@ def long_term_optimization(
                 fixed_parameters=fixed_parameters,
                 objective=objective,
                 flexible_loads=flexible_loads,
+                energy_level_starts={"ev": 0.5, "tes": 0.5},
+                energy_level_end_tes=0.5,
+                energy_level_end_ev=0.5,
                 # **start_values,
                 # **kwargs,
             )
