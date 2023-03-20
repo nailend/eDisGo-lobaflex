@@ -133,9 +133,12 @@ def export_results(result_dict, export_path, timesteps, filename):
                 logger.warning(
                     f"Values > 1e-6 in {res_name} at iteration {iteration}."
                 )
-            res = res[mask]
-            res = res.dropna(how="all")
-            res = res.dropna(how="all")
+            # res = res[mask]
+            # res = res.dropna(how="all")
+            # res = res.fillna(0)
+            res[~mask] = np.nan
+            res = res.T.dropna(how="all").T
+
         if res.empty:
             logger.info(f"No results for {res_name}.")
         else:
