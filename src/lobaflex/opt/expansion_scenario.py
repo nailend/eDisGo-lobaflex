@@ -102,7 +102,7 @@ def run_expansion_scenario(
     #     iterations=5,
     #     iteration_start=0.5,
     # )
-    edisgo_obj = edisgo_obj.reinforce(catch_convergence_problems=True)
+    edisgo_obj.reinforce(catch_convergence_problems=True)
 
     # Restore original timeseries
     edisgo_obj.timeseries = ts_orig
