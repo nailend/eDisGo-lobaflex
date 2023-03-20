@@ -95,13 +95,14 @@ def run_expansion_scenario(
 
     edisgo_obj.set_time_series_worst_case_analysis("load_case")
 
-    edisgo_obj = iterative_reinforce(
-        edisgo_obj,
-        timesteps=[edisgo_obj.timeseries.timeindex[0]],
-        mode="iterative",
-        iterations=5,
-        iteration_start=0.05,
-    )
+    # edisgo_obj = iterative_reinforce(
+    #     edisgo_obj,
+    #     timesteps=[edisgo_obj.timeseries.timeindex[0]],
+    #     mode="iterative",
+    #     iterations=5,
+    #     iteration_start=0.5,
+    # )
+    edisgo_obj = edisgo_obj.reinforce(catch_convergence_problems=True)
 
     # Restore original timeseries
     edisgo_obj.timeseries = ts_orig

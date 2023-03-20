@@ -223,9 +223,11 @@ def reinforce_grid(
     )
     os.makedirs(export_path, exist_ok=True)
 
-    edisgo_obj = iterative_reinforce(
-        edisgo_obj, combined_analysis=False, mode="split", iterations=5
-    )
+    # edisgo_obj = iterative_reinforce(
+    #     edisgo_obj, combined_analysis=False, mode="split", iterations=5
+    # )
+
+    edisgo_obj = edisgo_obj.reinforce(catch_convergence_problems=True)
 
     logger.info(f"Save reinforced grid to {export_path}")
     edisgo_obj.save(
