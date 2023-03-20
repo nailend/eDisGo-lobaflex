@@ -155,23 +155,7 @@ def plot_all_attributes_for_keyword(
             .loc[timeframe]
             .sum(axis=1)
         )
-        # lower_power = (
-        #     edisgo_obj.electromobility.flexibility_bands["lower_power"]
-        #     .loc[timeframe]
-        #     .sum(axis=1)
-        # )
-        # upper_energy = (
-        #     edisgo_obj.electromobility.flexibility_bands["upper_energy"]
-        #     .loc[timeframe]
-        #     .sum(axis=1)
-        # )
-        # lower_energy = (
-        #     edisgo_obj.electromobility.flexibility_bands["lower_energy"]
-        #     .loc[timeframe]
-        #     .sum(axis=1)
-        # )
-    else:
-        timeframe = None
+
     # objectives = [
     #     "maximize_grid_power",
     #     "minimize_grid_power",
@@ -244,8 +228,7 @@ def plot_all_attributes_for_keyword(
 
             for i, file in enumerate(files):
                 attr = re.findall(rf"{keyword}_(.*).csv", file)[0]
-                df = pd.DataFrame(data=0, index=timeframe)
-                df += pd.read_csv(file, index_col=0, parse_dates=True)
+                df = pd.read_csv(file, index_col=0, parse_dates=True)
                 df = df.sum(axis=1).rename(f"{keyword} {attr} [MW]")
 
                 if timeframe is None:
