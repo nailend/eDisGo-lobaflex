@@ -497,7 +497,7 @@ def task_scn_pot():
                     )
 
 
-@create_after("init")
+@create_after("min_pot")
 def task_analyse():
     """Generator for analysis tasks"""
     cfg_o = get_config(path=config_dir / ".opt.yaml")
