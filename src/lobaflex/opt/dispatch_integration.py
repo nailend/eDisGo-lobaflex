@@ -1,6 +1,6 @@
 import logging
-import warnings
 import os
+import warnings
 
 from copy import deepcopy
 from datetime import datetime
@@ -119,7 +119,12 @@ def integrate_timeseries(
 
 @log_errors
 def integrate_dispatch(
-    obj_or_path, import_path, grid_id=None, run_id=None, version_db=None
+    obj_or_path,
+    import_path,
+    grid_id=None,
+    objective=None,
+    run_id=None,
+    version_db=None,
 ):
     """
 
@@ -131,6 +136,9 @@ def integrate_dispatch(
         Path to directory where results are stored
     grid_id : int or None
         Grid id of MVGD
+    objective : str
+        Keyword after which the grid is reinforced. This is used for logging
+        purposes only
     run_id : str
         run id used for pydoit versioning
     version_db : dict
@@ -152,7 +160,10 @@ def integrate_dispatch(
     logger.info(f"Start ts integration of {grid_id} in {run_id}.")
 
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"dispatch_integration_{run_id}_{date}.log"
+    logfile = (
+        logs_dir / f"{run_id}_dispatch_integration_{objective}_"
+        f"{grid_id}_{date}.log"
+    )
     setup_logging(file_name=logfile)
 
     if isinstance(obj_or_path, EDisGo):

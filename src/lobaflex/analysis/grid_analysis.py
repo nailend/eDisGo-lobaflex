@@ -53,7 +53,7 @@ def create_grids_notebook(
     cfg_o = get_config(path=config_dir / ".opt.yaml")
 
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"analysis_grids_ynb_{run_id}_{date}.log"
+    logfile = logs_dir / f"{run_id}_analysis_grids_ynb_{grid_id}_{date}.log"
     setup_logging(file_name=logfile)
 
     # define data and paths

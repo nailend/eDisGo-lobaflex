@@ -1,4 +1,5 @@
 import logging
+import os
 import warnings
 
 from datetime import datetime
@@ -172,7 +173,7 @@ def run_timeframe_selection(
     cfg_o = get_config(path=config_dir / ".opt.yaml")
 
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"opt_{run_id}_{grid_id}_{date}.log"
+    logfile = logs_dir / f"{run_id}_observation_period_{grid_id}_{date}.log"
     setup_logging(file_name=logfile)
 
     logger.info(

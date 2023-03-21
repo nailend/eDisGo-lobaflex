@@ -198,7 +198,10 @@ def reinforce_grid(
 
     date = datetime.now().date().isoformat()
 
-    logfile = logs_dir / f"opt_{objective}_reinforcement_{run_id}_{date}.log"
+    logfile = (
+        logs_dir / f"{run_id}_reinforcement_{objective}_{grid_id}"
+        f"_{date}.log"
+    )
     setup_logging(file_name=logfile)
 
     logger.info(

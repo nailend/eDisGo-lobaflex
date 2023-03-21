@@ -2,8 +2,9 @@ import logging
 import os
 import warnings
 
-from datetime import datetime
 from copy import deepcopy
+from datetime import datetime
+
 from edisgo.edisgo import EDisGo, import_edisgo_from_files
 
 from lobaflex import logs_dir, results_dir
@@ -49,8 +50,7 @@ def run_expansion_scenario(
 
     date = datetime.now().date().isoformat()
     logfile = (
-        logs_dir
-        / f"opt_{int(percentage) * 100}_pct_expansion_{run_id}_{date}.log"
+        logs_dir / f"{run_id}_{int(percentage) * 100}_pct_expansion_{date}.log"
     )
     setup_logging(file_name=logfile)
 
@@ -119,7 +119,7 @@ def run_expansion_scenario(
             "simbev_config_df",
             "flexibility_bands",
         ],
-        save_results=True
+        save_results=True,
     )
 
     if version_db is not None:

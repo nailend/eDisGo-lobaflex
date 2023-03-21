@@ -710,6 +710,7 @@ def run_dispatch_optimization(
     feeder_id,
     objective,
     rolling_horizon=False,
+    meta=None,
     run_id=None,
     version_db=None,
 ):
@@ -728,6 +729,8 @@ def run_dispatch_optimization(
     rolling_horizon : {"pot": False, "load":False}
         If True, rolling horizon optimization is performed else long-term
         optimization (default = False).
+    meta : str
+        This is used for logging purposes only
     run_id : str or None
         run id used for pydoit versioning
     version_db : dict or None
@@ -746,7 +749,10 @@ def run_dispatch_optimization(
     feeder_id = f"{int(feeder_id):02}"
 
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"opt_{run_id}_{grid_id}-{feeder_id}" f"_{date}.log"
+    logfile = (
+        logs_dir / f"{run_id}_optimize_{meta}_{objective}_{grid_id}"
+        f"-{feeder_id}_{date}.log"
+    )
     setup_logging(file_name=logfile)
 
     logger.info(

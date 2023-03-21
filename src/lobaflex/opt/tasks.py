@@ -4,19 +4,18 @@ import shutil
 
 from datetime import datetime
 
-
 from lobaflex import config_dir, data_dir, logs_dir, results_dir
+from lobaflex.analysis.grid_analysis import create_grids_notebook
 from lobaflex.opt.dispatch_integration import integrate_dispatch
 from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
+from lobaflex.opt.expansion_scenario import run_expansion_scenario
 from lobaflex.opt.feeder_extraction import run_feeder_extraction
 from lobaflex.opt.grid_reinforcement import reinforce_grid
 from lobaflex.opt.result_concatination import save_concatenated_results
 from lobaflex.opt.timeframe_selection import run_timeframe_selection
-from lobaflex.opt.expansion_scenario import run_expansion_scenario
 from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.pydoit import opt_uptodate
 from lobaflex.tools.tools import get_config
-from lobaflex.analysis.grid_analysis import create_grids_notebook
 
 logger = logging.getLogger("lobaflex.opt." + __name__)
 date = datetime.now().date().isoformat()
@@ -66,6 +65,7 @@ def feeder_extraction_task(mvgd, objective, source, run_id, version_db, dep):
                 {  # kwargs
                     "obj_or_path": import_path,
                     "grid_id": mvgd,
+                    "objective": objective,
                     "export_path": export_path,
                     "version_db": version_db,
                     "run_id": run_id,
@@ -108,7 +108,14 @@ def feeder_extraction_task(mvgd, objective, source, run_id, version_db, dep):
 
 
 def optimization_task(
-    mvgd, feeder, objective, rolling_horizon, directory, run_id, version_db, dep
+    mvgd,
+    feeder,
+    objective,
+    rolling_horizon,
+    directory,
+    run_id,
+    version_db,
+    dep,
 ):
     """Generator to define optimization task for a feeder"""
 
@@ -132,6 +139,7 @@ def optimization_task(
                     "grid_id": mvgd,
                     "feeder_id": feeder,
                     "objective": objective,
+                    "meta": directory.parent.name,
                     "rolling_horizon": rolling_horizon,
                     "version_db": version_db,
                     "run_id": run_id,
@@ -150,9 +158,10 @@ def result_concatenation_task(
 ):
     """"""
 
-    def teardown(path):
-        logging.info("Remove intermediate results")
-        shutil.rmtree(path)
+    # TODO
+    # def teardown(path):
+    #     logging.info("Remove intermediate results")
+    #     shutil.rmtree(path)
 
     path = results_dir / run_id / str(mvgd) / directory / objective / "results"
 
@@ -170,6 +179,7 @@ def result_concatenation_task(
                 {
                     "grid_id": mvgd,
                     "path": path,
+                    "objective": objective,
                     "run_id": run_id,
                     "version_db": version_db,
                 },
@@ -199,6 +209,7 @@ def dispatch_integration_task(mvgd, objective, run_id, version_db, dep):
                     "obj_or_path": obj_path,
                     "import_path": import_path,
                     "grid_id": mvgd,
+                    "objective": objective,
                     "run_id": run_id,
                     "version_db": version_db,
                 },
