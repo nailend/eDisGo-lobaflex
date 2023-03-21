@@ -194,46 +194,53 @@ def run_timeframe_selection(
             import_electromobility=True,
         )
 
-    export_path = results_dir / run_id / str(grid_id) / "reference" / "mvgd"
+    export_path = results_dir / run_id / str(grid_id) / "initial" / "mvgd"
+    os.makedirs(export_path, exist_ok=True)
 
-    # timeframe for load intensive areas
-    # max residual load
-    if int(grid_id) in [2534, 177]:
-        timeframe = determine_observation_periods(
-            edisgo_obj, window_days=7, idx="max", absolute=False
+    if grid_id in [2534, 177, 1056, 176, 1690, 1811]:
+        # timeframe for load intensive areas
+        # max residual load
+        if int(grid_id) in [2534, 177]:
+            timeframe = determine_observation_periods(
+                edisgo_obj, window_days=7, idx="max", absolute=False
+            )
+
+        # timeframe for pv or wind intensive areas
+        # min residual load
+        elif int(grid_id) in [1056, 176, 1690, 1811]:
+
+            timeframe = determine_observation_periods(
+                edisgo_obj, window_days=7, idx="min", absolute=False
+            )
+
+        else:
+            raise NotImplementedError
+
+        # timeframe for potential analysis
+        # min absolute residual load
+        timeframe = timeframe.append(
+            determine_observation_periods(
+                edisgo_obj, window_days=7, idx="min", absolute=True
+            )
         )
+        timeframe = timeframe.sort_values()
 
-    # timeframe for pv or wind intensive areas
-    # min residual load
-    elif int(grid_id) in [1056, 176, 1690, 1811]:
+        if any(timeframe.duplicated()):
+            raise ValueError("There is a duplicated timeindex!")
 
-        timeframe = determine_observation_periods(
-            edisgo_obj, window_days=7, idx="min", absolute=False
+        logger.info("Extract timeframe")
+        edisgo_obj = extract_timeframe(
+            edisgo_obj,
+            timeframe=timeframe,
+            # start_datetime=cfg_o["start_datetime"],
+            # periods=cfg_o["total_timesteps"],
+            # freq="1h",
         )
-
     else:
-        raise NotImplementedError
-
-    # timeframe for potential analysis
-    # min absolute residual load
-    timeframe = timeframe.append(
-        determine_observation_periods(
-            edisgo_obj, window_days=7, idx="min", absolute=True
+        logger.warning(
+            "You are in experimental mode. Timeframe selection is "
+            f"not defined for grid id: {grid_id}"
         )
-    )
-    timeframe = timeframe.sort_values()
-
-    if any(timeframe.duplicated()):
-        raise ValueError("There is a duplicated timeindex!")
-
-    logger.info("Extract timeframe")
-    edisgo_obj = extract_timeframe(
-        edisgo_obj,
-        timeframe=timeframe,
-        # start_datetime=cfg_o["start_datetime"],
-        # periods=cfg_o["total_timesteps"],
-        # freq="1h",
-    )
 
     logger.info(f"Save reduced grid to {export_path}")
     edisgo_obj.save(
