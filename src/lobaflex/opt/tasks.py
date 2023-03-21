@@ -24,10 +24,8 @@ logfile = logs_dir / f"opt_tasks_{date}.log"
 setup_logging(file_name=logfile)
 
 
-def timeframe_selection_task(mvgd, run_id, version_db):
+def timeframe_selection_task(mvgd, import_path, run_id, version_db):
     """"""
-    import_dir = cfg_o["import_dir"]
-    import_path = data_dir / import_dir / str(mvgd)
     fix = cfg_o["fix_preparation"]
 
     return {

@@ -117,7 +117,12 @@ def task_init():
         if os.path.isdir(data_path):
 
             # TODO observation periods
-            yield timeframe_selection_task(mvgd, run_id, version_db)
+            yield timeframe_selection_task(
+                mvgd=mvgd,
+                import_path=data_path,
+                run_id=run_id,
+                version_db=version_db,
+            )
 
             yield feeder_extraction_task(
                 mvgd=mvgd,
