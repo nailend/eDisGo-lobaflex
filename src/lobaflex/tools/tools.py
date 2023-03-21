@@ -56,8 +56,14 @@ def get_config(path):
     """
     Returns the config.
     """
-    with open(path, encoding="utf8") as f:
-        return yaml.safe_load(f)
+    try:
+        with open(path, encoding="utf8") as f:
+             yaml_file = yaml.safe_load(f)
+    except FileNotFoundError:
+        split_model_config_in_subconfig()
+        with open(path, encoding="utf8") as f:
+             yaml_file = yaml.safe_load(f)
+    return yaml_file
 
 
 def split_model_config_in_subconfig():
