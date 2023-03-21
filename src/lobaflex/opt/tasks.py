@@ -225,7 +225,11 @@ def dispatch_integration_task(mvgd, objective, run_id, version_db, dep):
 
 def grid_reinforcement_task(mvgd, objective, run_id, version_db, dep):
     """"""
-    obj_path = results_dir / run_id / str(mvgd) / objective / "mvgd"
+    if objective == "reference":
+        obj_path = results_dir / run_id / str(mvgd) / "initial" / "mvgd"
+
+    else:
+        obj_path = results_dir / run_id / str(mvgd) / objective / "mvgd"
 
     return {
         "name": f"reinforce_{mvgd}",
@@ -312,14 +316,14 @@ def papermill_task(mvgd, name, template, period, run_id, version_db, dep):
     }
 
 
-def trust_ipynb(mvgd, run_id, template):
+def trust_ipynb(mvgd, run_id, template, dep):
     """"""
     filename = f"{template.rstrip('.ipynb')}_{mvgd}.ipynb"
     filepath = results_dir / run_id / str(mvgd) / "analysis" / filename
     return {
         "name": f"trust_{filename}",
         "actions": [f"jupyter trust {filepath}"],
-        "task_dep": [f"scn_pot:analyse_potential_{mvgd}"],
+        "task_dep": [dep],
     }
 
 

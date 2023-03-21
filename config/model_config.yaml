@@ -27,8 +27,6 @@ opt:
   start_datetime: 2011-01-01 00:00:00
 #  total_timesteps: 168
   total_timesteps: 48
-  rolling_horizon:
-    pot: True
   timesteps_per_iteration: 24 # number of timesteps which are optimized in one bulk
   overlap_iterations: 2
 #  overlap_iterations: 6 # overlapping timesteps at the end of each iteration
@@ -36,3 +34,22 @@ opt:
 #  iterations_per_era: 4
   iterations_per_era: 7 # an era defines a closed timeframe for optimization
 #  in the last iteration of an era, the overlapping time steps are invented
+  rolling_horizon:
+    pot: False
+    load: False
+  min_potential:
+    - maximize_grid_power
+    - minimize_grid_power
+    - maximize_energy_level
+    - minimize_energy_level
+  scn_potential:
+    - maximize_grid_power
+    - minimize_grid_power
+  #    - maximize_energy_level
+  #    - minimize_energy_level
+  ref_potential:
+    - maximize_grid_power
+    - minimize_grid_power
+  #    - maximize_energy_level
+  #    - minimize_energy_level
+

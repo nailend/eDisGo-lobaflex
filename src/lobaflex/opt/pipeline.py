@@ -55,11 +55,14 @@ setup_logging(file_name=logfile)
 
 DOIT_CONFIG = {
     "default_tasks": [
-        "ref",
+        "init",
+        "ref_exp",
+        "ref_pot",
         "min_exp",
         "min_pot",
-        "exp_scn",
+        "scn_exp",
         "scn_pot",
+        "analyse",
         # "trust_ipynb",
     ],
     "reporter": TelegramReporter,
@@ -94,29 +97,21 @@ def task_update():
 
 
 # def task_grids():
-    # Generate grids
+# Generate grids
 
-def task_ref():
-    """Generator for reference grids
 
-    Feeder extraction and dnm matrix generation"""
+def task_init():
+    """Generator for initial grids
+
+    Observation period selection and feeder separation"""
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
     import_dir = cfg_o["import_dir"]
-    objective = "reference"
 
     # Versioning
     version_db, run_id = init_versioning()
-    # dep_manager = doit.Globals.dep_manager
-    # version_db = dep_manager.get_result("_set_opt_version")
-    # version_db = version_db if isinstance(version_db, dict) else {"db": {}}
-    # task_version = version_db.get("current", {"run_id": "None"})
-    # run_id = task_version.get("run_id", "None")
 
-    # TODO
-    # observation_import = data_dir / import_dir / str(mvgd)
-    # path = results_dir / run_id / str(mvgd) / timeframe
     for mvgd in mvgds:
         data_path = data_dir / import_dir / str(mvgd)
         if os.path.isdir(data_path):
@@ -126,28 +121,114 @@ def task_ref():
 
             yield feeder_extraction_task(
                 mvgd=mvgd,
-                objective=objective,
-                source=Path(objective) / "mvgd",
+                objective="initial",
+                source=Path("initial") / "mvgd",
                 run_id=run_id,
                 version_db=version_db,
-                dep=[f"ref:timeframe_{mvgd}"],
+                dep=[f"init:timeframe_{mvgd}"],
             )
+
+
+@create_after(executed="init")
+def task_ref_exp():
+
+    """Generator for direct charging/reference grid reinforcement tasks
+
+    reinforcement and feeder extraction"""
+
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    mvgds = sorted(cfg_o["mvgds"])
+
+    # Versioning
+    version_db, run_id = init_versioning()
+
+    # create tasks only for existing grid folders
+    for mvgd in mvgds:
+        mvgd_path = results_dir / run_id / str(mvgd)
+        if os.path.isdir(mvgd_path):
 
             yield grid_reinforcement_task(
                 mvgd=mvgd,
-                objective=objective,
+                objective="reference",
                 run_id=run_id,
                 version_db=version_db,
-                dep=[f"ref:timeframe_{mvgd}"],
+                dep=[f"init:timeframe_{mvgd}"],
+            )
+
+            yield feeder_extraction_task(
+                mvgd=mvgd,
+                objective="reference",
+                source=Path("reference") / "reinforced",
+                run_id=run_id,
+                version_db=version_db,
+                dep=[f"ref_exp:reinforce_{mvgd}"],
             )
 
 
-# def task_clear_min_exp():
-#     """Clears the results of the minimal grid expansion tasks"""
-#       This might be necessary as tasks are generated dynamically
+@create_after(executed="ref_exp")
+def task_ref_pot():
+    """Generator for reference load balancing potential tasks"""
+
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    mvgds = sorted(cfg_o["mvgds"])
+    # objectives = [
+    #     "maximize_grid_power",
+    #     "minimize_grid_power",
+    #     "maximize_energy_level",
+    #     "minimize_energy_level",
+    # ]
+    objectives = cfg_o["ref_potential"]
+    rolling_horizon = cfg_o["rolling_horizon"]
+    directory = Path("reference") / "feeder"
+
+    # Versioning
+    version_db, run_id = init_versioning()
+
+    # create opt task only for existing grid folders
+    for mvgd in mvgds:
+        mvgd_path = results_dir / run_id / str(mvgd)
+        if os.path.isdir(mvgd_path):
+
+            feeder_path = mvgd_path / directory
+            os.makedirs(feeder_path, exist_ok=True)
+
+            # Get all existing feeder_ids is in directory
+            feeder_ids = [
+                f
+                for f in os.listdir(feeder_path)
+                if os.path.isdir(feeder_path / f)
+            ]
+            for objective in objectives:
+
+                dependencies = []
+                for feeder in sorted(feeder_ids):
+
+                    yield optimization_task(
+                        mvgd=mvgd,
+                        feeder=feeder,
+                        objective=objective,
+                        rolling_horizon=rolling_horizon,
+                        directory=directory,
+                        run_id=run_id,
+                        version_db=version_db,
+                        dep=[f"ref_exp:reference_feeder_{mvgd}"],
+                    )
+
+                    dependencies += [
+                        f"ref_pot:{objective}_{mvgd}" f"/{int(feeder):02}"
+                    ]
+
+                yield result_concatenation_task(
+                    mvgd=mvgd,
+                    objective=objective,
+                    directory=Path("potential") / "reference",
+                    run_id=run_id,
+                    version_db=version_db,
+                    dep=dependencies,
+                )
 
 
-@create_after(executed="ref")
+@create_after(executed="init")
 def task_min_exp():
     """Generator for minimal grid expansion tasks
 
@@ -157,8 +238,9 @@ def task_min_exp():
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
     objective = "minimize_loading"
-    directory = Path("reference") / "feeder"
+    directory = Path("initial") / "feeder"
     rolling_horizon = cfg_o["rolling_horizon"]
+
     # Versioning
     version_db, run_id = init_versioning()
 
@@ -172,7 +254,8 @@ def task_min_exp():
 
             # get all existing feeder_ids is in directory
             feeder_ids = [
-                f for f in os.listdir(feeder_path)
+                f
+                for f in os.listdir(feeder_path)
                 if os.path.isdir(feeder_path / f)
             ]
 
@@ -187,11 +270,13 @@ def task_min_exp():
                     directory=directory,
                     run_id=run_id,
                     version_db=version_db,
-                    dep=[f"ref:reference_feeder_{mvgd}"]
+                    dep=[f"init:initial_feeder_{mvgd}"],
                 )
 
                 # generate dependency list for concatenation task
-                dependencies += [f"min_exp:{objective}_{mvgd}/{int(feeder):02}"]
+                dependencies += [
+                    f"min_exp:{objective}_{mvgd}/{int(feeder):02}"
+                ]
 
             yield result_concatenation_task(
                 mvgd=mvgd,
@@ -234,15 +319,15 @@ def task_min_pot():
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
-    objectives = [
-        "maximize_grid_power",
-        "minimize_grid_power",
-        "maximize_energy_level",
-        "minimize_energy_level",
-    ]
+    # objectives = [
+    #     "maximize_grid_power",
+    #     "minimize_grid_power",
+    #     "maximize_energy_level",
+    #     "minimize_energy_level",
+    # ]
+    objectives = cfg_o["min_potential"]
     rolling_horizon = cfg_o["rolling_horizon"]
     directory = Path("minimize_loading") / "feeder"
-    # TODO add pathways
 
     # Versioning
     version_db, run_id = init_versioning()
@@ -257,7 +342,8 @@ def task_min_pot():
 
             # Get all existing feeder_ids is in directory
             feeder_ids = [
-                f for f in os.listdir(feeder_path)
+                f
+                for f in os.listdir(feeder_path)
                 if os.path.isdir(feeder_path / f)
             ]
             for objective in objectives:
@@ -273,7 +359,7 @@ def task_min_pot():
                         directory=directory,
                         run_id=run_id,
                         version_db=version_db,
-                        dep=[f"ref:reference_feeder_{mvgd}"],
+                        dep=[f"init:initial_feeder_{mvgd}"],
                     )
 
                     dependencies += [
@@ -302,8 +388,8 @@ def task_min_pot():
             # )
 
 
-@create_after(executed="min_exp")
-def task_exp_scn():
+@create_after(executed="init")
+def task_scn_exp():
     """Generator for expansion scenario tasks"""
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
@@ -338,22 +424,23 @@ def task_exp_scn():
                     source=source,
                     run_id=run_id,
                     version_db=version_db,
-                    dep=[f"exp_scn:{scenario}_pct_reinforced_{mvgd}"],
+                    dep=[f"scn_exp:{scenario}_pct_reinforced_{mvgd}"],
                 )
 
 
-@create_after(executed="exp_scn")
+@create_after(executed="scn_exp")
 def task_scn_pot():
     """Generator for expansion scenarios load balancing potential tasks"""
 
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
-    objectives = [
-        "maximize_grid_power",
-        "minimize_grid_power",
-        # "maximize_energy_level",
-        # "minimize_energy_level",
-    ]
+    # objectives = [
+    #     "maximize_grid_power",
+    #     "minimize_grid_power",
+    #     # "maximize_energy_level",
+    #     # "minimize_energy_level",
+    # ]
+    objectives = cfg_o["scn_potential"]
     rolling_horizon = cfg_o["rolling_horizon"]
 
     version_db, run_id = init_versioning()
@@ -370,7 +457,8 @@ def task_scn_pot():
                 feeder_path = scenario_path / scenario / "feeder"
                 os.makedirs(feeder_path, exist_ok=True)
                 feeder_ids = [
-                    f for f in os.listdir(feeder_path)
+                    f
+                    for f in os.listdir(feeder_path)
                     if os.path.isdir(feeder_path / f)
                 ]
                 for objective in objectives:
@@ -386,7 +474,7 @@ def task_scn_pot():
                             directory=Path("scenarios") / scenario / "feeder",
                             run_id=run_id,
                             version_db=version_db,
-                            dep=[f"exp_scn:{scenario}_feeder_{mvgd}"],
+                            dep=[f"scn_exp:{scenario}_feeder_{mvgd}"],
                         )
 
                         dependencies += [
@@ -403,6 +491,18 @@ def task_scn_pot():
                         dep=dependencies,
                     )
 
+
+@create_after("init")
+def task_analyse():
+    """Generator for analysis tasks"""
+    cfg_o = get_config(path=config_dir / ".opt.yaml")
+    mvgds = sorted(cfg_o["mvgds"])
+
+    version_db, run_id = init_versioning()
+
+    for mvgd in mvgds:
+        mvgd_path = results_dir / run_id / str(mvgd)
+        if os.path.isdir(mvgd_path):
             yield papermill_task(
                 mvgd=mvgd,
                 name=mvgd,
@@ -412,13 +512,16 @@ def task_scn_pot():
                 run_id=run_id,
                 version_db=version_db,
                 dep=[
-                    f"min_pot:minimize_loading_concat_{i}_{mvgd}"
-                    for i in objectives
+                    "min_pot:minimize_loading_concat_minimize_energy_level_"
+                    f"{mvgd}"
                 ],
             )
 
             yield trust_ipynb(
-                mvgd=mvgd, run_id=run_id, template="analyse_potential.ipynb"
+                mvgd=mvgd,
+                run_id=run_id,
+                template="analyse_potential.ipynb",
+                dep=f"analyse:analyse_potential_{mvgd}",
             )
 
 
