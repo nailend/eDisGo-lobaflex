@@ -783,7 +783,7 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
 
     # import reference grid
     edisgo_obj = import_edisgo_from_files(
-        grid_path / "reference" / "mvgd",
+        grid_path / "initial" / "mvgd",
         import_topology=False,
         import_timeseries=True,
         import_heat_pump=False,
