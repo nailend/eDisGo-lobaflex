@@ -62,7 +62,7 @@ DOIT_CONFIG = {
         "min_pot",
         "scn_exp",
         "scn_pot",
-        "analyse",
+        "analysis",
         # "trust_ipynb",
     ],
     "reporter": TelegramReporter,
