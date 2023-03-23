@@ -632,6 +632,8 @@ def plot_scenario_potential(
                 ]
 
                 file = [i for i in keyword_files if technology in i]
+                if len(file) == 0:
+                    continue
                 file = file[0]
                 attr = re.findall(rf"{keyword}_(.*).csv", file)[0]
                 df = pd.read_csv(file, index_col=0, parse_dates=True)
