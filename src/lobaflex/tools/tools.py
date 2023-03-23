@@ -284,7 +284,7 @@ class TelegramReporter(object):
                 self.status[task.name] = "fail"
 
             except KeyError:
-                self.telegram(text=f"Unmet dependency: {task.name}")
+                # self.telegram(text=f"Unmet dependency: {task.name}")
                 self.status[task.name] = "dependency"
             self.failures.append(result)
             self._write_failure(result)
