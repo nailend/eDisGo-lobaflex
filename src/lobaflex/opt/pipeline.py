@@ -498,7 +498,7 @@ def task_scn_pot():
 
 
 @create_after("min_pot")
-def task_analyse():
+def task_analysis():
     """Generator for analysis tasks"""
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
@@ -526,7 +526,7 @@ def task_analyse():
                 mvgd=mvgd,
                 run_id=run_id,
                 template="analyse_potential.ipynb",
-                dep=f"analyse:analyse_potential_{mvgd}",
+                dep=f"analysis:analyse_potential_{mvgd}",
             )
 
 
