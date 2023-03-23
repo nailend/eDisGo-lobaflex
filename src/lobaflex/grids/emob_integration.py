@@ -43,8 +43,8 @@ def run_emob_integration(
             # import_electromobility=True,
         )
 
-    # resample time series to have a temporal resolution of 15 minutes, which is the same
-    # as the electromobility time series
+    # resample time series to have a temporal resolution of 15 minutes,
+    # which is the same as the electromobility time series
     freq_load = pd.Series(edisgo_obj.timeseries.timeindex).diff().min()
     if not freq_load == "15min":
         logger.info("Resample timeseries to: 15min")
