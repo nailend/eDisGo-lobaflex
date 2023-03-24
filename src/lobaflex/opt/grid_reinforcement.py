@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from edisgo.edisgo import EDisGo, import_edisgo_from_files
+from edisgo.flex_opt.reinforce_grid import enhanced_reinforce_wrapper
 
 from lobaflex import config_dir, logs_dir, results_dir
 from lobaflex.tools.logger import setup_logging
@@ -235,7 +236,8 @@ def reinforce_grid(
     #     edisgo_obj, combined_analysis=False, mode="split", iterations=5
     # )
 
-    edisgo_obj.reinforce(catch_convergence_problems=True)
+    # edisgo_obj.reinforce(catch_convergence_problems=True)
+    edisgo_obj = enhanced_reinforce_wrapper(edisgo_obj)
 
     logger.info(f"Save reinforced grid to {export_path}")
     edisgo_obj.save(

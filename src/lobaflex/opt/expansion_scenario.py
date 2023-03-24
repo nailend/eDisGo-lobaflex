@@ -6,6 +6,7 @@ from copy import deepcopy
 from datetime import datetime
 
 from edisgo.edisgo import EDisGo, import_edisgo_from_files
+from edisgo.flex_opt.reinforce_grid import enhanced_reinforce_wrapper
 
 from lobaflex import logs_dir, results_dir
 from lobaflex.opt.grid_reinforcement import iterative_reinforce
@@ -108,9 +109,13 @@ def run_expansion_scenario(
     #     iterations=5,
     #     iteration_start=0.5,
     # )
-    edisgo_obj.reinforce(
+    # edisgo_obj.reinforce(
+    #     timesteps_pfa=[edisgo_obj.timeseries.timeindex[0]],
+    #     catch_convergence_problems=True,
+    # )
+    edisgo_obj = enhanced_reinforce_wrapper(
+        edisgo_obj=edisgo_obj,
         timesteps_pfa=[edisgo_obj.timeseries.timeindex[0]],
-        catch_convergence_problems=True,
     )
 
     # Restore original timeseries
