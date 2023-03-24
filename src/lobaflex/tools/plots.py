@@ -93,9 +93,12 @@ def get_all_attribute_values_for_keyword(results_path, keyword):
     list_of_results = get_files_in_subdirs(path=results_path, pattern="*.csv")
     selected_list = [i for i in list_of_results if "concat" in i]
 
-    keyword_files = [
-        i for i in selected_list if keyword in i and not "slack_initial" in i
-    ]
+    if "initial" in keyword:
+        keyword_files = [ i for i in selected_list if keyword in i ]
+    else:
+        keyword_files = [
+            i for i in selected_list if keyword in i and not  "slack_initial" in i
+        ]
 
     for obj in objectives:
         obj_files = [i for i in keyword_files if obj in i]
