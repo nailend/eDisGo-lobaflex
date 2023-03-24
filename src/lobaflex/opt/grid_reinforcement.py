@@ -221,6 +221,12 @@ def reinforce_grid(
             import_heat_pump=True,
         )
 
+        # n-1 criterion deactivated
+        edisgo_obj.config["grid_expansion_load_factors"].update(
+            {'mv_load_case_transformer': 1,
+             'mv_load_case_line': 1})
+
+
     export_path = (
         results_dir / run_id / str(grid_id) / objective / "reinforced"
     )
