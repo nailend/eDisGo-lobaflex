@@ -223,20 +223,19 @@ def reinforce_grid(
 
         # n-1 criterion deactivated
         edisgo_obj.config["grid_expansion_load_factors"].update(
-            {'mv_load_case_transformer': 1,
-             'mv_load_case_line': 1})
-
+            {"mv_load_case_transformer": 1, "mv_load_case_line": 1}
+        )
 
     export_path = (
         results_dir / run_id / str(grid_id) / objective / "reinforced"
     )
     os.makedirs(export_path, exist_ok=True)
 
-    edisgo_obj = iterative_reinforce(
-        edisgo_obj, combined_analysis=False, mode="split", iterations=5
-    )
+    # edisgo_obj = iterative_reinforce(
+    #     edisgo_obj, combined_analysis=False, mode="split", iterations=5
+    # )
 
-    # edisgo_obj.reinforce(catch_convergence_problems=True)
+    edisgo_obj.reinforce(catch_convergence_problems=True)
 
     logger.info(f"Save reinforced grid to {export_path}")
     edisgo_obj.save(

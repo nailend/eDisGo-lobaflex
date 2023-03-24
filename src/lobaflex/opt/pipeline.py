@@ -400,7 +400,8 @@ def task_scn_exp():
     cfg_o = get_config(path=config_dir / ".opt.yaml")
     mvgds = sorted(cfg_o["mvgds"])
 
-    scenarios = [20, 40, 60, 80, 100]
+    # scenarios = [20, 40, 60, 80, 100]
+    scenarios = [40, 60, 80, 100]
 
     # Versioning
     version_db, run_id = init_versioning()
@@ -410,14 +411,39 @@ def task_scn_exp():
         mvgd_path = results_dir / run_id / str(mvgd)
         if os.path.isdir(mvgd_path):
 
+            # first scenario iteration based on minimal loading
+            yield expansion_scenario_task(
+                mvgd=mvgd,
+                percentage=20,
+                source=Path("minimize_loading") / "reinforced",
+                run_id=run_id,
+                version_db=version_db,
+                dep=[f"min_exp:reinforce_{mvgd}"],
+            )
+
+            yield feeder_extraction_task(
+                mvgd=mvgd,
+                objective="20_pct_reinforced",
+                source=Path("scenarios") / "20_pct_reinforced" / "mvgd",
+                run_id=run_id,
+                version_db=version_db,
+                dep=[f"scn_exp:20_pct_reinforced_{mvgd}"],
+            )
+
+            # all further scenario iterations based on pre-iteration
             for scenario in scenarios:
 
                 yield expansion_scenario_task(
                     mvgd=mvgd,
                     percentage=scenario,
+                    source=(
+                        Path("scenarios")
+                        / f"{scenario-20}_pct_reinforced"
+                        / "mvgd"
+                    ),
                     run_id=run_id,
                     version_db=version_db,
-                    dep=[f"min_exp:reinforce_{mvgd}"],
+                    dep=[f"scn_exp:{scenario-20}_pct_reinforced_{mvgd}"],
                 )
 
                 source = (

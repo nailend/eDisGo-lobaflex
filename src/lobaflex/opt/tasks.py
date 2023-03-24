@@ -252,12 +252,12 @@ def grid_reinforcement_task(mvgd, objective, run_id, version_db, dep):
     }
 
 
-def expansion_scenario_task(mvgd, percentage, run_id, version_db, dep):
+def expansion_scenario_task(mvgd, percentage, source, run_id, version_db, dep):
     """"""
     # obj_path = (
     #     results_dir / run_id / str(mvgd) / "minimize_loading" / "reinforced"
     # )
-    obj_path = results_dir / run_id / str(mvgd) / "initial" / "mvgd"
+    obj_path = results_dir / run_id / str(mvgd) / source
 
     return {
         "name": f"{percentage}_pct_reinforced_{mvgd}",

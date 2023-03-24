@@ -20,7 +20,7 @@ else:
 
 @log_errors
 def run_expansion_scenario(
-    obj_or_path, grid_id=None, percentage=None, run_id=None, version_db=None
+    obj_or_path, grid_id, percentage, run_id=None, version_db=None
 ):
     """
 
@@ -41,6 +41,7 @@ def run_expansion_scenario(
     -------
 
     """
+
     # Log to pipeline log file
     logger.info(
         f"Run expansion pathway for {percentage:.0%} scenario of {grid_id} "
@@ -73,9 +74,8 @@ def run_expansion_scenario(
 
         # n-1 criterion deactivated
         edisgo_obj.config["grid_expansion_load_factors"].update(
-            {'mv_load_case_transformer': 1,
-             'mv_load_case_line': 1})
-
+            {"mv_load_case_transformer": 1, "mv_load_case_line": 1}
+        )
 
     export_path = (
         results_dir
@@ -101,14 +101,17 @@ def run_expansion_scenario(
 
     edisgo_obj.set_time_series_worst_case_analysis("load_case")
 
-    edisgo_obj = iterative_reinforce(
-        edisgo_obj,
-        timesteps=[edisgo_obj.timeseries.timeindex[0]],
-        mode="iterative",
-        iterations=5,
-        iteration_start=0.5,
+    # edisgo_obj = iterative_reinforce(
+    #     edisgo_obj,
+    #     timesteps=[edisgo_obj.timeseries.timeindex[0]],
+    #     mode="iterative",
+    #     iterations=5,
+    #     iteration_start=0.5,
+    # )
+    edisgo_obj.reinforce(
+        timesteps_pfa=[edisgo_obj.timeseries.timeindex[0]],
+        catch_convergence_problems=True,
     )
-    # edisgo_obj.reinforce(catch_convergence_problems=True)
 
     # Restore original timeseries
     edisgo_obj.timeseries = ts_orig
