@@ -71,6 +71,7 @@ def run_expansion_scenario(
             import_timeseries=True,
             import_electromobility=True,
             import_heat_pump=True,
+            import_results=True,
         )
 
         # n-1 criterion deactivated
