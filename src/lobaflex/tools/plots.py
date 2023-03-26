@@ -94,10 +94,12 @@ def get_all_attribute_values_for_keyword(results_path, keyword):
     selected_list = [i for i in list_of_results if "concat" in i]
 
     if "initial" in keyword:
-        keyword_files = [ i for i in selected_list if keyword in i ]
+        keyword_files = [i for i in selected_list if keyword in i]
     else:
         keyword_files = [
-            i for i in selected_list if keyword in i and not "slack_initial" in i
+            i
+            for i in selected_list
+            if keyword in i and not "slack_initial" in i
         ]
 
     for obj in objectives:
@@ -859,8 +861,7 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
         fig.add_trace(
             go.Scatter(
                 mode="lines",
-                line=dict(color=colors_dict[name],
-                          dash=dashdict[name]),
+                line=dict(color=colors_dict[name], dash=dashdict[name]),
                 # fill= "tozeroy" if name == "residual_load" else None,
                 fill=filldict[name],
                 #             opacity=0.3,
@@ -1150,14 +1151,17 @@ def get_all_reinforcement_measures(grid_path):
     df_costs = []
     scenarios = []
     for edisgo_path in edisgo_paths:
-        edisgo_obj = import_edisgo_from_files(
-            edisgo_path,
-            import_topology=False,
-            import_timeseries=False,
-            import_heat_pump=False,
-            import_electromobility=False,
-            import_results=True,
-        )
+        try:
+            edisgo_obj = import_edisgo_from_files(
+                edisgo_path,
+                import_topology=False,
+                import_timeseries=False,
+                import_heat_pump=False,
+                import_electromobility=False,
+                import_results=True,
+            )
+        except:
+            continue
 
         #     costs += edisgo_obj.results.grid_expansion_costs['total_costs'].sum()
         costs = pd.concat(
