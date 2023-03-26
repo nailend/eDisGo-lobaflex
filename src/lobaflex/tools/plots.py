@@ -97,7 +97,7 @@ def get_all_attribute_values_for_keyword(results_path, keyword):
         keyword_files = [ i for i in selected_list if keyword in i ]
     else:
         keyword_files = [
-            i for i in selected_list if keyword in i and not  "slack_initial" in i
+            i for i in selected_list if keyword in i and not "slack_initial" in i
         ]
 
     for obj in objectives:
@@ -844,6 +844,14 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
         "residual_load": None,
     }
 
+    dashdict = {
+        "hp_opt": None,
+        "hp_reference": "dash",
+        "ev_opt": None,
+        "ev_reference": ".",
+        "residual_load": "dash",
+    }
+
     fig = go.Figure()
 
     for name, ts in df.items():
@@ -851,7 +859,8 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
         fig.add_trace(
             go.Scatter(
                 mode="lines",
-                line=dict(color=colors_dict[name]),
+                line=dict(color=colors_dict[name],
+                          dash=dashdict[name]),
                 # fill= "tozeroy" if name == "residual_load" else None,
                 fill=filldict[name],
                 #             opacity=0.3,
