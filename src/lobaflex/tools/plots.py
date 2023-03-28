@@ -950,8 +950,16 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
         ),
     )
 
-    fig.update_yaxes(title_font=dict(size=16), titlefont=dict(size=18),tickfont=dict(size=16))
-    fig.update_xaxes(title_font=dict(size=16), titlefont=dict(size=18),tickfont=dict(size=16))
+    fig.update_yaxes(
+        title_font=dict(size=16),
+        titlefont=dict(size=18),
+        tickfont=dict(size=16),
+    )
+    fig.update_xaxes(
+        title_font=dict(size=16),
+        titlefont=dict(size=18),
+        tickfont=dict(size=16),
+    )
     fig.show()
     return fig
 
@@ -1251,3 +1259,147 @@ def get_all_reinforcement_measures(grid_path):
     ]
 
     return df.T.loc[order]
+
+
+def get_power_diff(grid_path, technology):
+    # technology=["hp", "ev"]
+    # if True:
+    keyword = "charging"
+    if type(technology) is not list():
+        technology = list(technology)
+
+    df_all = pd.DataFrame()
+    for i, scenario in enumerate(os.listdir(grid_path / "potential")):
+        scenario_path = grid_path / "potential" / scenario
+        df_diff = pd.DataFrame()
+        for objective in os.listdir(scenario_path):
+            if "power" not in objective:
+                continue
+            file_path = scenario_path / objective / "concat"
+            if len(os.listdir(file_path)) == 0:
+                continue
+            files_in_path = get_files_in_subdirs(
+                path=file_path, pattern="*.csv"
+            )
+
+            # filter for keyword
+            keyword_files = [
+                i
+                for i in files_in_path
+                if keyword in i and "slack_initial" not in i
+            ]
+            ts = pd.Series(index=timeframe, data=0, dtype=float)
+            for tech in technology:
+
+                # filter for technology
+                file = [i for i in keyword_files if tech in i]
+                df = pd.read_csv(file[0], index_col=0, parse_dates=True)
+
+                if "ev" in tech:
+                    ts = ts + df.loc[timeframe].sum(axis=1)
+                elif "hp" in tech:
+                    ts = ts + df.loc[timeframe].sum(axis=1)
+                else:
+                    raise KeyError
+
+            df_diff = pd.concat([df_diff, ts], axis=1)
+        df_diff = df_diff.diff(axis=1)
+        df_diff = df_diff.iloc[:, -1].rename(scenario)
+        df_all = pd.concat([df_all, df_diff], axis=1)
+
+    df_all = df_all.loc[:, df_all.mean().sort_values().index]
+    return df_all
+
+
+def plot_power_potenital(grid_path, timeframe, technology=["hp", "ev"]):
+    df_diff = get_power_diff(grid_path, technology)
+
+    # Create a list of colors with decreasing brightness
+    num_traces = len(df_all.columns) + 1
+    colors = [f"rgb({i}, {i}, {255})" for i in np.linspace(0, 200, num_traces)]
+    # colors.reverse()
+
+    fig = go.Figure()
+
+    # import opimized grid
+    edisgo_obj = import_edisgo_from_files(
+        potential_path.parent / "minimize_loading" / "mvgd",
+        import_topology=True,
+        import_timeseries=False,
+        import_heat_pump=True,
+        import_electromobility=True,
+    )
+
+    for i, (scn, data) in enumerate(df_diff.items()):
+        fig.add_trace(
+            go.Scatter(
+                mode="lines",
+                #             opacity=0.3,
+                #             fill='tozeroy',
+                fill="tonexty",
+                #             fill=None if i == 0 else "tonexty",
+                name=scn,
+                x=timeframe,
+                y=data,
+                line=dict(color=colors[i + 1]),
+                #             showlegend=True if not subplot else False,
+                #             showlegend=True if legend == 0 else False,
+                #             legendgroup=scenario,
+            )
+        )
+
+    upper_limit = pd.Series(index=timeframe, data=0, dtype=float)
+    lower_limit = pd.Series(index=timeframe, data=0, dtype=float)
+    if "ev" in technology:
+        upper_limit += (
+            edisgo_obj.electromobility.flexibility_bands["upper_power"]
+            .loc[timeframe]
+            .sum(axis=1)
+        )
+
+    if "hp" in technology:
+        hp_p_set = edisgo_obj.topology.loads_df.groupby("type")["p_set"].sum()[
+            "heat_pump"
+        ]
+        hp_p_set = len(timeframe) * [hp_p_set]
+        upper_limit += hp_p_set
+
+    fig.add_trace(
+        go.Scatter(
+            mode="lines",
+            name="upper limit",
+            x=timeframe,
+            y=upper_limit,
+            line=dict(color="#16BDBF"),
+        )
+    )
+
+    fig.update_layout(
+        width=1000,
+        height=500,
+        # height=2000,
+        margin=dict(t=30, b=30, l=30, r=30),
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=1.1,
+            xanchor="center",
+            x=0.5,
+            itemsizing="constant",
+        ),
+    )
+
+    fig.update_yaxes(title_text="Power in MW")
+    fig.update_yaxes(
+        title_font=dict(size=16),
+        titlefont=dict(size=18),
+        tickfont=dict(size=16),
+    )
+    fig.update_xaxes(
+        title_font=dict(size=16),
+        titlefont=dict(size=18),
+        tickfont=dict(size=16),
+    )
+    fig.show()
+    return fig
