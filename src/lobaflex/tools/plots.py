@@ -1312,7 +1312,7 @@ def get_power_diff(grid_path, timeframe, technology=["hp", "ev"]):
     return df_all
 
 
-def plot_power_potenital(grid_path, timeframe, technology=["hp", "ev"]):
+def plot_power_potential(grid_path, timeframe, technology=["hp", "ev"]):
     df_diff = get_power_diff(grid_path, timeframe, technology)
 
     # Create a list of colors with decreasing brightness
