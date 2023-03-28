@@ -569,8 +569,9 @@ def plot_scenario_potential(
         "40_pct_reinforced",
         "20_pct_reinforced",
         "minimize_loading",
+        "reference", 
     ]
-    scenarios.reverse()
+#    scenarios.reverse()
 
     # Define the base color and the number of traces
     base_color = "rgb(0, 0, 255)"
@@ -620,11 +621,7 @@ def plot_scenario_potential(
     #     )
     # )
 
-    for legend, objective in enumerate(objectives):
 
-        # add max power per scenario
-        for i, scenario in enumerate(scenarios):
-            scenario_path = potential_path / scenario / objective / "concat"
             if os.path.isdir(scenario_path):
                 files_in_path = get_files_in_subdirs(
                     path=scenario_path, pattern="*.csv"
@@ -652,13 +649,13 @@ def plot_scenario_potential(
                     go.Scatter(
                         mode="lines",
                         #             opacity=0.3,
-                        #             fill='tozeroy',
+                        fill='tozeroy',
                         #             fill="tonexty",
-                        fill=None if i == 0 else "tonexty",
+#                        fill=None if i == 0 else "tonexty",
                         name=scenario,
                         x=timeframe,
                         y=df,
-                        line=dict(color=colors[i + 1]),
+                        line=dict(color=colors[i + 1]),# dash=dash_dict.get(name, None)),
                         # showlegend=True if not subplot else False,
                         showlegend=True if legend == 0 else False,
                         legendgroup=scenario,
@@ -787,7 +784,8 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
         .sum(axis=1)
         .rename("ev_opt")
     )
-
+#    ev_optimized = ev_optimized + hp_optimized.values
+    hp_optimized = hp_optimized + ev_optimized.values
     # import reference grid
     edisgo_obj = import_edisgo_from_files(
         grid_path / "initial" / "mvgd",
@@ -807,17 +805,18 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
         .sum(axis=1)
         .rename("ev_reference")
     )
-
+#    ev_reference = ev_reference + hp_reference.values
+    hp_reference = hp_reference + ev_reference.values
     residual_load = edisgo_obj.timeseries.residual_load.loc[timeframe].rename(
         "residual_load"
     )
     df = pd.concat(
         [
             residual_load,
-            hp_optimized,
-            hp_reference,
             ev_optimized,
+            hp_optimized,
             ev_reference,
+            hp_reference,
         ],
         axis=1,
     )
@@ -831,13 +830,14 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
     # }
 
     filldict = {
-        "hp_opt": "tozeroy",
-        "hp_reference": "tonexty",
-        "ev_opt": "tozeroy",
-        "ev_reference": "tonexty",
-        "residual_load": "tozeroy",
+#        "hp_opt": "tozeroy",
+        "hp_opt": "tonexty",
+#        "hp_reference": "tonexty",
+#        "ev_opt": "tozeroy",
+        "ev_opt": "tonexty",
+#        "ev_reference": "tonexty",
+#        "residual_load": "tozeroy",
     }
-
     patterndict = {
         "hp_opt": None,
         "hp_reference": "/",
@@ -845,6 +845,21 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
         "ev_reference": "/",
         "residual_load": None,
     }
+    stacked_dict = {
+        "hp_opt": "opt",
+        "hp_reference": "ref",
+        "ev_opt": "opt",
+        "ev_reference": "ref",
+        "residual_load": "res",
+    }
+    dash_dict= {
+        "hp_opt": None,
+#        "hp_reference": "dot",
+        "ev_opt": None,
+#        "ev_reference": "dot",
+        "residual_load": None,
+    }
+
 
     dashdict = {
         "hp_opt": None,
@@ -861,12 +876,12 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
         fig.add_trace(
             go.Scatter(
                 mode="lines",
-                line=dict(color=colors_dict[name], dash=dashdict[name]),
+                line=dict(color=colors_dict.get(name,None), dash=dash_dict.get(name, None)),
                 # fill= "tozeroy" if name == "residual_load" else None,
-                fill=filldict[name],
-                #             opacity=0.3,
-                fillpattern=dict(shape=patterndict[name]),
-                # stackgroup=patterndict[name],
+                fill=filldict.get(name, None),
+#                opacity=0.3,
+                fillpattern=dict(shape=patterndict.get(name, None)),
+#                stackgroup=stacked_dict.get(name, None),
                 name=name,
                 x=timeframe,
                 y=ts,
@@ -896,9 +911,12 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
     fig.update_layout(
         width=1000,
         height=600,
+#        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
         yaxis_title="MW",
         xaxis_title="timesteps",
         showlegend=True,
+        legend=dict(orientation='h', yanchor='top', y=1.1, xanchor='center', x=0.5, itemsizing='constant'),
         yaxis=dict(
             title="Load Power in MW",
             zeroline=True,
@@ -920,8 +938,7 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
         ),
     )
 
-    fig.show()
-
+    return fig
 
 def plot_flex_capacities(edisgo_obj):
     """
@@ -1151,70 +1168,4 @@ def get_all_reinforcement_measures(grid_path):
     df_costs = []
     scenarios = []
     for edisgo_path in edisgo_paths:
-        try:
-            edisgo_obj = import_edisgo_from_files(
-                edisgo_path,
-                import_topology=False,
-                import_timeseries=False,
-                import_heat_pump=False,
-                import_electromobility=False,
-                import_results=True,
-            )
-        except:
-            continue
-
-        #     costs += edisgo_obj.results.grid_expansion_costs['total_costs'].sum()
-        costs = pd.concat(
-            [
-                edisgo_obj.results.grid_expansion_costs.groupby(
-                    "voltage_level"
-                )["quantity"]
-                .sum()
-                .to_frame(),
-                edisgo_obj.results.grid_expansion_costs.groupby(
-                    "voltage_level"
-                )["total_costs"]
-                .sum()
-                .to_frame(),
-            ],
-            axis=1,
-        )  # .T.stack().round()
-
-        df_costs += [
-            pd.concat(
-                [
-                    costs,
-                    pd.Series(
-                        [
-                            edisgo_obj.results.grid_expansion_costs[
-                                "quantity"
-                            ].sum(),
-                            edisgo_obj.results.grid_expansion_costs[
-                                "total_costs"
-                            ].sum(),
-                        ],
-                        index=["quantity", "total_costs"],
-                        name="all",
-                    )
-                    .to_frame()
-                    .T,
-                ]
-            )
-            .T.astype(int)
-            .T
-        ]
-        scenarios += [edisgo_path.parent.name]
-    df = pd.concat(df_costs, keys=scenarios).sort_index().T
-    #     print(f"{edisgo_path.parent.name}: {costs/1e3:.2f} Mio €")
-
-    order = [
-        "minimize_loading",
-        "reference",
-        "20_pct_reinforced",
-        "40_pct_reinforced",
-        "60_pct_reinforced",
-        "80_pct_reinforced",
-        "100_pct_reinforced",
-    ]
-
-    return df.T.loc[order]
+return df.T.loc[order]
