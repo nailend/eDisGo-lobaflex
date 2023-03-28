@@ -950,6 +950,9 @@ def plot_compare_optimization_to_reference(grid_path, timeframe):
         ),
     )
 
+    fig.update_yaxes(title_font=dict(size=16), titlefont=dict(size=18),tickfont=dict(size=16))
+    fig.update_xaxes(title_font=dict(size=16), titlefont=dict(size=18),tickfont=dict(size=16))
+    fig.show()
     return fig
 
 
