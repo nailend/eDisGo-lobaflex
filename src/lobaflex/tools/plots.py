@@ -542,6 +542,7 @@ def plot_optimized_dispatch(edisgo_obj, timeframe, title=None):
     )
 
     fig.show()
+    return fig
 
 
 def plot_scenario_potential(
@@ -1071,6 +1072,7 @@ def plot_flex_capacities(edisgo_obj):
         yaxis4=dict(title="kWh", overlaying="y3", side="right"),
     )
     fig.show()
+    return fig
 
 
 def identify_cop_bug(results_path, edisgo_obj, timeframe):
@@ -1261,9 +1263,8 @@ def get_all_reinforcement_measures(grid_path):
     return df.T.loc[order]
 
 
-def get_power_diff(grid_path, technology):
-    # technology=["hp", "ev"]
-    # if True:
+def get_power_diff(grid_path, timeframe, technology=["hp", "ev"]):
+
     keyword = "charging"
     if type(technology) is not list():
         technology = list(technology)
@@ -1312,10 +1313,10 @@ def get_power_diff(grid_path, technology):
 
 
 def plot_power_potenital(grid_path, timeframe, technology=["hp", "ev"]):
-    df_diff = get_power_diff(grid_path, technology)
+    df_diff = get_power_diff(grid_path, timeframe, technology)
 
     # Create a list of colors with decreasing brightness
-    num_traces = len(df_all.columns) + 1
+    num_traces = len(df_diff.columns) + 1
     colors = [f"rgb({i}, {i}, {255})" for i in np.linspace(0, 200, num_traces)]
     # colors.reverse()
 
@@ -1323,7 +1324,7 @@ def plot_power_potenital(grid_path, timeframe, technology=["hp", "ev"]):
 
     # import opimized grid
     edisgo_obj = import_edisgo_from_files(
-        potential_path.parent / "minimize_loading" / "mvgd",
+        grid_path / "minimize_loading" / "mvgd",
         import_topology=True,
         import_timeseries=False,
         import_heat_pump=True,
@@ -1349,7 +1350,6 @@ def plot_power_potenital(grid_path, timeframe, technology=["hp", "ev"]):
         )
 
     upper_limit = pd.Series(index=timeframe, data=0, dtype=float)
-    lower_limit = pd.Series(index=timeframe, data=0, dtype=float)
     if "ev" in technology:
         upper_limit += (
             edisgo_obj.electromobility.flexibility_bands["upper_power"]
