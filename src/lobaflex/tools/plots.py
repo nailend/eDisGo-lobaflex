@@ -1207,17 +1207,18 @@ def get_all_reinforcement_measures(grid_path):
     df_costs = []
     scenarios = []
     for edisgo_path in edisgo_paths:
-        try:
-            edisgo_obj = import_edisgo_from_files(
-                edisgo_path,
-                import_topology=False,
-                import_timeseries=False,
-                import_heat_pump=False,
-                import_electromobility=False,
-                import_results=True,
-            )
-        except:
+        if not os.path.isdir(edisgo_path):
             continue
+        if len(os.listdir(edisgo_path)) == 0:
+            continue
+        edisgo_obj = import_edisgo_from_files(
+               edisgo_path,
+               import_topology=False,
+               import_timeseries=False,
+               import_heat_pump=False,
+               import_electromobility=False,
+               import_results=True,
+           )
 
         #     costs += edisgo_obj.results.grid_expansion_costs['total_costs'].sum()
         costs = pd.concat(
@@ -1273,8 +1274,8 @@ def get_all_reinforcement_measures(grid_path):
         "100_pct_reinforced",
     ]
 
-    return df.T.loc[order]
-
+#    return df.T.loc[order]
+    return df.T
 
 def get_power_diff(grid_path, timeframe, technology=["hp", "ev"]):
 
@@ -1282,10 +1283,10 @@ def get_power_diff(grid_path, timeframe, technology=["hp", "ev"]):
     if type(technology) is not list():
         technology = list(technology)
 
-    df_all = pd.DataFrame()
+    df_all = pd.DataFrame(index=timeframe)
     for i, scenario in enumerate(os.listdir(grid_path / "potential")):
         scenario_path = grid_path / "potential" / scenario
-        df_diff = pd.DataFrame()
+        df_diff = pd.DataFrame(index=timeframe)
         for objective in os.listdir(scenario_path):
             if "power" not in objective:
                 continue
@@ -1308,7 +1309,7 @@ def get_power_diff(grid_path, timeframe, technology=["hp", "ev"]):
                 # filter for technology
                 file = [i for i in keyword_files if tech in i]
                 df = pd.read_csv(file[0], index_col=0, parse_dates=True)
-
+                
                 if "ev" in tech:
                     ts = ts + df.loc[timeframe].sum(axis=1)
                 elif "hp" in tech:
@@ -1322,6 +1323,7 @@ def get_power_diff(grid_path, timeframe, technology=["hp", "ev"]):
         df_all = pd.concat([df_all, df_diff], axis=1)
 
     df_all = df_all.loc[:, df_all.mean().sort_values().index]
+#    df_all = df_all.loc[:, df_all]
     return df_all
 
 
@@ -1331,6 +1333,8 @@ def plot_power_potential(grid_path, timeframe, technology=["hp", "ev"]):
     # Create a list of colors with decreasing brightness
     num_traces = len(df_diff.columns) + 1
     colors = [f"rgb({i}, {i}, {255})" for i in np.linspace(0, 200, num_traces)]
+    colors = px.colors.sample_colorscale(px.colors.sequential.Cividis,
+                                           samplepoints=pd.Series(range(7))/7) 
     # colors.reverse()
 
     fig = go.Figure()
@@ -1355,7 +1359,8 @@ def plot_power_potential(grid_path, timeframe, technology=["hp", "ev"]):
                 name=scn,
                 x=timeframe,
                 y=data,
-                line=dict(color=colors[i + 1]),
+                line=dict(color=colors_dict.get(scn, None)),
+                #line=dict(color=colors[i]),
                 #             showlegend=True if not subplot else False,
                 #             showlegend=True if legend == 0 else False,
                 #             legendgroup=scenario,
@@ -1390,6 +1395,7 @@ def plot_power_potential(grid_path, timeframe, technology=["hp", "ev"]):
     fig.update_layout(
         width=1000,
         height=500,
+        plot_bgcolor="rgba(0,0,0,0)",
         # height=2000,
         margin=dict(t=30, b=30, l=30, r=30),
         showlegend=True,
@@ -1401,6 +1407,11 @@ def plot_power_potential(grid_path, timeframe, technology=["hp", "ev"]):
             x=0.5,
             itemsizing="constant",
         ),
+        xaxis=dict(
+            showgrid=True,
+            gridcolor='rgb(211, 211, 211)',
+            gridwidth=1
+            ),
     )
 
     fig.update_yaxes(title_text="Power in MW")
