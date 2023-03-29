@@ -8,7 +8,7 @@ import plotly.io as pio
 
 from edisgo.edisgo import import_edisgo_from_files
 from plotly.subplots import make_subplots
-
+import plotly.express as px
 from lobaflex.tools.tools import get_files_in_subdirs
 
 # comment to make plots interactive
@@ -38,8 +38,21 @@ colors_dict = {
     "biomass": "#2ca02c",
     "hydropower": "#4a19e5",
     "wind": "#73baec",
-}
-
+#    "minimize_loading": "#1f77b4",   # a dark blue color
+#    "reference": "#ff7f0e",          # a bright orange color
+#    "20_pct_reinforced": "#2ca02c",  # a deep green color
+#    "40_pct_reinforced": "#d62728",  # a bright red color
+#    "60_pct_reinforced": "#9467bd",  # a muted purple color
+#    "80_pct_reinforced": "#8c564b",  # a brownish color
+#    "100_pct_reinforced": "#e377c2"  # a pinkish color
+    'reference': '#ec563c',
+    'minimize_loading': 'rgb(0, 34, 78)',
+    '20_pct_reinforced': 'rgb(30, 59, 111)',
+    '40_pct_reinforced': 'rgb(75, 84, 109)',
+    '60_pct_reinforced': 'rgb(108, 110, 114)',
+    '80_pct_reinforced': 'rgb(142, 137, 119)',
+    '100_pct_reinforced': 'rgb(178, 166, 111)',
+    }
 
 def custom_round(x, base=0.001):
     """
