@@ -651,6 +651,7 @@ def plot_scenario_potential(
                 ]
 
                 file = [i for i in keyword_files if technology in i]
+                
                 if len(file) == 0:
                     continue
                 file = file[0]
@@ -659,7 +660,7 @@ def plot_scenario_potential(
                 df = df.sum(axis=1).rename(f"{keyword} {attr} [MW]")
                 df = df.loc[timeframe]
 
-                # if "energy" in keyword and technology == "ev":
+                #if "energy" in keyword and technology == "ev":
                 #     df = df - df.iloc[0]
 
                 fig.add_trace(
@@ -672,7 +673,8 @@ def plot_scenario_potential(
                         name=scenario,
                         x=timeframe,
                         y=df,
-                        line=dict(color=colors[i + 1]),
+#                        line=dict(color=colors[i + 1]),
+                        line=dict(color=colors_dict[scenario]),
                         # showlegend=True if not subplot else False,
                         showlegend=True if legend == 0 else False,
                         legendgroup=scenario,
@@ -683,7 +685,7 @@ def plot_scenario_potential(
 
     upper_limit = None
     lower_limit = None
-    if technology == "ev":
+    if "ev" in technology:
         if "charging" in keyword:
             upper_limit = (
                 edisgo_obj.electromobility.flexibility_bands["upper_power"]
@@ -703,13 +705,13 @@ def plot_scenario_potential(
                 .sum(axis=1)
             )
 
-    elif technology == "hp_el":
+    elif "hp" in technology:
         upper_limit = edisgo_obj.topology.loads_df.groupby("type")[
             "p_set"
         ].sum()["heat_pump"]
         upper_limit = len(timeframe) * [upper_limit]
 
-    elif technology == "tes":
+    elif "tes" in technology:
         upper_limit = edisgo_obj.heat_pump.thermal_storage_units_df.loc[
             :, "capacity"
         ].sum()
@@ -752,7 +754,7 @@ def plot_scenario_potential(
     fig.update_yaxes(title_text=ylabel)
 
     fig.show()
-
+    return fig
 
 def plot_compare_optimization_to_reference(grid_path, timeframe):
     """
@@ -1183,7 +1185,7 @@ def identify_cop_bug(results_path, edisgo_obj, timeframe):
         ),
     )
     fig.show()
-
+    return fig
 
 def get_all_reinforcement_measures(grid_path):
     """
@@ -1400,6 +1402,7 @@ def plot_power_potential(grid_path, timeframe, technology=["hp", "ev"]):
         margin=dict(t=30, b=30, l=30, r=30),
         showlegend=True,
         legend=dict(
+            font = dict(size = 14, color = "black"),
             orientation="h",
             yanchor="top",
             y=1.1,
