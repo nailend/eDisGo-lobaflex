@@ -4,19 +4,18 @@ import shutil
 
 from datetime import datetime
 
-
 from lobaflex import config_dir, data_dir, logs_dir, results_dir
+from lobaflex.analysis.grid_analysis import create_grids_notebook
 from lobaflex.opt.dispatch_integration import integrate_dispatch
 from lobaflex.opt.dispatch_optimization import run_dispatch_optimization
+from lobaflex.opt.expansion_scenario import run_expansion_scenario
 from lobaflex.opt.feeder_extraction import run_feeder_extraction
 from lobaflex.opt.grid_reinforcement import reinforce_grid
 from lobaflex.opt.result_concatination import save_concatenated_results
 from lobaflex.opt.timeframe_selection import run_timeframe_selection
-from lobaflex.opt.expansion_scenario import run_expansion_scenario
 from lobaflex.tools.logger import setup_logging
 from lobaflex.tools.pydoit import opt_uptodate
 from lobaflex.tools.tools import get_config
-from lobaflex.analysis.grid_analysis import create_grids_notebook
 
 logger = logging.getLogger("lobaflex.opt." + __name__)
 date = datetime.now().date().isoformat()
@@ -25,10 +24,8 @@ logfile = logs_dir / f"opt_tasks_{date}.log"
 setup_logging(file_name=logfile)
 
 
-def timeframe_selection_task(mvgd, run_id, version_db):
+def timeframe_selection_task(mvgd, import_path, run_id, version_db):
     """"""
-    import_dir = cfg_o["import_dir"]
-    import_path = data_dir / import_dir / str(mvgd)
     fix = cfg_o["fix_preparation"]
 
     return {
@@ -66,6 +63,7 @@ def feeder_extraction_task(mvgd, objective, source, run_id, version_db, dep):
                 {  # kwargs
                     "obj_or_path": import_path,
                     "grid_id": mvgd,
+                    "objective": objective,
                     "export_path": export_path,
                     "version_db": version_db,
                     "run_id": run_id,
@@ -108,7 +106,14 @@ def feeder_extraction_task(mvgd, objective, source, run_id, version_db, dep):
 
 
 def optimization_task(
-    mvgd, feeder, objective, directory, run_id, version_db, dep
+    mvgd,
+    feeder,
+    objective,
+    rolling_horizon,
+    directory,
+    run_id,
+    version_db,
+    dep,
 ):
     """Generator to define optimization task for a feeder"""
 
@@ -132,6 +137,8 @@ def optimization_task(
                     "grid_id": mvgd,
                     "feeder_id": feeder,
                     "objective": objective,
+                    "meta": directory.parent.name,
+                    "rolling_horizon": rolling_horizon,
                     "version_db": version_db,
                     "run_id": run_id,
                 },
@@ -144,13 +151,15 @@ def optimization_task(
     }
 
 
-def result_concatenation_task(mvgd, objective, directory, run_id, version_db,
-                              dep):
+def result_concatenation_task(
+    mvgd, objective, directory, run_id, version_db, dep
+):
     """"""
 
-    def teardown(path):
-        logging.info("Remove intermediate results")
-        shutil.rmtree(path)
+    # TODO
+    # def teardown(path):
+    #     logging.info("Remove intermediate results")
+    #     shutil.rmtree(path)
 
     path = results_dir / run_id / str(mvgd) / directory / objective / "results"
 
@@ -168,6 +177,7 @@ def result_concatenation_task(mvgd, objective, directory, run_id, version_db,
                 {
                     "grid_id": mvgd,
                     "path": path,
+                    "objective": objective,
                     "run_id": run_id,
                     "version_db": version_db,
                 },
@@ -197,6 +207,7 @@ def dispatch_integration_task(mvgd, objective, run_id, version_db, dep):
                     "obj_or_path": obj_path,
                     "import_path": import_path,
                     "grid_id": mvgd,
+                    "objective": objective,
                     "run_id": run_id,
                     "version_db": version_db,
                 },
@@ -212,7 +223,11 @@ def dispatch_integration_task(mvgd, objective, run_id, version_db, dep):
 
 def grid_reinforcement_task(mvgd, objective, run_id, version_db, dep):
     """"""
-    obj_path = results_dir / run_id / str(mvgd) / objective / "mvgd"
+    if objective == "reference":
+        obj_path = results_dir / run_id / str(mvgd) / "initial" / "mvgd"
+
+    else:
+        obj_path = results_dir / run_id / str(mvgd) / objective / "mvgd"
 
     return {
         "name": f"reinforce_{mvgd}",
@@ -237,11 +252,12 @@ def grid_reinforcement_task(mvgd, objective, run_id, version_db, dep):
     }
 
 
-def expansion_scenario_task(mvgd, percentage, run_id, version_db, dep):
+def expansion_scenario_task(mvgd, percentage, source, run_id, version_db, dep):
     """"""
-    obj_path = (
-            results_dir / run_id / str(mvgd) / "minimize_loading" / "reinforced"
-    )
+    # obj_path = (
+    #     results_dir / run_id / str(mvgd) / "minimize_loading" / "reinforced"
+    # )
+    obj_path = results_dir / run_id / str(mvgd) / source
 
     return {
         "name": f"{percentage}_pct_reinforced_{mvgd}",
@@ -252,7 +268,7 @@ def expansion_scenario_task(mvgd, percentage, run_id, version_db, dep):
                 {
                     "obj_or_path": obj_path,
                     "grid_id": mvgd,
-                    "percentage": percentage/100,
+                    "percentage": percentage / 100,
                     "run_id": run_id,
                     "version_db": version_db,
                 },
@@ -266,7 +282,7 @@ def expansion_scenario_task(mvgd, percentage, run_id, version_db, dep):
     }
 
 
-def papermill_task(mvgd, template, import_dir, run_id, version_db, dep):
+def papermill_task(mvgd, name, template, period, run_id, version_db, dep):
     """"""
 
     task_name = template.rstrip(".ipynb")
@@ -279,11 +295,15 @@ def papermill_task(mvgd, template, import_dir, run_id, version_db, dep):
                 [],
                 {
                     "template": template,
+                    "period": period,
                     "grid_id": mvgd,
-                    "import_dir": str(import_dir),
+                    "name": name,
+                    # "import_dir": str(import_dir),
                     "run_id": run_id,
                     "version_db": version_db,
-                    "kernel_name": os.path.basename(os.environ.get('VIRTUAL_ENV')),
+                    "kernel_name": os.path.basename(
+                        os.environ.get("VIRTUAL_ENV")
+                    ),
                 },
             )
         ],
@@ -292,6 +312,17 @@ def papermill_task(mvgd, template, import_dir, run_id, version_db, dep):
         # results if not all opt succeeded
         "task_dep": dep,
         "uptodate": [opt_uptodate],
+    }
+
+
+def trust_ipynb(mvgd, run_id, template, dep):
+    """"""
+    filename = f"{template.rstrip('.ipynb')}_{mvgd}.ipynb"
+    filepath = results_dir / run_id / str(mvgd) / "analysis" / filename
+    return {
+        "name": f"trust_{filename}",
+        "actions": [f"jupyter trust {filepath}"],
+        "task_dep": [dep],
     }
 
 

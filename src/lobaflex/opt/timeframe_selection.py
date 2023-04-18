@@ -1,4 +1,5 @@
 import logging
+import os
 import warnings
 
 from datetime import datetime
@@ -19,16 +20,16 @@ else:
 
 
 def determine_observation_periods(
-    edisgo_obj, window_days, idx="min", var=False
+    edisgo_obj, window_days, idx="min", absolute=False
 ):
-    if var:
-        residual_load = edisgo_obj.timeseries.residual_load.resample("D").var()
-        residual_load = residual_load.rolling(window=window_days).var()
+    if absolute:
+        residual_load = edisgo_obj.timeseries.residual_load.abs()
     else:
-        residual_load = edisgo_obj.timeseries.residual_load.resample(
-            "D"
-        ).mean()
-        residual_load = residual_load.rolling(window=window_days).mean()
+        residual_load = edisgo_obj.timeseries.residual_load
+    residual_load = residual_load.rolling(
+        window=window_days * 24, closed="both"
+    ).mean()
+    residual_load = residual_load.loc[::24]
 
     if idx == "min":
         timestep = residual_load.idxmin()
@@ -57,7 +58,7 @@ def extract_timeframe(
     hp=True,
 ):
     """Extracts a given time frame from the edisgo object for all time series
-    which are defined in the edisgo object and flaged.
+    which are defined in the edisgo object and flagged.
 
     Parameters
     ----------
@@ -91,11 +92,16 @@ def extract_timeframe(
             start=start_datetime, periods=periods, freq=freq
         )
 
+    timeframe = timeframe.sort_values()
+    if timeframe.duplicated().any():
+        raise ValueError("There are duplicated timeindex!")
+
     if not (timeframe.isin(edisgo_obj.timeseries.timeindex)).all():
         # logger.exception()
         raise ValueError(
             "Edisgo object does not contain all the given timeindex"
         )
+
     # adapt timeseries
     if ts:
         attributes = TimeSeries()._attributes
@@ -124,10 +130,10 @@ def extract_timeframe(
                     getattr(edisgo_obj.heat_pump, attr).loc[timeframe],
                 )
 
-    logger.info(
-        f"Timeseries taken: {timeframe[0]} -> "
-        f"{timeframe[-1]} including {periods} timesteps."
-    )
+    # logger.info(
+    #     f"Timeseries taken: {timeframe[0]} -> "
+    #     f"{timeframe[-1]} including {periods} timesteps."
+    # )
     return edisgo_obj
 
 
@@ -167,7 +173,7 @@ def run_timeframe_selection(
     cfg_o = get_config(path=config_dir / ".opt.yaml")
 
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"opt_{run_id}_{grid_id}_{date}.log"
+    logfile = logs_dir / f"{run_id}_observation_period_{grid_id}_{date}.log"
     setup_logging(file_name=logfile)
 
     logger.info(
@@ -188,20 +194,53 @@ def run_timeframe_selection(
             import_electromobility=True,
         )
 
-    export_path = results_dir / run_id / str(grid_id) / "reference" / "mvgd"
+    export_path = results_dir / run_id / str(grid_id) / "initial" / "mvgd"
+    os.makedirs(export_path, exist_ok=True)
 
-    timeframe = determine_observation_periods(
-        edisgo_obj, window_days=7, idx="max", var=True
-    )
+    if grid_id in [2534, 177, 1056, 176, 1690, 1811]:
+        # timeframe for load intensive areas
+        # max residual load
+        if int(grid_id) in [2534, 177]:
+            timeframe = determine_observation_periods(
+                edisgo_obj, window_days=7, idx="max", absolute=False
+            )
 
-    logger.info("Extract timeframe")
-    edisgo_obj = extract_timeframe(
-        edisgo_obj,
-        timeframe=timeframe,
-        # start_datetime=cfg_o["start_datetime"],
-        # periods=cfg_o["total_timesteps"],
-        # freq="1h",
-    )
+        # timeframe for pv or wind intensive areas
+        # min residual load
+        elif int(grid_id) in [1056, 176, 1690, 1811]:
+
+            timeframe = determine_observation_periods(
+                edisgo_obj, window_days=7, idx="min", absolute=False
+            )
+
+        else:
+            raise NotImplementedError
+
+        # timeframe for potential analysis
+        # min absolute residual load
+        timeframe = timeframe.append(
+            determine_observation_periods(
+                edisgo_obj, window_days=7, idx="min", absolute=True
+            )
+        )
+        timeframe = timeframe.sort_values()
+
+        if any(timeframe.duplicated()):
+            raise ValueError("There is a duplicated timeindex!")
+
+        logger.info("Extract timeframe")
+        edisgo_obj = extract_timeframe(
+            edisgo_obj,
+            timeframe=timeframe,
+            # start_datetime=cfg_o["start_datetime"],
+            # periods=cfg_o["total_timesteps"],
+            # freq="1h",
+        )
+    else:
+        logger.warning(
+            "You are in experimental mode. Timeframe selection is "
+            f"not defined for grid id: {grid_id}"
+        )
 
     logger.info(f"Save reduced grid to {export_path}")
     edisgo_obj.save(

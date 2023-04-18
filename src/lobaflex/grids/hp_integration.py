@@ -43,11 +43,12 @@ def get_hps_mvgd(penetration, residentials_mvgd):
         elif penetration == "NEP2035":
 
             number_of_hps_germany = 7 * 1e6
-            number_of_residential_buildings_germany_2035 = 42 * 1e6
-
+            # TODO Gebäudebestand 2021 20Mio
+            # number_of_residential_buildings_germany_2035 = 42 * 1e6
+            number_of_residential_buildings_germany_2021 = 19375911
             penetration = (
                 number_of_hps_germany
-                / number_of_residential_buildings_germany_2035
+                / number_of_residential_buildings_germany_2021
             )
             number_of_hps_mvgd = int(residentials_mvgd * penetration)
 
@@ -91,7 +92,7 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
     # Overhead of profiles is needed as only profiles in range 8-20MWh are
     # selected.
     if penetration == "NEP2035":
-        overhead_factor = 1
+        overhead_factor = 2
     elif penetration < 0.3:
         overhead_factor = 1
     elif penetration < 0.7:
@@ -114,7 +115,7 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
         values="demand_ts",
     )
     heat_demand_df = heat_demand_df.sort_index().reset_index(drop=True)
-
+    check_nans(heat_demand_df)
     # define number of hp in the grid
     number_of_hps_mvgd = get_hps_mvgd(
         penetration=penetration, residentials_mvgd=residential_loads.shape[0]
@@ -183,8 +184,22 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
     logger.info(f"Heat pump time series cut adapted to year {year}")
 
     # Minimum hp capacity is determined by peak load
-    logger.info("Determine minimum hp capacity by peak load")
-    hp_p_set = determine_minimum_hp_capacity_per_building(heat_demand_df.max())
+    # logger.info("Determine minimum hp capacity by peak load")
+    # hp_p_set = determine_minimum_hp_capacity_per_building(heat_demand_df.max())
+    logger.info(
+        "Determine minimum hp capacity by peak load and respective COP"
+    )
+    # identify cop value at timestep with max heat demand
+    max_peak_id_per_hp = list(
+        zip(
+            heat_demand_df.columns,
+            heat_demand_df.idxmax().values,
+        )
+    )
+    max_peak_cop = cop_df.T.stack().loc[max_peak_id_per_hp]
+    hp_p_set = determine_minimum_hp_capacity_per_building(
+        heat_demand_df.max(), cop=max_peak_cop.values
+    )
     # round to next kW
     hp_stepsize = 0.001
     logger.info(
@@ -205,7 +220,7 @@ def create_heatpumps_from_db(edisgo_obj, penetration=None):
     tes_size = cfg_g["hp_integration"].get("tes_size", 4)
     logger.info(
         f"Storage size will cover the heat demand of {tes_size} "
-        f"highest consecutive days."
+        f"highest consecutive hours."
     )
     tes_capacity = heat_demand_df.rolling(window=tes_size).sum().max()
 

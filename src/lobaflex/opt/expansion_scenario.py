@@ -2,9 +2,11 @@ import logging
 import os
 import warnings
 
-from datetime import datetime
 from copy import deepcopy
+from datetime import datetime
+
 from edisgo.edisgo import EDisGo, import_edisgo_from_files
+from edisgo.flex_opt.reinforce_grid import enhanced_reinforce_wrapper
 
 from lobaflex import logs_dir, results_dir
 from lobaflex.opt.grid_reinforcement import iterative_reinforce
@@ -19,7 +21,7 @@ else:
 
 @log_errors
 def run_expansion_scenario(
-    obj_or_path, grid_id=None, percentage=None, run_id=None, version_db=None
+    obj_or_path, grid_id, percentage, run_id=None, version_db=None
 ):
     """
 
@@ -40,6 +42,7 @@ def run_expansion_scenario(
     -------
 
     """
+
     # Log to pipeline log file
     logger.info(
         f"Run expansion pathway for {percentage:.0%} scenario of {grid_id} "
@@ -49,8 +52,7 @@ def run_expansion_scenario(
 
     date = datetime.now().date().isoformat()
     logfile = (
-        logs_dir
-        / f"opt_{int(percentage) * 100}_pct_expansion_{run_id}_{date}.log"
+        logs_dir / f"{run_id}_{int(percentage) * 100}_pct_expansion_{date}.log"
     )
     setup_logging(file_name=logfile)
 
@@ -69,6 +71,12 @@ def run_expansion_scenario(
             import_timeseries=True,
             import_electromobility=True,
             import_heat_pump=True,
+            import_results=True,
+        )
+
+        # n-1 criterion deactivated
+        edisgo_obj.config["grid_expansion_load_factors"].update(
+            {"mv_load_case_transformer": 1, "mv_load_case_line": 1}
         )
 
     export_path = (
@@ -95,12 +103,20 @@ def run_expansion_scenario(
 
     edisgo_obj.set_time_series_worst_case_analysis("load_case")
 
-    edisgo_obj = iterative_reinforce(
-        edisgo_obj,
-        timesteps=[edisgo_obj.timeseries.timeindex[0]],
-        mode="iterative",
-        iterations=5,
-        iteration_start=0.05,
+    # edisgo_obj = iterative_reinforce(
+    #     edisgo_obj,
+    #     timesteps=[edisgo_obj.timeseries.timeindex[0]],
+    #     mode="iterative",
+    #     iterations=5,
+    #     iteration_start=0.5,
+    # )
+    # edisgo_obj.reinforce(
+    #     timesteps_pfa=[edisgo_obj.timeseries.timeindex[0]],
+    #     catch_convergence_problems=True,
+    # )
+    edisgo_obj = enhanced_reinforce_wrapper(
+        edisgo_obj=edisgo_obj,
+        timesteps_pfa=[edisgo_obj.timeseries.timeindex[0]],
     )
 
     # Restore original timeseries
@@ -118,7 +134,7 @@ def run_expansion_scenario(
             "simbev_config_df",
             "flexibility_bands",
         ],
-        save_results=True
+        save_results=True,
     )
 
     if version_db is not None:

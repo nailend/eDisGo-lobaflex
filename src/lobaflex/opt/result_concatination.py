@@ -115,13 +115,18 @@ def concat_results(path, timeframe=None, parameters=None, fillna=None):
 
 
 @log_errors
-def save_concatenated_results(grid_id, path, run_id=None, version_db=None):
+def save_concatenated_results(
+    grid_id, path, objective=None, run_id=None, version_db=None
+):
     """Concatenate all results of one grid and save them to csv.
 
     Parameters
     ----------
     grid_id : int
     path : PosixPath
+    objective : str
+        Keyword after which the grid is reinforced. This is used for logging
+        purposes only
     run_id : str
         run id used for pydoit versioning
     version_db : dict
@@ -137,7 +142,10 @@ def save_concatenated_results(grid_id, path, run_id=None, version_db=None):
     logger.info(f"Run result concatenation of {grid_id}")
 
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"opt_concat_results_{run_id}_{grid_id}_{date}.log"
+    logfile = (
+        logs_dir / f"{run_id}_concat_results_{objective}_{grid_id}"
+        f"_{date}.log"
+    )
     setup_logging(file_name=logfile)
 
     logger.info("Start concatenating files")

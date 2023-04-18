@@ -122,6 +122,7 @@ def extract_feeders_parallel(
 def run_feeder_extraction(
     obj_or_path,
     grid_id,
+    objective=None,
     export_path=None,
     run_id=None,
     version_db=None
@@ -135,6 +136,8 @@ def run_feeder_extraction(
         edisgo object or path to edisgo dump
     grid_id : int or str
         grid id of MVGD
+    objective : str
+        Keyword after which the grid is reinforced. This is used for logging
     export_path : PosixPath or None
         Path to export feeders to, if non given feeders are not exported
     run_id : str
@@ -157,7 +160,10 @@ def run_feeder_extraction(
     cfg_flexible_loads = cfg_o["flexible_loads"]
 
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"feeder_extraction_{run_id}_{grid_id}_{date}.log"
+    logfile = (
+        logs_dir / f"{run_id}_feeder_extraction_{objective}_{grid_id}"
+        f"_{date}.log"
+    )
     setup_logging(file_name=logfile)
 
     if isinstance(obj_or_path, EDisGo):

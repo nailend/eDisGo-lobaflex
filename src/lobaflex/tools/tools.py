@@ -56,8 +56,14 @@ def get_config(path):
     """
     Returns the config.
     """
-    with open(path, encoding="utf8") as f:
-        return yaml.safe_load(f)
+    try:
+        with open(path, encoding="utf8") as f:
+             yaml_file = yaml.safe_load(f)
+    except FileNotFoundError:
+        split_model_config_in_subconfig()
+        with open(path, encoding="utf8") as f:
+             yaml_file = yaml.safe_load(f)
+    return yaml_file
 
 
 def split_model_config_in_subconfig():
@@ -278,7 +284,7 @@ class TelegramReporter(object):
                 self.status[task.name] = "fail"
 
             except KeyError:
-                self.telegram(text=f"Unmet dependency: {task.name}")
+                # self.telegram(text=f"Unmet dependency: {task.name}")
                 self.status[task.name] = "dependency"
             self.failures.append(result)
             self._write_failure(result)
@@ -394,6 +400,7 @@ class TelegramReporter(object):
         if self.runtime_errors:
             self.write("#" * 40 + "\n")
             self.write("Execution aborted.\n")
+            self.telegram(text="Execution aborted.")
             self.write("\n".join(self.runtime_errors))
             self.write("\n")
 

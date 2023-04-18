@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from edisgo.edisgo import EDisGo, import_edisgo_from_files
+from edisgo.flex_opt.reinforce_grid import enhanced_reinforce_wrapper
 
 from lobaflex import config_dir, logs_dir, results_dir
 from lobaflex.tools.logger import setup_logging
@@ -198,7 +199,10 @@ def reinforce_grid(
 
     date = datetime.now().date().isoformat()
 
-    logfile = logs_dir / f"opt_{objective}_reinforcement_{run_id}_{date}.log"
+    logfile = (
+        logs_dir / f"{run_id}_reinforcement_{objective}_{grid_id}"
+        f"_{date}.log"
+    )
     setup_logging(file_name=logfile)
 
     logger.info(
@@ -218,14 +222,22 @@ def reinforce_grid(
             import_heat_pump=True,
         )
 
+        # n-1 criterion deactivated
+        edisgo_obj.config["grid_expansion_load_factors"].update(
+            {"mv_load_case_transformer": 1, "mv_load_case_line": 1}
+        )
+
     export_path = (
         results_dir / run_id / str(grid_id) / objective / "reinforced"
     )
     os.makedirs(export_path, exist_ok=True)
 
-    edisgo_obj = iterative_reinforce(
-        edisgo_obj, combined_analysis=False, mode="split", iterations=5
-    )
+    # edisgo_obj = iterative_reinforce(
+    #     edisgo_obj, combined_analysis=False, mode="split", iterations=5
+    # )
+
+    # edisgo_obj.reinforce(catch_convergence_problems=True)
+    edisgo_obj = enhanced_reinforce_wrapper(edisgo_obj)
 
     logger.info(f"Save reinforced grid to {export_path}")
     edisgo_obj.save(

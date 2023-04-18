@@ -7,9 +7,9 @@ import doit
 from load_integration import run_load_integration
 
 from lobaflex import config_dir, logs_dir
-from lobaflex.grids.dnm_generation import run_dnm_generation
+# from lobaflex.grids.dnm_generation import run_dnm_generation
 from lobaflex.grids.emob_integration import run_emob_integration
-from lobaflex.grids.feeder_extraction import run_feeder_extraction
+# from lobaflex.grids.feeder_extraction import run_feeder_extraction
 from lobaflex.grids.hp_integration import run_hp_integration
 from lobaflex.tools.logger import setup_logging
 
@@ -36,8 +36,10 @@ setup_logging(file_name=logfile)
 #   8. watch param
 #   9. Check connection to db, maybe at beginning and raise warning
 
-DOIT_CONFIG = {"default_tasks": ["grids"], "reporter": TelegramReporter}
+DOIT_CONFIG = {"default_tasks": ["grids"]}#, "reporter": TelegramReporter}
 
+# DOIT_CONFIG = {"default_tasks": ["_set_grids_version"]}#, "reporter":
+#     # TelegramReporter}
 
 # def task__init_dataset_version():
 #     cfg = get_config(path=config_dir / ".grids.yaml")
@@ -135,63 +137,63 @@ def hp_integration_task(mvgd):
     }
 
 
-def feeder_extraction_task(mvgd):
-    """Generator to define feeder extraction task for a mvgd"""
-    cfg = get_config(path=config_dir / ".grids.yaml")
-    fix = cfg["feeder_extraction"]["fix_version"]
-    dep_manager = doit.Globals.dep_manager
-    grids_version = dep_manager.get_result("_set_grids_version")["version"]
+# def feeder_extraction_task(mvgd):
+#     """Generator to define feeder extraction task for a mvgd"""
+#     cfg = get_config(path=config_dir / ".grids.yaml")
+#     fix = cfg["feeder_extraction"]["fix_version"]
+#     dep_manager = doit.Globals.dep_manager
+#     grids_version = dep_manager.get_result("_set_grids_version")["version"]
+#
+#     yield {
+#         "name": f"{mvgd}_feeder_extraction",
+#         "actions": [
+#             (
+#                 run_feeder_extraction,
+#                 [],  # args
+#                 {  # kwargs
+#                     "grid_id": mvgd,
+#                     "doit": True,
+#                     "save": True,
+#                     "version": grids_version,
+#                 },
+#             )
+#         ],
+#         "task_dep": [f"grids:{mvgd}_hp_integration"],
+#         # take current version number of dataset
+#         # "getargs": {"version": ("_get_grids_version", "version")},
+#         "uptodate": [True] if fix else [grids_uptodate],
+#         "verbosity": 2,
+#     }
 
-    yield {
-        "name": f"{mvgd}_feeder_extraction",
-        "actions": [
-            (
-                run_feeder_extraction,
-                [],  # args
-                {  # kwargs
-                    "grid_id": mvgd,
-                    "doit": True,
-                    "save": True,
-                    "version": grids_version,
-                },
-            )
-        ],
-        "task_dep": [f"grids:{mvgd}_hp_integration"],
-        # take current version number of dataset
-        # "getargs": {"version": ("_get_grids_version", "version")},
-        "uptodate": [True] if fix else [grids_uptodate],
-        "verbosity": 2,
-    }
 
-
-def dnm_generation_task(mvgd):
-    """Generator to define dnm generation task for a feeder or mvgd"""
-    cfg = get_config(path=config_dir / ".grids.yaml")
-    fix = cfg["dnm_generation"]["fix_version"]
-    dep_manager = doit.Globals.dep_manager
-    grids_version = dep_manager.get_result("_set_grids_version")["version"]
-
-    yield {
-        "name": f"{mvgd}_dnm_generation",
-        "actions": [
-            (
-                run_dnm_generation,
-                [],
-                {
-                    "grid_id": mvgd,
-                    "doit": True,
-                    "save": True,
-                    "feeder": cfg["dnm_generation"]["feeder"],
-                    "version": grids_version,
-                },
-            )
-        ],
-        "task_dep": [f"grids:{mvgd}_feeder_extraction"],
-        # take current version number of dataset
-        # "getargs": {"version": ("_get_grids_version", "version")},
-        "uptodate": [True] if fix else [grids_uptodate],
-        "verbosity": 2,
-    }
+# def dnm_generation_task(mvgd):
+#     """Generator to define dnm generation task for a feeder or mvgd"""
+#     cfg = get_config(path=config_dir / ".grids.yaml")
+#     fix = cfg["dnm_generation"]["fix_version"]
+#     dep_manager = doit.Globals.dep_manager
+#     grids_version = dep_manager.get_result("_set_grids_version")["version"]
+#
+#     yield {
+#         "name": f"{mvgd}_dnm_generation",
+#         "actions": [
+#             (
+#                 run_dnm_generation,
+#                 [],
+#                 {
+#                     "grid_id": mvgd,
+#                     "doit": True,
+#                     "save": True,
+#                     "feeder": cfg["dnm_generation"]["feeder"],
+#                     "version": grids_version,
+#                 },
+#             )
+#         ],
+#         "task_dep": [f"grids:{mvgd}_feeder_extraction"],
+#         # take current version number of dataset
+#         # "getargs": {"version": ("_get_grids_version", "version")},
+#         "uptodate": [True] if fix else [grids_uptodate],
+#         "verbosity": 2,
+#     }
 
 
 def task_grids():
@@ -204,8 +206,8 @@ def task_grids():
         yield load_integration_task(mvgd)
         yield emob_integration_task(mvgd)
         yield hp_integration_task(mvgd)
-        yield feeder_extraction_task(mvgd)
-        yield dnm_generation_task(mvgd)
+        # yield feeder_extraction_task(mvgd)
+        # yield dnm_generation_task(mvgd)
 
 
 # def optimization(mvgd, feeder):
@@ -255,27 +257,27 @@ def task_grids():
 #             yield optimization(mvgd=mvgd, feeder=feeder)
 
 
-def task_grids_group():
-    """Groups grid tasks"""
-    cfg = get_config(path=config_dir / ".grids.yaml")
-    mvgds = sorted(cfg.pop("mvgds"))
-    cfg.pop("version", None)
-    tasks = [i for i in cfg.keys() if "mvgds" not in i]
-    for mvgd in mvgds:
-        yield {
-            "actions": None,
-            "name": str(mvgd),
-            "doc": "per mvgd",
-            "task_dep": [f"grids:{mvgd}_{i}" for i in tasks],
-        }
-
-    for task in tasks:
-        yield {
-            "actions": None,
-            "name": str(task),
-            "doc": "per task",
-            "task_dep": [f"grids:{i}_{task}" for i in mvgds],
-        }
+# def task_grids_group():
+#     """Groups grid tasks"""
+#     cfg = get_config(path=config_dir / ".grids.yaml")
+#     mvgds = sorted(cfg.pop("mvgds"))
+#     cfg.pop("version", None)
+#     tasks = [i for i in cfg.keys() if "mvgds" not in i]
+#     for mvgd in mvgds:
+#         yield {
+#             "actions": None,
+#             "name": str(mvgd),
+#             "doc": "per mvgd",
+#             "task_dep": [f"grids:{mvgd}_{i}" for i in tasks],
+#         }
+#
+#     for task in tasks:
+#         yield {
+#             "actions": None,
+#             "name": str(task),
+#             "doc": "per task",
+#             "task_dep": [f"grids:{i}_{task}" for i in mvgds],
+#         }
 
 
 # def task_opt_group():

@@ -133,9 +133,12 @@ def export_results(result_dict, export_path, timesteps, filename):
                 logger.warning(
                     f"Values > 1e-6 in {res_name} at iteration {iteration}."
                 )
-            res = res[mask]
-            res = res.dropna(how="all")
-            res = res.dropna(how="all")
+            # res = res[mask]
+            # res = res.dropna(how="all")
+            # res = res.fillna(0)
+            res[~mask] = np.nan
+            res = res.T.dropna(how="all").T
+
         if res.empty:
             logger.info(f"No results for {res_name}.")
         else:
@@ -272,10 +275,21 @@ def prepare_input_parameters(edisgo_obj, timeframe_only=False):
         total_timesteps = edisgo_obj.timeseries.timeindex.shape[0]
         timeframe = edisgo_obj.timeseries.timeindex
 
-    logger.info(
-        f"Optimized timeframe is: {timeframe[0]} -> "
-        f"{timeframe[-1]} including {total_timesteps} timesteps."
-    )
+    if timeframe.inferred_freq == None:
+        logger.warning("You might have a splitted time series. BE AWARE!")
+        theoretical_timesteps = pd.date_range(
+            start=timeframe.min(), end=timeframe.max(), freq="h"
+        )
+        logger.warning(
+            f"You timeframe has {len(timeframe)} timesteps but "
+            f"theoretical could have {len(theoretical_timesteps)}"
+        )
+
+    else:
+        logger.info(
+            f"Whole timeframe is: {timeframe[0]} -> "
+            f"{timeframe[-1]} including {total_timesteps} timesteps."
+        )
 
     return fixed_parameters, flexible_loads, total_timesteps, timeframe
 
@@ -332,89 +346,132 @@ def long_term_optimization(
         timeframe,
     ) = prepare_input_parameters(edisgo_obj, timeframe_only)
 
-    # TODO loop over era
-
-    logger.info(f"Set up model.")
-    model = lopf.setup_model(
-        fixed_parameters=fixed_parameters,
-        timesteps=timeframe,
-        objective=objective,
-        flexible_loads=flexible_loads,
-        # charging_starts={"ev": 0, "hp": 0, "tes": 0},
-        # **start_values, # might be fixed
-        load_factor_rings=0.5 if cfg_o["n-1"] else None  # TODO N-1 DEACTIVATED!
-        # **kwargs,
+    equal_splits = len(timeframe) / (
+        cfg_o["timesteps_per_iteration"] * cfg_o["iterations_per_era"]
     )
+    windows = np.split(timeframe.sort_values(), equal_splits)
 
-    # lpfile
-    if cfg_o["save_lp_files"]:
-        lp_filename = export_path / f"lp_file.lp"
-        logger.info(f"LP file is saved to: {lp_filename}")
+    for iteration, window in enumerate(windows):
 
-    else:
-        lp_filename = None
-
-    # logfile
-    if cfg_o["save_solver_logs"]:
-        date = datetime.now().date().isoformat()
-        logfile = logs_dir / f"gurobi_{date}_{grid_id}_{feeder_id}.log"
+        window.freq = pd.infer_freq(window)
         logger.info(
-            f"Solver log for long-term optimization are saved to: {logfile}"
+            f"Timeframe of iteration {iteration}: {window[0]} -> "
+            f"{window[-1]} including {len(window)} timesteps."
         )
-    else:
-        logfile = None
+        if iteration == 0:
+            logger.info("Set up model.")
+            model = lopf.setup_model(
+                fixed_parameters=fixed_parameters,
+                timesteps=window,
+                objective=objective,
+                flexible_loads=flexible_loads,
+                energy_level_ends={"ev": True, "tes": True},
+                # **start_values, # TODO not needed anymore @Anya?
+                load_factor_rings=0.5 if cfg_o["n-1"] else None  # TODO N-1
+                # DEACTIVATED!
+                # **kwargs,
+            )
+        else:
 
-    try:
-        result_dict = lopf.optimize(
-            model=model,
-            solver=cfg_o["solver"],
-            tee=cfg_o["print_solver_logs"],
-            lp_filename=lp_filename,
-            logfile=logfile,
-            options=cfg_o["options"],
+            logger.info(f"Update model for iteration {iteration}.")
+            model = lopf.update_model(
+                model=model,
+                timesteps=window,
+                fixed_parameters=fixed_parameters,
+                objective=objective,
+                # flexible_loads=flexible_loads,
+                energy_level_starts={"ev": 0.5, "tes": 0.5},
+                energy_level_ends={"ev": True, "tes": True},
+                # **start_values,
+                # **kwargs,
+            )
+
+        # lpfile
+        if cfg_o["save_lp_files"]:
+            lp_filename = export_path / f"lp_file_iteration_{iteration}.lp"
+            logger.info(
+                f"LP files for iteration {iteration} are saved to:"
+                f" {lp_filename}"
+            )
+
+        else:
+            lp_filename = None
+
+        # logfile
+        if cfg_o["save_solver_logs"]:
+            date = datetime.now().date().isoformat()
+            logfile = (
+                logs_dir / f"gurobi_{date}_{grid_id}_{feeder_id}"
+                f"_iteration_{iteration}.log"
+            )
+            logger.info(
+                f"Solver logs for iteration {iteration} are saved to:"
+                f" {logfile}"
+            )
+        else:
+            logfile = None
+
+        try:
+            result_dict = lopf.optimize(
+                model=model,
+                solver=cfg_o["solver"],
+                tee=cfg_o["print_solver_logs"],
+                lp_filename=lp_filename,
+                logfile=logfile,
+                options=cfg_o["options"],
+            )
+
+            if result_dict is None:
+                raise ValueError(
+                    f"Optimization failed for iteration {iteration}."
+                )
+
+        except ValueError as e:
+            logger.warning(e)
+            logger.info("Tuning Gurobi parameters.")
+            options = cfg_o["options"]
+            options.update(
+                {
+                    "OptimalityTol": 1e-5,
+                    "FeasibilityTol": 1e-5,
+                    "BarConvTol": 1e-5,
+                    "NumericFocus": 3,
+                    "BarHomogeneous": 1,
+                }
+            )
+
+            result_dict = lopf.optimize(
+                model=model,
+                solver=cfg_o["solver"],
+                tee=cfg_o["print_solver_logs"],
+                lp_filename=lp_filename,
+                logfile=logfile,
+                options=options,
+            )
+            if result_dict is None:
+                raise ValueError(
+                    f"Optimization failed for iteration {iteration} even "
+                    "after Gurobi parameter tuning."
+                )
+
+        logger.info(f"Finished optimisation for iteration {iteration}.")
+
+        # if export_path is not None:
+        filename = (
+            f"$res_name$_{grid_id}-{feeder_id}_iteration_{iteration}.csv"
         )
-        if result_dict is None:
-            raise ValueError(f"Optimization failed.")
-
-    except ValueError as e:
-        logger.warning(e)
-        logger.info("Tuning Gurobi parameters.")
-        options = cfg_o["options"]
-        options.update(
-            {"OptimalityTol": 1e-5,
-             "FeasibilityTol": 1e-5,
-             "BarConvTol": 1e-5,
-             "NumericFocus": 3,
-             "BarHomogeneous": 1,
-             }
-        )
-
-        result_dict = lopf.optimize(
-            model=model,
-            solver=cfg_o["solver"],
-            tee=cfg_o["print_solver_logs"],
-            lp_filename=lp_filename,
-            logfile=logfile,
-            options=options,
-        )
-        if result_dict is None:
-            raise ValueError(
-                f"Optimization failed even after Gurobi parameter tuning.")
-
-    logger.info(f"Finished long-term optimization.")
-
-    # if export_path is not None:
-    filename = f"$res_name$_{grid_id}-{feeder_id}_iteration_0.csv"
-    try:
-        export_results(
-            result_dict=result_dict,
-            export_path=export_path,
-            timesteps=timeframe,
-            filename=filename,
-        )
-    except Exception:
-        logger.warning("Optimization Error. Result's couldn't be exported.")
-        raise ValueError("Results not valid")
+        try:
+            export_results(
+                result_dict=result_dict,
+                export_path=export_path,
+                timesteps=window,
+                filename=filename,
+            )
+        except Exception:
+            logger.warning(
+                "Optimization Error. Result's couldn't be exported."
+            )
+            raise ValueError("Results not valid")
 
 
 def rolling_horizon_optimization(
@@ -490,7 +547,7 @@ def rolling_horizon_optimization(
         # if last iteration of era, no overlap is added but energy_level
         # at the end needs to be reached
         if iteration % iterations_per_era == iterations_per_era - 1:
-            timesteps = edisgo_obj.timeseries.timeindex[
+            timesteps = timeframe[
                 iteration
                 * timesteps_per_iteration : (iteration + 1)
                 * timesteps_per_iteration
@@ -501,7 +558,7 @@ def rolling_horizon_optimization(
 
         # in all other iterations overlap is added to the timeframe
         else:
-            timesteps = edisgo_obj.timeseries.timeindex[
+            timesteps = timeframe[
                 iteration
                 * timesteps_per_iteration : (iteration + 1)
                 * timesteps_per_iteration
@@ -523,12 +580,6 @@ def rolling_horizon_optimization(
                     "tes": None,
                     "hp": None,
                 },
-                # TODO workaround to fix charging in first timestep
-                # "charging_starts": {
-                #     "ev": 0,
-                #     "tes": 0,
-                #     "hp": None,
-                # },
             }
 
         else:
@@ -545,7 +596,8 @@ def rolling_horizon_optimization(
                 flexible_loads=flexible_loads,
                 # charging_starts={"ev": 0, "hp": 0, "tes": 0},
                 **start_values,
-                load_factor_rings=0.5 if cfg_o["n-1"] else None  # TODO N-1 DEACTIVATED!
+                load_factor_rings=0.5 if cfg_o["n-1"] else None  # TODO N-1
+                # DEACTIVATED!
                 # **kwargs,
             )
         else:
@@ -599,19 +651,22 @@ def rolling_horizon_optimization(
             )
 
             if result_dict is None:
-                raise ValueError(f"Optimization failed for iteration {iteration}.")
+                raise ValueError(
+                    f"Optimization failed for iteration {iteration}."
+                )
 
         except ValueError as e:
             logger.warning(e)
             logger.info("Tuning Gurobi parameters.")
             options = cfg_o["options"]
             options.update(
-                {"OptimalityTol": 1e-5,
-                 "FeasibilityTol": 1e-5,
-                 "BarConvTol": 1e-5,
-                 "NumericFocus": 3,
-                 "BarHomogeneous": 1,
-                 }
+                {
+                    "OptimalityTol": 1e-5,
+                    "FeasibilityTol": 1e-5,
+                    "BarConvTol": 1e-5,
+                    "NumericFocus": 3,
+                    "BarHomogeneous": 1,
+                }
             )
 
             result_dict = lopf.optimize(
@@ -625,7 +680,8 @@ def rolling_horizon_optimization(
             if result_dict is None:
                 raise ValueError(
                     f"Optimization failed for iteration {iteration} even "
-                    "after Gurobi parameter tuning.")
+                    "after Gurobi parameter tuning."
+                )
 
         logger.info(f"Finished optimisation for iteration {iteration}.")
 
@@ -654,6 +710,7 @@ def run_dispatch_optimization(
     feeder_id,
     objective,
     rolling_horizon=False,
+    meta=None,
     run_id=None,
     version_db=None,
 ):
@@ -669,9 +726,11 @@ def run_dispatch_optimization(
         feeder id, respective folder name of feeder
     objective :
         objective function to be used for optimization
-    rolling_horizon : bool
+    rolling_horizon : {"pot": False, "load":False}
         If True, rolling horizon optimization is performed else long-term
-        optimization (default = False). !NOTE Currently fixed to objectives!
+        optimization (default = False).
+    meta : str
+        This is used for logging purposes only
     run_id : str or None
         run id used for pydoit versioning
     version_db : dict or None
@@ -690,7 +749,10 @@ def run_dispatch_optimization(
     feeder_id = f"{int(feeder_id):02}"
 
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"opt_{run_id}_{grid_id}-{feeder_id}" f"_{date}.log"
+    logfile = (
+        logs_dir / f"{run_id}_optimize_{meta}_{objective}_{grid_id}"
+        f"-{feeder_id}_{date}.log"
+    )
     setup_logging(file_name=logfile)
 
     logger.info(
@@ -719,11 +781,7 @@ def run_dispatch_optimization(
             "minimize_energy_level",
         ]:
 
-            # Use long-term optimization for these objectives if false
-            if cfg_o["rolling_horizon"]["pot"]:
-                rolling_horizon = True
-            else:
-                rolling_horizon = False
+            rolling_horizon = rolling_horizon["pot"]
 
             # Add extra directory layer for potentials
             directory = Path("potential") / obj_or_path.parent.parent.name
@@ -731,7 +789,7 @@ def run_dispatch_optimization(
         else:
 
             # use rolling horizon optimization for all other objectives
-            rolling_horizon = True
+            rolling_horizon = rolling_horizon["load"]
 
             # No extra directory layer needed
             directory = ""
@@ -746,10 +804,6 @@ def run_dispatch_optimization(
             / feeder_id
         )
         os.makedirs(export_path, exist_ok=True)
-
-    # TODO Move to edisgo feeder extraction + timeseries extraction
-    logger.info("Check integrity.")
-    edisgo_obj.check_integrity()
 
     logger.info("Run Powerflow for first timestep")
     try:

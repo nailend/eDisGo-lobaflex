@@ -42,6 +42,7 @@ def create_grids_notebook(
     grid_id,
     run_id,
     template="grid_analysis_template.ipynb",
+    period=None,
     name=None,
     import_dir=None,
     export_dir=None,
@@ -52,14 +53,14 @@ def create_grids_notebook(
     cfg_o = get_config(path=config_dir / ".opt.yaml")
 
     date = datetime.now().date().isoformat()
-    logfile = logs_dir / f"analysis_grids_ynb_{run_id}_{date}.log"
+    logfile = logs_dir / f"{run_id}_analysis_grids_ynb_{grid_id}_{date}.log"
     setup_logging(file_name=logfile)
 
     # define data and paths
     input_template = os.path.join(analysis_path[0], "templates", template)
 
     if import_dir is None:
-        import_dir = cfg_o["import_dir"]
+        grid_path = results_dir / run_id / str(grid_id)
     if export_dir is None:
         export_dir = run_id
     export_path = results_dir / export_dir / str(grid_id) / "analysis"
@@ -67,15 +68,16 @@ def create_grids_notebook(
 
     if name is None:
         name = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    # else:
+    #     name = name + "_" + datetime.now().strftime("%Y-%m-%d_%H%M%S")
     export_name = f"{template.strip('.ipynb')}_{name}.ipynb"
     export_notebook = export_path / export_name
 
     parameters = {
         "run_id": run_id,
         "grid_id": grid_id,
-        "start_datetime": None,
-        "period": None,
-        "import_dir": import_dir,
+        "period": period,
+        "grid_path": str(grid_path),
     }
 
     # execute notebook with specific parameter
@@ -118,15 +120,17 @@ if __name__ == "__main__":
     logfile = logs_dir / f"analysis_grids_ynb_{date}_local.log"
     setup_logging(file_name=logfile)
 
+    grid_id = 1056
+    run_id = "rolling_horizon_only_load_unbound_2weeks"
     create_grids_notebook(
-        grid_id=9999,
-        run_id="long_term",
+        grid_id=grid_id,
+        run_id=run_id,
         # template="grid_analysis_template.ipynb",
         template="analyse_potential.ipynb",
-        import_dir=str(
-            results_dir / "long_term" / str(9999) / "minimize_loading"
-        ),
+        period="potential",
+        import_dir=None,
         export_dir=None,
+        name="local",
         # kernel_name="lobaflex",
         # kernel_name="d_py3.8_edisgo-lobaflex",
         kernel_name=os.path.basename(os.environ.get("VIRTUAL_ENV")),
